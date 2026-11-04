@@ -1,0 +1,95 @@
+# 通用任务配置：模型名称、API Key、服务地址统一放在项目根目录 .env。
+# 相对路径以运行命令时的工作目录为基准；建议在项目根目录运行。
+
+# ── 1. 输入、输出与运行方式 ──────────────────────────────────
+# 输入文件或目录；目录会递归扫描 TXT、Markdown、文本 PDF 和 DOCX。
+input: cairo_transportation
+# 输出根目录；每次 generate 创建独立 run_* 批次，也可指定 .jsonl/.json/.csv 文件。
+output: data/output
+# contexts：由本工程构建证据；docs：交给 DeepEval 解析召回，需 strategy=chunks。
+mode: contexts
+# 生成问答的目标语言及数据语言标签；不会把原始证据翻译后替换。
+language: en
+# 本地随机种子；不能保证远程 LLM 逐字复现，回放依靠批次快照和检查点。
+seed: 42
+
+# ── 2. 证据切分：两种 Context 策略均保留 Chunk 以定位引用 ────────
+chunking:
+  # 长文本切分的目标 Token 数；章节、段落、表格边界仍独立保留，单行表格可能超出。
+  size: 650
+  # 仅长文本滑窗切分时的重叠 Token 数；必须小于 size。
+  overlap: 70
+
+# ── 3. Context 构建：先选全文或分块，再考虑召回与跨文档组合 ───────
+context:
+  # whole_document：每篇全部正文 Chunk 合为一个 Context；chunks：按片段构建。
+  # 全文策略不做跨文档拼接，也不受下方片段数量/Context 数量上限限制。
+  strategy: whole_document
+  # 每个 Context 的最大证据 Token 数，包含证据标签和表头；不是模型总窗口。
+  # 全文超限直接报错，绝不截断或遗漏整篇文档；需调大或切换 chunks。
+  max_tokens: 6000
+
+  # 以下召回参数只用于 chunks 策略；全文策略跳过索引，不调用召回 Embedding。
+  # tfidf：本地词频向量；openai：远程向量，模型取自 .env 的 DEEPEVAL_EMBEDDING_MODEL。
+  embedding: openai
+  # 单文档 Context 数量上限；不是生成的 QA 数量，whole_document 始终每篇一个。
+  max_contexts_per_document: 8
+  # 片段组合开关：1 仅单片段，>=2 允许组合；当前自建 chunks 策略最多组合两个主片段。
+  # docs 模式中会作为 DeepEval 的 Context 片段数上限；全文策略忽略此值。
+  max_chunks: 3
+
+  # 以下跨文档参数仅在 strategy=chunks 且 cross_document=true 时参与证据拼接。
+  # 是否允许组合不同文档的片段；未知文档可先关闭，正常生成单文档 QA。
+  cross_document: false
+  # 跨文档 Context 总量上限；0 表示不生成跨文档 Context。
+  max_cross_contexts: 10
+  # 跨文档片段的向量余弦相似度下限；仍须同时通过实体和关系规则。
+  similarity_threshold: 0.12
+  # 共享实体名称列表；空列表尝试用英文名称规则自动发现。
+  # 同时用于 QA 语义去重的实体范围保护，全文策略也保留此用途。
+  entities: []
+  # 共享实体所在句子中需出现的关系关键词；空列表不产生规则型跨文档组合。
+  relations: []
+
+# ── 4. QA 生成：以下均为单轮问答的生成参数 ─────────────────────
+synthesis:
+  # 文档专属规则：按文件名精确匹配（含扩展名，区分大小写，不写目录）。
+  # 每条规则写成一行 YAML 列表，可用中文或英文；同一文件的所有 Context 都会收到。
+  # 多文档 Context 分别追加每个来源的规则，并标明适用的 document_id。
+  # 规则用于初始问题生成和可选的表述调整；仅 mode=contexts 支持。
+  # 示例见 transport_qa.yaml；{} 表示不配置，某个文件填 [] 表示不追加规则。
+  document_rules: {}
+  # 可选：按 context_id 再追加规则，ID 可从 prepare 输出的 contexts.jsonl 复制。
+  # 文档规则和 Context 规则依次追加，不相互覆盖；没有特殊需求时保持 {}。
+  context_rules: {}
+  # 每个 Context 最多生成的候选 QA 数（1～20）；审核和去重后可能减少。
+  max_goldens_per_context: 15
+  # DeepEval 内部异步任务并发上限；本工程仍逐个 Context 调度。
+  max_concurrent: 3
+  # 远程请求失败重试次数；docs 模式也用于 Context 构建重试。
+  max_retries: 2
+  # 每次远程请求的超时秒数，不是整批任务的总时间上限。
+  timeout: 90
+  # 问题演化轮数（0～5）；0 同时关闭演化和表述调整，初始问题直接生成答案。
+  # 1～5：完成对应轮次的演化后，再执行一次表述调整。
+  num_evolutions: 0
+  # 每个 Context 都参考以下全部题型，模型为每条问题返回 qa_type；按证据选择，不要求等量。
+  # factual：普通事实；numeric_fact：数值；list：列举；conditional：条件查询；
+  # comparison：比较。标签描述信息需求，表格中的数值也归 numeric_fact。
+  question_types: [factual, numeric_fact, list, conditional, comparison]
+  # 可选的正整数偏好权重：仅引导关注程度，不是数量配额；未填写的默认为 1。
+  # 键必须包含在 question_types 中；{} 表示无额外偏好。
+  type_weights: {}
+
+# ── 5. 工程质量门禁与去重：分数均为 0～1 ──────────────────────
+quality:
+  # question_clarity / self_containment / completeness / answer_correctness / personification。
+  # answer_correctness 合并答案事实正确性与引用支持；personification 评本地用户自然需求及问法。
+  # 五个维度分别返回 1/2/3，程序映射为 0/0.5/1，各占 20%。
+  # 加权总分达到此值时通过；不再设置单维度最低分。
+  overall_threshold: 0.80
+  # 是否对已自动通过的 QA 做远程向量召回和 LLM 判重；离线 smoke 不调用。
+  # 与 context.embedding 无关；启用后仍可能使用 .env 中的 Embedding 模型。
+  semantic_dedup: true
+  # 问题向量相似度达到此值才交给 LLM 判重；相似度本身不直接判定重复。
+  semantic_candidate_threshold: 0.85

@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: doc2qa
+Version: 0.1.0
+Summary: Evidence-first document QA synthesis with DeepEval
+Requires-Python: >=3.11
+Requires-Dist: deepeval==4.3.2
+Requires-Dist: PyYAML<7,>=6
+Requires-Dist: tiktoken<1,>=0.9
+Requires-Dist: pypdf<7,>=5
+Requires-Dist: python-docx<2,>=1.1
+Provides-Extra: docs
+Requires-Dist: chromadb<2,>=1; extra == "docs"
+Requires-Dist: langchain-community<1,>=0.3; extra == "docs"
+Requires-Dist: langchain-text-splitters<1,>=0.3; extra == "docs"
+Provides-Extra: dev
+Requires-Dist: pytest<9,>=8; extra == "dev"
+Requires-Dist: ruff<1,>=0.11; extra == "dev"

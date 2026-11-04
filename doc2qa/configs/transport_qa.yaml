@@ -1,0 +1,47 @@
+# 开罗交通数据任务；完整参数及逐项说明见同目录 default.yaml。
+# 继承文件路径相对于当前 YAML；这里只保留任务相关覆盖项。
+extends: default.yaml
+
+# 五份交通资料所在目录，相对于命令运行目录。
+input: cairo_transportation
+# 生成批次的输出根目录。
+output: data/output
+# 生成英文问答，证据保留原文。
+language: en
+
+# 在这里直接编辑每篇文档的特殊要求，无需修改 Python。
+# 文件名必须与输入文档一致；本任务使用英文规则，输出语言仍由上面的 language 控制。
+# 仅对包含对应文档的 Context 生效。删除某个条目或把列表改成 [] 可停用该文件的规则。
+synthesis:
+  # 每篇文档保留三条英文核心要求：实际乘车问题、事实边界、该交通方式的特殊限制。
+  document_rules:
+    cairo_bus_rapid_transit_en.txt:
+      - Ask everyday questions a local passenger might ask about taking Cairo BRT, focusing on fares, station access and transfers rather than project statistics.
+      - Use only documented station names, fare bands and connections; do not infer stop order or point-to-point fares.
+      - Distinguish reported service hours and frequencies from verified current operations, and keep planned facilities clearly labelled.
+    cairo_metro_en.txt:
+      - Ask practical questions a Cairo resident might ask about choosing a metro line, changing trains, fares, passes or reaching a named landmark.
+      - Use only documented stations, interchanges and fare categories; do not invent routes, journey times, prices or missing pass durations.
+      - Do not turn Line 3 construction-phase lists into a travel sequence or present planned Line 4 services as available today.
+    cairo_light_electric_train_en.txt:
+      - Ask everyday commuter questions about LRT fares, monthly passes, transfers at Adly Mansour and connections to nearby communities.
+      - Use only documented station names, branches, fare bands and feeder links; do not invent door-to-door routes or timetables.
+      - Distinguish opened phases from construction and proposals; do not present planned stations or interchanges as available for travel.
+    cairo_monorail_en.txt:
+      - Ask practical questions a local resident might ask about reaching New Cairo, the New Administrative Capital or 6th of October City and changing transport.
+      - Use only documented station names and interchanges; do not infer station order or invent fares, frequencies or journey times.
+      - Keep East and West Nile lines separate; describe openings and future connections as reported without implying confirmed service today.
+    cairo_railway_en.txt:
+      - Ask realistic passenger questions about Cairo-to-city fares, first versus second class, where to book tickets and how to pay.
+      - Use only listed destinations and prices; do not invent station names, departure times, train types or ticket availability.
+      - Treat dashes as unlisted fares and keep the table's currency unspecified; do not fill these gaps from other transport documents.
+  # 可选：给某个 Context 再追加要求，通常保持为空。
+  context_rules: {}
+
+context:
+  # 每篇文档的全部正文组成一个 Context；五份不同资料对应五个 Context。
+  strategy: whole_document
+  # 共享实体留空；无需提前了解文档内容，可正常生成单文档 QA。
+  entities: []
+  # 关系词留空；全文策略不依赖关系规则。
+  relations: []

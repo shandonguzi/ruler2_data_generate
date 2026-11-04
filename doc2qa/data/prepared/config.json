@@ -1,0 +1,78 @@
+{
+  "input": "cairo_transportation",
+  "output": "data/prepared",
+  "mode": "contexts",
+  "language": "en",
+  "seed": 42,
+  "chunking": {
+    "size": 650,
+    "overlap": 70
+  },
+  "context": {
+    "embedding": "tfidf",
+    "embedding_model": "text-embedding-3-small",
+    "cross_document": true,
+    "max_chunks": 3,
+    "max_tokens": 5000,
+    "max_contexts_per_document": 8,
+    "max_cross_contexts": 10,
+    "similarity_threshold": 0.12,
+    "entities": [
+      "Adly Mansour",
+      "Wadi El Nile",
+      "Cairo University",
+      "Arts and Culture",
+      "Bashteel",
+      "Hesham Barakat",
+      "El Narges",
+      "Metro Line 3",
+      "Giza"
+    ],
+    "relations": [
+      "interchange",
+      "connects",
+      "connections",
+      "terminus",
+      "links",
+      "transfer"
+    ]
+  },
+  "synthesis": {
+    "model": "gpt-4.1-mini",
+    "judge_model": "gpt-4.1-mini",
+    "max_goldens_per_context": 2,
+    "max_concurrent": 3,
+    "max_retries": 2,
+    "timeout": 90.0,
+    "num_evolutions": 1,
+    "input_quality_threshold": 0.7,
+    "question_types": [
+      "factual",
+      "numeric_fact",
+      "list",
+      "conditional",
+      "comparison",
+      "multi_hop",
+      "table_lookup",
+      "source_limitation"
+    ],
+    "type_weights": {
+      "factual": 2,
+      "numeric_fact": 2,
+      "table_lookup": 2,
+      "source_limitation": 2,
+      "list": 1,
+      "comparison": 1,
+      "multi_hop": 1
+    }
+  },
+  "quality": {
+    "question_clarity": 0.7,
+    "self_containment": 0.7,
+    "groundedness": 0.85,
+    "evidence_coverage": 0.9,
+    "completeness": 0.85,
+    "semantic_candidate_threshold": 0.85,
+    "semantic_dedup": true
+  }
+}

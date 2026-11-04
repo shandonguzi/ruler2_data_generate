@@ -1,0 +1,54 @@
+{
+  "input": "cairo_transportation",
+  "output": "data/prepared_whole_document",
+  "mode": "contexts",
+  "language": "en",
+  "seed": 42,
+  "chunking": {
+    "size": 650,
+    "overlap": 70
+  },
+  "context": {
+    "strategy": "whole_document",
+    "embedding": "tfidf",
+    "embedding_model": "text-embedding-3-small",
+    "cross_document": false,
+    "max_chunks": 3,
+    "max_tokens": 6000,
+    "max_contexts_per_document": 8,
+    "max_cross_contexts": 10,
+    "similarity_threshold": 0.12,
+    "entities": [],
+    "relations": []
+  },
+  "synthesis": {
+    "model": "gpt-4.1-mini",
+    "judge_model": "gpt-4.1-mini",
+    "max_goldens_per_context": 15,
+    "max_concurrent": 3,
+    "max_retries": 2,
+    "timeout": 90.0,
+    "num_evolutions": 1,
+    "input_quality_threshold": 0.7,
+    "question_types": [
+      "factual",
+      "numeric_fact",
+      "list",
+      "conditional",
+      "comparison",
+      "multi_hop",
+      "table_lookup",
+      "source_limitation"
+    ],
+    "type_weights": {}
+  },
+  "quality": {
+    "question_clarity": 0.7,
+    "self_containment": 0.7,
+    "groundedness": 0.85,
+    "evidence_coverage": 0.9,
+    "completeness": 0.85,
+    "semantic_candidate_threshold": 0.85,
+    "semantic_dedup": true
+  }
+}

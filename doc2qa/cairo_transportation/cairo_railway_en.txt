@@ -1,0 +1,22 @@
+CAIRO GOVERNORATE TRANSPORTATION SERVICES
+English reference compiled 30 October 2026
+Index: https://www.cairo.gov.eg/en/governorate-services/transportation-services/
+Names and figures follow the portal; plans, fares and service status may have changed. This is not a real-time timetable.
+1. RAILWAY
+Source: https://www.cairo.gov.eg/en/governorate-services/transportation-services/railway/
+Page last updated: 2026. The portal gives the following Cairo-to-city fares, without specifying currency in the table or a particular train service. A dash denotes no fare listed.
+Destination | First class | Second class
+Alexandria | 190 | 150
+Aswan | 430 | 280
+Assiut | 500 | 250
+Beni Suef | 130 | 100
+Damietta | — | 90
+Menya | 200 | 150
+Mansoura | 120 | 70
+Zagazig | — | 60
+Luxor | 360 | 250
+Qena | 340 | 230
+Sohag | 290 | 200
+Tanta | 110 | 90
+
+Booking: city booking offices, station ticket counters, the Egyptian National Railways (ENR) website, the Egyptian National Railways mobile app, and participating agents Fawry, Aman, Damen, Magic Pay, Khadamaty, OPay, Talqa and Cash Call. The portal lists cash and card payment at offices/counters and participating agents, and card payment online or in the app. Verify availability, prices and schedules with ENR: https://www.enr.gov.eg/En

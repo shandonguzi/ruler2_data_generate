@@ -1,0 +1,13 @@
+CAIRO GOVERNORATE TRANSPORTATION SERVICES
+English reference compiled 30 October 2026
+Index: https://www.cairo.gov.eg/en/governorate-services/transportation-services/
+Names and figures follow the portal; plans, fares and service status may have changed. This is not a real-time timetable.
+6. MONORAIL
+Source: https://www.cairo.gov.eg/en/governorate-services/transportation-services/monorail/
+The portal describes electric trains on elevated single-rail beams, two East and West Nile lines, and an 80 km/h operating speed. It presents project benefits including lower congestion, pollution and fuel consumption and support for new urban development. Current operations and construction progress should be checked with the operator.
+
+The page labels the following 16 stations inaugurated, with its numbering:
+1 Field Marshal Tantawy; 2 Al-Mostasmerin; 3 Al-Lotus; 4 One Ninety; 5 Beit Al-Watan; 6 Al-Fattah Al-Aleem Mosque; 7 Air Force Hospital; 8 R2 Residential District; 9 R1 Residential District; 10 Justice City; 11 Government District; 12 Misr Mosque; 13 Financial District; 14 Golden Square; 15 Al-Narges; 16 Arts and Culture City.
+The source separately describes the East Nile line from Field Marshal Tantawi to Justice City, serving Nasr City, New Cairo and the New Administrative Capital. It mentions an LRT interchange at Arts and Culture City and future interchanges with Metro Line 6 at El Narges and phase 2 of Line 4 at Hesham Barakat. The separately numbered station table should not be assumed to be a route sequence, since the source's endpoint and table ordering are not fully consistent.
+
+West Nile line: the page describes 43.8 km from 6th of October City to Wadi El Nile in Mohandessin, serving the city's southern developments. Its 13 named stations are New October; Ahram Canadian University; Sadat; 6th of October University; Engineers Syndicate; Mall of Egypt; Sheikh Zayed City; Alexandria Road; Mansouria; Mariouteya; Ring Road; Bashteel; Wadi El Nile. It names Alstom and Arab Contractors among the consortium. Listed interchanges: Metro Line 3 at Wadi El Nile; Upper Egypt Railway Station at Bashteel; Ain Sokhna–Marsa Matrouh high-speed rail at Engineers Syndicate Club; and a future Line 4 phase at 6th of October University.

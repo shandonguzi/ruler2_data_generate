@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.DS_Store
+.env
+\!.env.example
+output/
+ouput/
+config.yaml
+*.zip
+*.log
+*.pid

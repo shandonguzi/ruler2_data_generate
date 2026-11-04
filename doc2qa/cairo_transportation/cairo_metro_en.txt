@@ -1,0 +1,56 @@
+CAIRO GOVERNORATE TRANSPORTATION SERVICES
+English reference compiled 30 October 2026
+Index: https://www.cairo.gov.eg/en/governorate-services/transportation-services/
+Names and figures follow the portal; plans, fares and service status may have changed. This is not a real-time timetable.
+2. METRO: LINES AND LANDMARKS
+Source: https://www.cairo.gov.eg/en/governorate-services/transportation-services/metro/
+Page last updated: 2026.
+
+LINE 1: Helwan to New El Marg. The portal lists 35 stations: 30 surface and 5 underground. Stations, in source order:
+Helwan; Ain Helwan; Helwan University; Wadi Hof; Hadayek Helwan; El Maasara; Tora El Asmant; Kotsika; Tora El Balad; Maadi Barracks; Maadi; Hadayek El Maadi; Dar El Salam; El Zahraa; Mar Girgis; El Malek El Saleh; Sayeda Zeinab; Saad Zaghloul; Sadat (Tahrir) [Line 2 interchange]; Gamal Abdel Nasser [Line 3]; Ahmed Orabi; Al Shohadaa (Ramses) [Line 2]; Ghamra; El Demerdash; Manshiet El Sadr; Kobri El Qobba; Hammamat El Qobba; Saray El Qobba; Hadayek El Zeitoun; Helmiet El Zeitoun; El Matareya; Ain Shams; Ezbet El Nakhl; El Marg; New El Marg.
+
+LINE 2: Shubra El Kheima, Qalyubia, to El Mounib, Giza. The page lists 20 stations: 12 underground, 6 surface and 2 elevated. Source order from El Mounib:
+El Mounib; Sakiat Mekki; Giza Suburbs (Om El Masryeen); Giza [planned Line 4 interchange]; Faisal; Cairo University [Line 3]; El Bohouth; Dokki; Opera; Sadat (Tahrir) [Line 1]; Mohamed Naguib; Ataba [Line 3]; Al Shohadaa (Ramses) [Line 1]; Massara; Rod El Farag; Saint Teresa; Khalafawy; El Mazallat; Faculty of Agriculture; Shubra El Kheima.
+
+LINE 3: The page gives a total length of 41.2 km. Its station lists are organized by construction phase, not a single continuous travel sequence:
+Phase 1, 4.4 km, underground: Ataba; Bab El Shaaria; El Geish; Abdo Pasha; Abbassia.
+Phase 2, 7.7 km, underground: Ard El Maared; Stadium; Girls’ College; El Ahram.
+Phase 3 part 1, 4 km, underground: Gamal Abdel Nasser; Maspero; Safaa Hegazy; Kit Kat.
+Phase 3 part 2, 6.6 km: Sudan (underground); Imbaba, El Bohy, El Qawmeya El Arabia, Ring Road (elevated); Rod El Farag Axis (surface terminus).
+Phase 3 part 3, 7.1 km: Tawfikia, Wadi El Nile, League of Arab States (underground); Cairo University (elevated); Bolak El Dakrour (surface).
+Phase 4 part 1, 3.7 km, underground: Haroun; Heliopolis; Alf Maskan; El Shams Club.
+Phase 4 part 2, 7.8 km, elevated: El Nozha; Hesham Barakat; Qobaa; Omar Ibn El Khattab; El Haykestep; Adly Mansour.
+
+LINE 4 — construction/planning as described by the source, not confirmed live status: 42 km and 39 planned stations (37 underground, 2 surface), expected capacity about 2 million passengers per day. The route starts west of the Ring Road near 6th of October City, runs past the Grand Egyptian Museum and Remaya Square along Al Haram Street to Giza (planned interchange with Line 2), then to El Malek El Saleh (Line 1), Magra El Oyoun, Salah Salem Street, El Nasr Road, Al Mokawloon Al Arab Club, Nasr City and El Rehab, ending at an integrated transport center north of the Ring Road/Cairo–Suez Road junction.
+Phase 1: 19 km, 17 stations, Hadayek El Ashgar to Fustat; via the museum, Remaya Square, Al Haram and Giza; crosses the Nile to El Malek El Saleh. Phase 2: 23 km, 22 stations, Fustat to Nasr City and New Cairo, via Salah Salem, Mansheyet Nasser, El Doweiqa, El Arab District, Al Mokawloon Al Arab Club, Railway Club, Al-Azhar University, El Shaheed Axis, Mostafa El Nahhas Street, El Teba, Mahdi Arafa Street, El Methaq Street, Zahraa Nasr City, the Police Academy and Mostafa Kamel Axis near El Rehab, ending near Cairo–Suez Desert Road and the workshop. The source does not give a complete 39-station list.
+
+IMPORTANT STATIONS AND NEARBY LANDMARKS (as described on the portal):
+Al Shohadaa: Lines 1/2; Ramses Railway Station; El Sabteya, El Fagalla and El Gomhoreya Street commercial areas.
+Sadat: Lines 1/2; former Mugamma El Tahrir, Cabinet, House of Representatives, Egyptian Museum and Qasr El Nile Bridge.
+Ataba: downtown Cairo. Stadium: Cairo International Stadium. Bab El Shaaria: northern Islamic Cairo.
+Cairo University: Cairo University. Manshiet El Sadr: Ain Shams University. Helwan University: Helwan University.
+Opera: Cairo Opera House, Zamalek and Nile Corniche. Giza: Giza Railway Station and buses towards the Pyramids.
+Mar Girgis: Coptic Cairo, Hanging Church and the Religious Complex. Mohamed Naguib: Abdeen Palace.
+Gamal Abdel Nasser: 26th of July Street and High Court. Helwan: Japanese Garden and highway towards Upper Egypt.
+
+3. METRO TICKETS, SUBSCRIPTIONS AND CASH WALLET
+Source: https://www.cairo.gov.eg/en/governorate-services/transportation-services/metro/metro-tickets/
+Page updated 2026. Values below are presented as EGP, based on the page's Egyptian-pound context; confirm before travel.
+Single ticket, distance in stations | Public | Over 60 / military and police | People with disabilities
+9 | 10 | 5 | 5
+16 | 12 | 6 | 5
+23 | 15 | 8 | 5
+39 | 20 | 10 | 5
+
+Subscriptions, public / military and police, by zone:
+The first subscription table does not explicitly state its duration: one zone 390/300; two 440/360; three or four 510/450; five or six 600/600.
+Quarterly: one zone 1,045/900; two 1,190/1,080; three or four 1,250/—; five or six 1,670/—.
+Annual public: one line 5,100; three lines 6,400.
+Seniors over 60 to 70, monthly, by one / two / three or four / more than four phases: 270 / 350 / 415 / 470. Quarterly: 825 / 1,040 / 1,125 / 1,270. The page states that passengers aged 70 and above receive free subscriptions for all phases on all three lines.
+Quarterly, one / two / three or four / more than four phases: injured persons and families of martyrs (military/police/revolution) 525/595/715/835; students 150/200/250/300; people with disabilities 150/200/250/300.
+
+Application: visit a subscription office, complete the relevant form with two 4 × 6 cm photos, supply ID or birth certificate and any applicable membership documentation, and obtain the relevant authority's stamp; general public applications do not require a stamp. Student forms need Student Affairs approval, the prescribed photo stamps, ID/birth certificate, proof of tuition payment or current/previous academic-year card, and a phone number when required. Student passes cover the residence-to-study route. Passes are personal and misuse can incur a penalty.
+Student form: https://www.cairometro.gov.eg/ (follow the form link from the source page).
+Quarterly offices — Line 1: Helwan, Ain Helwan, Helwan University, Maadi, Dar El Salam, El Zahraa, El Shohadaa, Hadayeq El Zaitoun, Ain Shams, Ezbet El Nakhl, Old Marg, New Marg. Line 2: Faculty of Agriculture, El Mazallat, Rod El Farag, Massara, El Shohadaa, Ataba, Dokki, Cairo University, Giza, El Mounib. Line 3: Ataba, Abbassia, Heliopolis, Adly Mansour.
+Annual offices — Line 1: Helwan, Maadi, Ain Shams. Line 2: Faculty of Agriculture, Rod El Farag, El Shohadaa, Ataba, Cairo University. Line 3: Heliopolis, Adly Mansour.
+Cash wallet: anonymous, reusable smart card for single trips; initial card price 80 EGP; recharge denominations listed from 40 through 500 EGP. The page says it can be shared, has no fixed use period and is sold at all stations on the three lines.
