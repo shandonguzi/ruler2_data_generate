@@ -1,0 +1,9 @@
+# 第三任务五维评测配置。已填入工作空间接口、密钥和默认模型。
+# 使用兼容接口时，api_url 需是完整的 Chat Completions 地址。
+api_url: "https://ws-fonpfytrgypb84s5.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions"
+api_key: ""
+model: "deepseek-v4.1-flash-1017"
+
+# 相对路径以本文件所在的 src 目录为起点。
+input: "../voice_ruler2_test/第三任务_160条五维预评分.xlsx"
+out_dir: "output/test_80"
