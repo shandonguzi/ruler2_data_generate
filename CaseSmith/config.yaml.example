@@ -1,0 +1,172 @@
+# CaseSmith 配置模板：cp config.yaml.example config.yaml 后填写密钥与模型名
+
+api:
+  provider: "openai"
+  api_key: ""                                   # 留空则读取 OPENAI_API_KEY
+  base_url: "https://your-llm-gateway.example.com/v1"
+  model: "your-model-name"
+
+  inference:
+    temperature: 0.7
+    max_completion_tokens: 8192
+    top_p: 0.9
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+
+# openrouter:
+#   api_key: ""                                 # 留空则读取 OPENROUTER_API_KEY
+#   endpoint: "https://openrouter.ai/api/v1/chat/completions"
+
+paths:
+  input_csv: "QA_case.csv"                      # 必需列: id, dialect, open_question, open_answer
+  output_csv: "output/QA_case_improved.csv"
+  failed_csv: "output/failed_queries.csv"
+  state_dir: "output/state"
+
+  persona_bank:
+    persona: "input/persona.yaml"
+
+  persona_specs:
+    output_dir: "output/personas"
+    format: "json"
+
+  queries:
+    output_dir: "output/queries"
+
+  sampling:
+    config: "input/sampling_config.yaml"
+
+  interactions:
+    output_dir: "output/interactions"
+
+  training_data:
+    output_dir: "output/training_data"
+
+  logs:
+    dir: "logs"
+    level: "INFO"
+
+query_selection:
+  num: null                                     # null = 全部；--num 优先
+  persona_assignment: "with_replacement"
+
+persona_generation:
+  num_personas: 1000
+  sampling_strategy: "random"
+  feature_availability_rate: 0.7
+  diversity:
+    enabled: true
+    min_hamming_distance: 3
+
+formulation:
+  system_prompt_template: "prompts/persona_to_system_prompt.txt"
+  max_retries: 3
+  retry_delay: 2
+  validate_output: true
+  min_prompt_length: 10
+
+query_generation:
+  max_queries: null
+  style_transfer:
+    enabled: true
+    template: "prompts/query_style_transfer.txt"
+    partial_template: "prompts/query_style_transfer_partial.txt"
+    transfer_probability: 0.5
+  selection:
+    strategy: "random"
+
+interaction_generation:
+  min_turns: 1                                  # 固定 1 轮
+  max_turns: 1
+  max_workers: 10
+  max_retries: 3
+  retry_delay: 2
+  max_supplement_rounds: 0
+  reformulate_persona_prompt: false
+
+  assistant_model:
+    model_pool:                                 # 权重之和必须为 1.0
+      - provider: "openai"
+        model: "your-assistant-model-a"
+        weight: 0.34
+        inference:
+          temperature: 0.7
+          max_completion_tokens: 4096
+      - provider: "openai"
+        model: "your-assistant-model-b"
+        weight: 0.33
+        inference:
+          temperature: 0.7
+          max_completion_tokens: 4096
+      - provider: "openai"
+        model: "your-assistant-model-c"
+        weight: 0.33
+        inference:
+          temperature: 0.7
+          max_completion_tokens: 4096
+
+  user_model:
+    provider: "openai"
+    model: "your-model-name"
+    temperature: 0.8
+    max_completion_tokens: 2048
+    system_prompt_template: "prompts/user_feedback.txt"
+    feedback_probability: 0.85
+
+distractor:
+  enabled: true
+  use_semantic: true
+  activation_probability: 0.25
+  strategy_path: "input/distractor_strategy.yaml"
+  apply_to:
+    initial_query: true
+    follow_up_feedback: true
+  noise_strategies:
+    - name: "typo"
+      probability: 0.3
+      intensity: 0.1
+    - name: "word_swap"
+      probability: 0.2
+      num_swaps: 1
+    - name: "word_deletion"
+      probability: 0.1
+      deletion_rate: 0.05
+    - name: "word_insertion"
+      probability: 0.1
+      insertion_rate: 0.05
+  llm:
+    enabled: false
+    provider: "openai"
+    model: "your-model-name"
+    template: "prompts/distractor_noise.txt"
+    temperature: 0.8
+    max_completion_tokens: 2048
+
+training_data:
+  format:
+    include_persona: true
+    include_trajectory: true
+    include_full_conversation: true
+    include_distractor_versions: true
+  split:
+    train: 0.8
+    validation: 0.1
+    test: 0.1
+
+output:
+  encoding: "utf-8"                             # Excel 乱码时改为 "utf-8-sig"
+  lineterminator: "\r\n"
+  on_failure: "skip"                            # skip | placeholder
+  include_unanswered: false
+  order: "sample_order"
+
+experiment:
+  output_format: "json"
+  batch_size: 20
+  incremental: true
+  stages:
+    persona_generation: true
+    query_generation: true
+    interaction_generation: true
+    distractor_application: true
+    training_data_export: true

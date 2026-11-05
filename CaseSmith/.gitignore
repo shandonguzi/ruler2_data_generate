@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+# 本地真实配置（含密钥），使用 config.yaml.example 作为模板
+config.yaml
+.config_run_*.yaml
+output/
+logs/
+*.tmp
