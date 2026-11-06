@@ -1,60 +1,52 @@
-# 第三任务五维评测
+# Excel 五维评分
 
-流程：读取已整体接受的五维参考评分 → LLM 只看原问题 Q0、原答案 A0、候选问题 Q1，独立打五维分 → 程序计算 CRITIC 加权总分并判通过／拒绝 → 对照参考分数，生成 HTML 报告。旧的 1–5 分与“通过／人工复核／拒绝”结果仍作对照。当前 40 条开发集已评测；`config.yaml` 现已指向另外 80 条种子的 160 条候选参考评分，模型评测尚未启动。
+读取 Excel 中的原 query、原 answer、新 query，由模型逐行给五维分数和理由，再由程序计算 CRITIC 总分和通过／拒绝结果，写入新的 Excel。
 
-## 审核表怎么填
+1. 准备 `.xlsx` 文件，第一行为列名。例如：
 
-当前配置输入是 [160 条参考评分表](../voice_ruler2_test/第三任务_160条五维预评分.xlsx)。Y 列的审核状态已按用户决定全部设为“同意”；若以后修改某行，可按下表填写：
+   | 编号 | 原query | 原answer | 新query | 备注 |
+   | --- | --- | --- | --- | --- |
+   | 1 | 小明昨天买了什么？ | 一本书。 | 请问小明昨天买了什么东西？ | 样例 |
 
-| Y 列 | 填写方式 | 评测使用的分数和标签 |
-| --- | --- | --- |
-| 同意 | R–W 保持空白 | 接受 G–K 的五维预评分和 Q 列标签 |
-| 修改 | R–V 只填需要修改的维度；W 必填 `good`、`bad` 或 `uncertain`；X 写理由 | 未修改的维度沿用 G–K，修改的维度用 R–V |
-| 存疑 | 暂不确定 | 此条不进入评测 |
+   三个输入列名可在配置中修改。其他列、行顺序、原有单元格内容、公式、常规格式及其他工作表会保留；模型只接收配置指定的三个文本字段。
 
-“同意”表示整体接受这行 Codex 参考分与设计标签，**不表示所有候选题质量合格**。这 160 行没有独立人工逐条评分，不能称作独立人工金标。CRITIC 总分与旧综合分都由程序从五维分计算，不读取表中原有的综合分作为标准。
+2. 将 [config.example.yaml](./config.example.yaml) 复制为 `config.yaml`，填写接口、密钥、模型、输入输出路径和列名：
 
-## CRITIC 总分与二分类
+   ```yaml
+   api_url: "https://example.com/v1/chat/completions"
+   api_key: "填写你的密钥"
+   model: "deepseek-v4.1-flash-1017"
 
-按[CRITIC 计算与试算说明](../voice_ruler2_test/第三任务_CRITIC权重可行性分析.md)，五维固定顺序为语言自然、表述清晰、内部逻辑、原意忠实、原答案匹配。40 条开发集参考评分归一化为 `z=(五维分数−1)/2` 后估权；工程将权重冻结为 **0.2147945637、0.1184326548、0.1802983689、0.2646037728、0.2218706398**，后续输入和 LLM 预测都使用同一组权重。
+   input: "input.xlsx"
+   output: "output/评分结果.xlsx"
+   columns:
+     original_query: "原query"
+     original_answer: "原answer"
+     new_query: "新query"
+   sheet_name: ""
+   ```
 
-每条候选的总分 `T=Σ(权重×z)`，范围为 0–1。**五维任一项为 1，直接拒绝；否则 `T≥0.80` 为通过，`T<0.80` 为拒绝。**若因语言或清晰度 1 分导致内容维无法判定，仍直接拒绝，缺失维度不填造分数。报告逐条显示参考与 LLM 的 CRITIC 总分和二分类决定，另列旧五档结果用于对照。
+   `api_url` 使用完整的 Chat Completions 地址。`api_key` 留空时读取环境变量 `OPENAI_API_KEY`。相对路径以配置文件所在目录为起点；上述输入路径即 `src/input.xlsx`。`sheet_name` 留空处理第一个工作表，也可填写具体表名。输入和输出必须是不同的 `.xlsx` 文件。
 
-**0.80 是本项目根据 40 条开发题确定的试验阈值，不是论文给出的合格线。**新 160 条未参与估权和选阈值，但参考分仍由 Codex 给出、用户整体接受；后续评测可检查模型与这份参考分的拟合，不能替代独立人工验证。
+3. 在项目根目录运行（Python 3.11）：
 
-## 运行
+   ```powershell
+   python -m pip install -r src/requirements.txt
+   python src/evaluate.py run
+   ```
 
-需要 Python 3.11。`src/config.yaml` 已填写工作空间接口、密钥和默认模型；如需调整，可编辑以下字段：
+   也可以省略 `run`。若要先检查列名并生成未评分的 Excel，可运行 `python src/evaluate.py preview`，此命令不调用模型，写入单独的 `<输出文件名不含扩展名>_预览.xlsx`。`--config` 可指定其他配置文件；`--input`、`--output`、`--model`、`--api-url` 可临时覆盖配置，例如：
 
-| 字段 | 填什么 |
-| --- | --- |
-| `api_url` | Chat Completions 接口完整 URL |
-| `api_key` | 接口密钥；留空时改从 `OPENAI_API_KEY` 环境变量读取 |
-| `model` | 要评测的模型名称；当前使用已授权的固定版本 `deepseek-v4.1-flash-1017` |
-| `input` | 审核后的 Excel 路径 |
-| `out_dir` | 报告输出目录 |
+   ```powershell
+   python src/evaluate.py run --input "D:\数据\待评分.xlsx" --output "D:\数据\已评分.xlsx"
+   ```
 
-`input` 和 `out_dir` 的相对路径以 `config.yaml` 所在目录为基准。当前配置为 `../voice_ruler2_test/第三任务_160条五维预评分.xlsx` 和 `output/test_80`，因此新测试结果将与原开发集报告分开保存。需要运行时，在项目根目录的 PowerShell 中执行：
+输出在原有列的右侧追加八列：**语言自然分、表述清晰分、内部逻辑分、原意忠实分、原答案匹配分、CRITIC总分、评测结果、评分说明**。若原表已有同名列，新列使用 `（2）` 等后缀，原列保留。
 
-```powershell
-python -m pip install -r src/requirements.txt
-python src/evaluate.py preview
-```
+五维各打 1～3 分，顺序为语言自然、表述清晰、内部逻辑、原意忠实、原答案匹配。固定 CRITIC 权重依次约为 **0.2148、0.1184、0.1803、0.2646、0.2219**；每维按 `(分数−1)/2` 换算后加权，得到 0～1 总分。**任一维为 1 分直接拒绝；否则总分 ≥ 0.80 通过，低于 0.80 拒绝。**严重语病或歧义使内容维无法判断时，内容分写“无法判定”，总分留空并拒绝。程序使用完整精度的冻结权重，0.80 是项目试验阈值。
 
-预览会保存在 `src/output/test_80/报告预览_未评测.html`，只展示审核进度，不含 LLM 分数或拟合指标。
+整行空白会保留并跳过。缺少必填内容的行标为“输入不完整”，不会调用模型；三列中若使用公式，需有 Excel 保存的计算结果。评分失败时会保存包含已完成结果的 Excel，未处理行标为“未评分”；再次运行相同配置会跳过已成功评分的行。
 
-后续要对新 160 条启动模型评测时，运行：
+续跑记录保存在输出文件旁的 `<输出文件名不含扩展名>_records/`，包含 `manifest.json`、`model_scores.jsonl` 和 `attempts.jsonl`。输入数据、列映射、模型或评分规则变化时，请换一个输出文件名，以免混用记录。配置中的密钥不会写入评分结果或记录文件。
 
-```powershell
-python src/evaluate.py run
-```
-
-此前 40 条**开发集**已完成模型盲评：[HTML 评测报告](./output/评测报告.html)与[逐条评分对照 CSV](./output/逐条评分对照.csv)仍位于 `src/output/`。40 条的参考与模型通过／拒绝决定一致 40/40，旧 1–5 分完全一致 37/40；这些只是开发集校准结果。新 160 条的[参考分 Excel](../voice_ruler2_test/第三任务_160条五维预评分.xlsx)和[CSV](../voice_ruler2_test/第三任务_160条五维预评分.csv)已经准备好，可由[逐题评分源](../voice_ruler2_test/第三任务_160条五维参考评分源.json)与[生成脚本](../voice_ruler2_test/生成160条五维参考分.py)重建；`src/output/test_80/` 尚无模型评测结果。
-
-当前 DeepSeek 模型按[阿里云结构化输出说明](https://help.aliyun.com/en/model-studio/qwen-structured-output)使用 Chat Completions 的 JSON Object 输出；程序会检查五维字段、分数和理由，格式不合格时重试。其他模型默认使用 JSON Schema 输出。原先指定的 `deepseek-v4-pro` 在本工作空间无推理权限，故按用户选择改用已授权的 Flash 固定版本。需要切换配置文件时传 `--config 路径`；`--model`、`--api-url`、`--input`、`--out-dir` 可临时覆盖 YAML 中对应的值。程序不会把 API Key 写入报告或记录文件。
-
-`config.yaml` 含实际密钥，已在 `src/.gitignore` 中列为忽略项。
-
-正式运行输出：`评测报告.html`（主要交付）、`逐条评分对照.csv`、`model_scores.jsonl`（已解析分数）、`attempts.jsonl`（原始响应与失败记录）、`manifest.json`（输入、模型与盲评顺序）。若中途失败，保持相同输入、模型和输出目录再次运行，会跳过已成功评分的条目。
-
-开发集 40 条参与了 CRITIC 估权与 0.80 阈值选择。后续 160 条虽然来自保留的 80 条种子，但其参考评分和好坏标签没有独立人工逐条确认；模型结果应表述为“与 Codex 参考分的一致性”，不能表述为“与独立人工金标的一致性”。
+当前流程只需要三个输入列，无需预评分、good/bad 标签或审核状态，结果直接输出 Excel。此前的 HTML 报告可继续查看。

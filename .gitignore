@@ -11,3 +11,6 @@ config.yaml
 *.zip
 *.log
 *.pid
+
+# 本地数据、论文和实验文档不上传。
+/voice_ruler2_test/

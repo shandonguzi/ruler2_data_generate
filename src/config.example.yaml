@@ -1,9 +1,19 @@
-# 第三任务五维评测配置。已填入工作空间接口、密钥和默认模型。
-# 使用兼容接口时，api_url 需是完整的 Chat Completions 地址。
-api_url: "https://ws-fonpfytrgypb84s5.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions"
+# Excel 五维评分配置。复制为 config.yaml 后填写接口和密钥。
+# api_url 使用完整的 Chat Completions 地址。
+api_url: "https://example.com/v1/chat/completions"
+# 留空时读取环境变量 OPENAI_API_KEY。
 api_key: ""
 model: "deepseek-v4.1-flash-1017"
 
-# 相对路径以本文件所在的 src 目录为起点。
-input: "../voice_ruler2_test/第三任务_160条五维预评分.xlsx"
-out_dir: "output/test_80"
+# 相对路径以本配置文件所在目录为起点；输入、输出均为 .xlsx，不能同路径。
+input: "input.xlsx"
+output: "output/评分结果.xlsx"
+
+# 右侧填写输入 Excel 第一行中的实际列名，其他列会原样保留。
+columns:
+  original_query: "原query"
+  original_answer: "原answer"
+  new_query: "新query"
+
+# 留空处理第一个工作表，也可填写具体工作表名。
+sheet_name: ""
