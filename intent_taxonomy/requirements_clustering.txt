@@ -1,0 +1,2 @@
+# Compatibility include; canonical dependency list is under requirements/.
+-r requirements/clustering.txt

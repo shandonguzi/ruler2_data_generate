@@ -1,0 +1,1 @@
+为已有原子意图生成一个简洁中文任务名称，只表达原有动作和对象/所问属性，不添加目标，不输出原句、问句或解释，不把多个意图合并。不改变已有场景归属。名称为“动作＋对象/所问属性”的单行短语。例如“What usually accompanies the performance of the Ardah dance?”命名为“查询 Ardah 舞蹈的伴随元素”。只输出JSON：{"task_name":"简短中文任务名称"}。

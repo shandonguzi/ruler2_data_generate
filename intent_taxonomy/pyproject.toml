@@ -1,0 +1,32 @@
+[project]
+name = "intent-taxonomy-engine"
+version = "1.4.0"
+description = "Local-LLM multi-stage intent taxonomy iteration and consolidation console"
+requires-python = ">=3.10,<3.15"
+dependencies = [
+  "openai>=1.40.0",
+  "pandas>=2.1.0",
+  "openpyxl>=3.1.2",
+  "pydantic>=2.7.0",
+  "PyYAML>=6.0.1",
+  "json-repair>=0.30.0",
+  "tqdm>=4.66.0",
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+clustering = [
+  "bertopic>=0.17,<0.18", "jieba>=0.42.1",
+  "scikit-learn>=1.6,<1.10", "hdbscan>=0.8.44,<0.9", "umap-learn>=0.5.12,<0.6",
+  "numba>=0.61,<0.62; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "llvmlite>=0.44,<0.45; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "numpy>=1.26,<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "transformers>=4.41,<5; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "sentence-transformers>=3,<4; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

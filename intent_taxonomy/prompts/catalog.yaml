@@ -1,0 +1,53 @@
+version: 1
+templates:
+- key: atomic_discovery.EXTRACT_PROMPT
+  group: 原子意图与层级发现
+  label: 原子意图分析
+- key: atomic_discovery.REVIEW_PROMPT
+  group: 原子意图与层级发现
+  label: 簇一致性审核（含子簇复核）
+- key: atomic_discovery.PAIR_PROMPT
+  group: 原子意图与层级发现
+  label: 跨簇边界复核
+- key: cluster_refinement.SPLIT_PROMPT
+  group: 混合簇细分
+  label: 混合簇 · LLM 完整分组
+- key: hierarchy_review.NODE_PROMPT
+  group: BERTopic 层级命名与审核
+  label: 父主题命名、解释与归组审核
+- key: classifier.ATOMIC_CLASSIFY_SYSTEM
+  group: 迭代 · 语义分类与任务匹配
+  label: 缺失语义字段时补解析 · 对象、动作与参数
+- key: classifier.PAIRWISE_SYSTEM
+  group: 迭代 · 语义分类与任务匹配
+  label: 单候选任务匹配
+- key: classifier.FINAL_MATCH_SYSTEM
+  group: 迭代 · 语义分类与任务匹配
+  label: 候选任务最终消歧
+- key: skill_router.JUDGE_SYSTEM
+  group: 可选工具 · Skill 路由
+  label: 候选 Skill 判断
+- key: skill_router.FALLBACK_SYSTEM
+  group: 可选工具 · Skill 路由
+  label: 未覆盖 Skill 判断
+- key: leaf_merge.MERGE_PROMPT
+  group: 叶子归并
+  label: 叶子实例泛化与合并建议
+- key: leaf_merge.VERIFY_PROMPT
+  group: 叶子归并
+  label: 通用叶子定义与成员独立复核
+- key: hierarchy_review.LEAF_PROMPT
+  group: BERTopic 层级命名与审核
+  label: 叶子语义明确性与命名（支持量独立）
+- key: parent_regroup.PROPOSE
+  group: 父级重组
+  label: 父级归属提议
+- key: parent_regroup.VERIFY
+  group: 父级重组
+  label: 父级归属复核
+- key: scene_mapping.MAP_PROMPT
+  group: S4 场景关联
+  label: 原子意图选择 S4 场景
+- key: scene_mapping.NAME_PROMPT
+  group: S4 场景关联
+  label: 已关联原子意图补充任务名称

@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Intent Studio · 意图分类工作空间</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="/static/css/console.css" />
+</head>
+<body>
+<svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol><symbol id="i-flow" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="5" rx="1"/><rect x="2" y="17" width="7" height="5" rx="1"/><rect x="15" y="17" width="7" height="5" rx="1"/><path d="M12 7v5M5.5 17v-5h13v5"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 3v17h17M9 15v-5m5 5V6m5 9v-3"/></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 10 5-10 5L2 8Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15Zm9-17H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8"/></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol><symbol id="i-activity" viewBox="0 0 24 24"><path d="M2 12h5l3-8 4 16 3-8h5"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol><symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Zm0 0v6h6M8 13h8m-8 4h5"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7a9 9 0 1 0 1 8M20 2v5h-5"/></symbol><symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></symbol><symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01"/></symbol><symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol></defs></svg>
+<a class="skip-link" href="#mainContent">跳到主内容</a>
+<div class="app">
+  <aside class="side">
+<div class="brand"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-flow"/></svg></span><div>Intent Studio<small>TAXONOMY WORKSPACE</small></div></div><div class="workspace-label"><span class="workspace-avatar">I</span><div>意图分类工作空间<small>Local workspace</small></div><svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg></div><nav class="nav" aria-label="主导航"><div class="nav-group"><div class="nav-label">工作空间</div><button type="button" data-panel="workspace" aria-current="false" ><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span>分类与迭代</span></button><button type="button" data-panel="continueIteration" aria-current="false"><svg class="icon" aria-hidden="true"><use href="#i-play"/></svg><span>继续迭代</span></button></div><details class="nav-tools"><summary>流程能力 <span>阶段与结果</span></summary><div class="nav-children"><button type="button" data-panel="sceneMapping" aria-current="false"><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg><span>S4 场景关联</span></button><button type="button" data-panel="stageTools" aria-current="false"><svg class="icon" aria-hidden="true"><use href="#i-flow"/></svg><span>阶段处理</span></button><button type="button" data-panel="reports" aria-current="false" ><svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span>结果导出</span></button><button type="button" data-panel="taxonomy" aria-current="false" ><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg><span>层级浏览</span></button><button type="button" data-panel="taxonomyManager" aria-current="false" ><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg><span>层级整理</span></button></div></details><div class="nav-group"><div class="nav-label">设置与运行</div><button type="button" data-panel="clusteringSettings" aria-current="false"><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg><span>聚类设置</span></button><button type="button" data-panel="promptSettings" aria-current="false"><svg class="icon" aria-hidden="true"><use href="#i-edit"/></svg><span>Prompt 管理</span></button><button type="button" data-panel="modelSettings" aria-current="false" ><svg class="icon" aria-hidden="true"><use href="#i-server"/></svg><span>模型配置</span></button><button type="button" data-panel="jobs" aria-current="false" ><svg class="icon" aria-hidden="true"><use href="#i-activity"/></svg><span>运行任务</span></button></div></nav><div class="side-footer"><svg class="icon" aria-hidden="true"><use href="#i-server"/></svg><div>本地工作空间<small>数据保存在此设备</small></div><span id="sideVersion" class="tag">—</span></div></aside>
+  <main class="main" id="mainContent">
+<div class="breadcrumb">工作空间 <span>/</span> <span id="breadcrumbPage">分类与迭代</span><span class="workspace-mode">LOCAL</span></div>
+    <div class="top">
+      <div><h1 id="pageTitle">分类与迭代</h1><div class="sub" id="pageSubtitle">从用户表达中发现意图，让分类体系持续生长。</div></div>
+      <div class="top-tools"><span class="pill"><span id="llmDot" class="dot"></span><span id="llmState">LLM 未检测</span></span> <button class="btn icon-button" id="checkLlmBtn" title="重新检测 vLLM" aria-label="重新检测 vLLM"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg></button></div>
+    </div>
+
+
+
+
+
+
+    <section id="sceneMapping" class="panel">
+      <div class="card"><h2 class="section-title">原子意图关联 S4 场景</h2>
+      <p class="section-caption">直接使用已有原子意图，每次请求携带完整 S4 目录，由模型选择一个场景；不修改聚类。</p>
+      <div class="actions"><button class="btn" id="sceneRefreshBtn" type="button">刷新流程</button></div>
+      <div class="field section"><label for="sceneRun">① 选择已有流程</label><select id="sceneRun"><option value="">正在读取流程…</option></select></div>
+      <div class="field" id="sceneSourceField" hidden><label for="sceneSource">② 选择原子意图中间结果</label><select id="sceneSource"></select></div>
+      <div id="sceneRunSettings" hidden><div class="field"><label for="sceneWorkers">模型请求并发数</label><input id="sceneWorkers" type="number" min="1" max="32" value="4"></div>
+      <p class="muted">选择已有 S4 关联结果时，目录和原子意图未变化则保留场景选择，仅补生成任务名称。结果按每个 S4 一行导出，“任务”列仅拼接归纳后的任务名称；模型请求及理由可在运行任务中审查；下载请前往「结果导出」。</p></div>
+      <div class="actions"><button class="btn primary" type="button" id="sceneStartBtn" disabled>开始关联，保存新版本</button></div><p id="sceneStatus" class="muted"></p>
+      </div>
+    </section>
+    <section id="stageTools" class="panel">
+      <div class="card">
+        <h2 id="stageToolHeading" class="section-title">重跑单个阶段</h2><p id="stageToolCaption" class="section-caption">选择已有流程，只执行一个阶段并保存新版本；运行多轮完整迭代请使用「继续迭代」。</p>
+        <div id="stageHowto" class="stage-howto"><div><b>1. 选一次运行</b><span>选择你已处理过的数据流程。</span></div><div><b>2. 选要重做的步骤</b><span>例如聚类不理想，选择「无监督聚类」。</span></div><div><b>3. 看输入，再执行</b><span>选择上游结果，可先查看原子意图。执行后创建新版本。</span></div></div>
+        <div class="field section"><label for="stageRun">① 选择流程</label><select id="stageRun"><option value="">请选择流程</option></select></div>
+        <div id="stageDiagnostics" class="workflow-diagnostics" hidden></div>
+        <details id="stageAvailability" class="advanced-settings" hidden><summary>查看不可用原因</summary><div id="stageAvailabilityReasons" class="advanced-body"></div></details>
+        <div class="field section" id="stageActionStep" hidden><label for="stageAction">② 选择可用能力</label><select id="stageAction"><option value="">请选择处理能力</option></select></div>
+        <div class="field section" id="stageSourceStep" hidden><label for="stageSource">③ 选择对应中间结果</label><select id="stageSource"><option value="">请选择中间结果</option></select></div>
+        <div class="notice section" id="stageScopeInfo" hidden></div>
+        <details id="stagePreviewStep" class="advanced-settings" hidden><summary>查看所选结果详情<span>在本页展开意图、聚类和主题树，不调用模型</span></summary><div class="advanced-body"><p id="stagePreviewContext" class="section-caption"></p><div id="stagePreviewMount"></div></div></details>
+        <details class="advanced-settings" id="externalStageSettings"><summary>高级：使用其他中间结果文件<span>导入外部文件或选择其他流程的产物</span></summary><div class="advanced-body">
+          <label class="check"><input id="stageUseExternal" type="checkbox"> 本次使用其他文件，覆盖上方流程选择</label>
+          <div id="externalStageFields" hidden><div class="field"><label for="stageOtherArtifact">其他流程的中间结果</label><select id="stageOtherArtifact"><option value="">手动填写路径或导入 JSON</option></select></div>
+          <div class="field"><label for="stageExternalPath">中间结果 JSON 路径</label><input id="stageExternalPath" placeholder="data/reports/coldstart_..._extract.json"></div>
+          <div class="field upload"><input id="stageUploadInput" type="file" accept=".json" aria-label="选择其他中间结果 JSON"><button class="btn" id="stageUploadBtn">导入中间结果</button></div></div>
+        </div></details>
+        <div id="stageExecuteStep" hidden><div class="notice">已有原子意图可独立关联 S4 场景，每条意图一次请求并携带完整目录。<button class="btn" id="mapScenesBtn" type="button">关联到 S4 场景</button></div><div class="field section"><label for="stageWorkers">分析并发数</label><input id="stageWorkers" type="number" min="1" max="32" value="4"></div><div class="field" id="stageIterationSettings" hidden><details class="advanced-settings"><summary>追加新用例（可选）</summary><p class="muted">保留旧结果，自动剔除与已有原句及本文件重复的用例，仅解析新增原句（忽略首尾空白）。</p>        <input id="appendInput" type="hidden">
+        <div class="field section"><label for="appendUploadInput">导入新增原句文件</label><input id="appendUploadInput" type="file" accept=".xlsx,.csv,.xls"><small class="muted">选择文件后自动读取工作表、列名与预览，支持 xlsx / csv。</small></div>
+        <div class="input-preview" id="appendFilePreview" hidden>
+          <div class="input-preview-heading"><div><strong id="appendFileName"></strong><span id="appendFileInfo"></span></div><span class="tag">数据预览</span></div>
+          <div class="form-row two-cols">
+            <div class="field" id="appendSheetField"><label for="appendSheet">工作表</label><select id="appendSheet" disabled><option value="">请先导入文件</option></select></div>
+            <div class="field" id="appendColumnField" hidden><label for="appendTextCol">用户原句所在列</label><select id="appendTextCol" disabled><option value="">请先导入文件</option></select></div>
+          </div><div id="appendInputSample"></div>
+        </div>
+<p id="appendStatus" class="muted"></p><button class="btn" id="appendClear" type="button">清除追加文件</button></details><label for="stageIterationRounds">最大迭代轮数</label><input id="stageIterationRounds" type="number" min="1" max="10" value="3"><small class="muted">使用所选候选体系继续迭代，保留已有原子意图与来源。</small><label for="stageIterationScope">迭代分类范围</label><select id="stageIterationScope"><option value="">使用配置文件设置</option><option value="all">全部有效原子意图</option><option value="unresolved_only">仅未确认归属的意图（噪声及待确认簇）</option></select><small class="muted">主流程已解析对象和动作；增量模式从首轮起复用已确认归属，重试噪声与待确认簇中的意图。归属失效时补做必要校验。</small></div><div class="actions form-submit"><button class="btn primary" id="runStageBtn" disabled>处理所选中间结果</button><button class="btn" data-open-panel="workspace">返回总流程</button></div>
+        </div><div class="status-line" id="stageToolStatus" role="status"></div>
+      </div>
+    </section>
+
+    <section id="clusteringSettings" class="panel">
+      <div class="notice">中文与英文分别配置分词、词组和停用词。保存后用于新聚类及混合簇细分；分词规则修改需重跑聚类。原句与 Embedding 输入不变。</div>
+      <div class="card section">
+        <p class="section-caption">最终主题统一来自审核后的 BERTopic 多层树；叶子匹配通过最终版本验证后，沿同一棵树导出祖先路径。</p>
+        <div class="field"><label for="topicLanguage">语料语言</label><select id="topicLanguage"><option value="english">英文 · 英文分词</option><option value="chinese">中文 · jieba 分词</option></select></div>
+        <p class="section-caption" id="topicLanguageHint"></p>
+        <div class="field"><label for="topicNgrams">主题词特征</label><select id="topicNgrams"><option value="1,1">单词 (1,1)</option><option value="1,2">单词 + 二元词组 (1,2)</option><option value="1,3">单词 + 二元 / 三元词组 (1,3)</option><option value="2,2">仅二元词组 (2,2)</option></select></div>
+        <label class="check"><input id="topicDefaultStops" type="checkbox">启用该语言的默认停用词</label>
+        <div class="field"><label for="topicCustomStops">该语言的额外停用词（每行一个）</label><textarea id="topicCustomStops" rows="8" spellcheck="false"></textarea></div>
+        <p class="muted">英文默认保留 not、no、never 等否定词及关键动作词；don't / can't 等缩写会展开否定。手动添加的停用词优先，请保留意图核心词。</p>
+        <div class="actions"><button class="btn primary" id="saveClusteringSettings">保存中英文配置</button><button class="btn" id="reloadClusteringSettings">重新读取</button></div>
+        <p class="status-line" id="clusteringSettingsStatus" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="promptSettings" class="panel">
+      <div class="notice">按阶段管理独立 Prompt 文件。默认模板位于 prompts/defaults/，页面修改保存到 config/prompts/，后续任务生效。Embedding、BERTopic 聚类与统计导出没有 Prompt。输入数据和输出 JSON 结构由程序提供，编辑时请保留结构要求。</div>
+      <div class="card section">
+        <div class="form-row two-cols"><div class="field"><label for="promptGroup">流程阶段</label><select id="promptGroup"><option value="">请选择阶段</option></select></div><div class="field" id="promptTemplateField" hidden><label for="promptTemplate">Prompt 模板</label><select id="promptTemplate"><option value="">请选择模板</option></select></div></div>
+        <div id="promptEditor" hidden>
+          <p class="section-caption" id="promptTemplateInfo"></p>
+          <p class="section-caption" id="promptSourcePath" style="overflow-wrap:anywhere"></p>
+          <p class="section-caption" id="promptDefaultPath" style="overflow-wrap:anywhere"></p>
+          <div class="field"><label for="promptText">系统 Prompt</label><textarea id="promptText" rows="22" maxlength="32000" spellcheck="false" style="width:100%;resize:vertical;font-family:monospace;line-height:1.65"></textarea></div>
+          <details class="advanced-settings"><summary>查看文件中的默认模板</summary><pre id="promptDefault" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
+          <div class="actions"><button class="btn primary" id="savePromptBtn">保存当前模板</button><button class="btn" id="resetPromptBtn">恢复默认到编辑器</button></div>
+        </div>
+        <div class="actions"><button class="btn" id="reloadPromptsBtn">重新读取配置</button></div><p id="promptSettingsStatus" class="status-line" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="modelSettings" class="panel">
+      <div class="notice">保存后同步写入 config/config.yaml，后续任务使用新设置。Embedding 暂未准备好时，地址和模型名可同时留空。环境变量中的 Key 优先于文件中的 Key。</div>
+
+      <div class="card section" id="llmModelCard">
+        <h2 class="section-title">对话模型</h2><p class="section-caption">用于原子意图拆分、簇审核及 BERTopic 层级命名与合并审核。</p>
+        <div class="form-row two-cols">
+          <div class="field"><label for="modelllmUrl">OpenAI 兼容 API 地址</label><input id="modelllmUrl" type="url" placeholder="http://127.0.0.1:8000/v1" autocomplete="off"></div>
+          <div class="field"><label for="modelllmName">模型名</label><input id="modelllmName" placeholder="服务端提供的模型标识" autocomplete="off"></div>
+        </div>
+        <details class="advanced-settings"><summary>认证设置<span>API Key 或本地环境变量</span></summary><div class="advanced-body">
+          <div class="form-row two-cols">
+            <div class="field"><label for="modelllmKey">新 API Key（留空保留已有值）</label><input id="modelllmKey" type="password" autocomplete="new-password"><small class="muted" id="modelllmKeyState"></small></div>
+            <div class="field"><label for="modelllmEnv">API Key 环境变量名（可选）</label><input id="modelllmEnv" placeholder="INTENT_LLM_API_KEY" autocomplete="off"></div>
+          </div>
+          <label class="check"><input id="modelllmClearKey" type="checkbox"> 清除配置文件中已保存的 API Key</label>
+        </div></details>
+        <div class="form-row two-cols">
+          <div class="field"><label for="modelThinkingMode">思考开关</label><select id="modelThinkingMode"><option value="default">服务默认 / 使用自定义参数</option><option value="on">开启思考</option><option value="off">关闭思考</option></select></div>
+          <div class="field" id="modelThinkingPathField" hidden><label for="modelThinkingParameter">思考参数路径</label><input id="modelThinkingParameter" value="chat_template_kwargs.enable_thinking"><small class="muted">用点分隔嵌套字段；开关会覆盖该路径的同名额外参数。</small></div>
+        </div>
+        <details class="advanced-settings"><summary>额外请求参数<span>以 key / value 形式写入 extra_body</span></summary><div class="advanced-body">
+          <p class="section-caption">Key 为请求体顶层字段；Value 填 JSON 值，例如 true、1024、"文本" 或 {"enable_thinking":false}。</p>
+          <div id="modelllmExtraRows"></div><button class="btn" type="button" data-model-param-add="llm">添加参数</button>
+        </div></details>
+        <div class="actions"><button class="btn" id="checkModelllmBtn" type="button" disabled>检测连接</button><span class="status-line" id="checkModelllmStatus" role="status" aria-live="polite"></span></div>
+      </div>
+
+      <div class="card section" id="embeddingModelCard">
+        <h2 class="section-title">Embedding 模型</h2><p class="section-caption">用于计算原子意图的语义向量，可与对话模型使用不同服务。</p>
+        <div class="form-row two-cols">
+          <div class="field"><label for="modelembeddingUrl">OpenAI 兼容 API 地址</label><input id="modelembeddingUrl" type="url" placeholder="http://127.0.0.1:8000/v1" autocomplete="off"></div>
+          <div class="field"><label for="modelembeddingName">模型名</label><input id="modelembeddingName" placeholder="服务端提供的模型标识" autocomplete="off"></div>
+        </div>
+        <details class="advanced-settings"><summary>认证设置<span>API Key 或本地环境变量</span></summary><div class="advanced-body">
+          <div class="form-row two-cols">
+            <div class="field"><label for="modelembeddingKey">新 API Key（留空保留已有值）</label><input id="modelembeddingKey" type="password" autocomplete="new-password"><small class="muted" id="modelembeddingKeyState"></small></div>
+            <div class="field"><label for="modelembeddingEnv">API Key 环境变量名（可选）</label><input id="modelembeddingEnv" placeholder="INTENT_EMBEDDING_API_KEY" autocomplete="off"></div>
+          </div>
+          <label class="check"><input id="modelembeddingClearKey" type="checkbox"> 清除配置文件中已保存的 API Key</label>
+        </div></details>
+        <details class="advanced-settings"><summary>额外请求参数<span>以 key / value 形式写入 extra_body</span></summary><div class="advanced-body">
+          <p class="section-caption">Key 为请求体顶层字段；Value 填 JSON 值，例如 true、1024、"文本" 或 {"enable_thinking":false}。</p>
+          <div id="modelembeddingExtraRows"></div><button class="btn" type="button" data-model-param-add="embedding">添加参数</button>
+        </div></details>
+        <div class="actions"><button class="btn" id="checkModelembeddingBtn" type="button" disabled>检测连接</button><span class="status-line" id="checkModelembeddingStatus" role="status" aria-live="polite"></span></div>
+      </div>
+
+      <div class="card section">
+        <details class="advanced-settings"><summary>多个 LLM · 随机请求</summary><p class="muted">上方对话模型与下方模型组成请求池，每次请求随机选择，重试优先切换。凭据填写环境变量名。</p><div id="extraLlmRows"></div><button class="btn" type="button" id="addExtraLlmBtn">添加 LLM</button></details><div class="actions"><button class="btn primary" id="saveModelSettingsBtn" disabled>保存到配置文件</button><button class="btn" id="reloadModelSettingsBtn">重新读取</button><button class="btn" data-open-panel="discovery">前往分类与迭代</button></div>
+        <div class="status-line" id="modelSettingsStatus" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="workspace" class="panel active">
+      <div class="card workspace-flow" aria-labelledby="workspaceFlowTitle">
+        <div class="card-heading"><div><div class="eyebrow">THE WORKFLOW</div><h2 class="section-title" id="workspaceFlowTitle">从原句到意图分类体系</h2><p class="section-caption">从数据发现初版，再通过多轮分类、审核与更新迭代候选体系。</p></div><span class="tag">完整流程 · 7 个阶段</span></div>
+        <ol class="workspace-flow-track" aria-label="分类与迭代流程">
+          <li><span class="flow-number">01</span><strong>原子意图分析</strong><small>LLM 拆分多意图<br>保留原文与动作关系</small></li>
+          <li><span class="flow-number">02</span><strong>无监督聚类</strong><small>BERTopic 发现叶子主题<br>合并形成多层主题树</small></li>
+          <li><span class="flow-number">03</span><strong>簇一致性审核</strong><small>检查簇内动作与对象<br>记录拆分及边界建议</small></li>
+          <li><span class="flow-number">04</span><strong>跨簇边界复核</strong><small>比较相邻候选簇<br>记录合并或保留建议</small></li>
+          <li><span class="flow-number">05</span><strong>逐层命名与审核</strong><small>同层并行、由叶到根<br>审核父主题是否合理</small></li>
+          <li><span class="flow-number">06</span><strong>主题层级迭代</strong><small>匹配叶子、发现新簇<br>复核后重建同一棵树</small></li>
+          <li><span class="flow-number">07</span><strong>统计与导出</strong><small>保存每轮结果与变更<br>导出报告与 Token 用量</small></li>
+        </ol>
+        <p class="workspace-flow-note">父级归组不会合并叶子意图；迭代阶段更新叶子归属，并重建、审核同一套主题层级。每轮保存分类、体系快照与变更；没有实际变更、检测到循环或达到轮数上限时停止。</p>
+      </div>
+      <div class="card">
+        <div class="section-title">分类与迭代</div>
+        <p class="section-caption">从用户原句开始，完成无监督发现，再以初版候选体系进行多轮迭代。</p>
+        <div class="notice">总流程先用 LLM 分析原子意图，再用 BERTopic 发现类别与层级。明确表达的前置动作也单独保留，例如“打开支付宝，交电费”拆成两条。仅“用支付宝交电费”不补出打开动作。发现过程不读取预制领域、任务或 Skill；拆并建议与候选体系保存在报告中，供确认。</div>
+        <div class="form-section-label"><span>01</span> 输入数据</div>
+        <input id="discInput" type="hidden">
+        <div class="field section"><label for="discUploadInput">导入原句文件</label><input id="discUploadInput" type="file" accept=".xlsx,.csv,.xls"><small class="muted">选择文件后自动读取工作表、列名与预览，支持 xlsx / csv。</small></div>
+        <div class="input-preview" id="discFilePreview" hidden>
+          <div class="input-preview-heading"><div><strong id="discFileName"></strong><span id="discFileInfo"></span></div><span class="tag">数据预览</span></div>
+          <div class="form-row two-cols">
+            <div class="field" id="discSheetField"><label for="discSheet">工作表</label><select id="discSheet" disabled><option value="">请先导入文件</option></select></div>
+            <div class="field" id="discColumnField" hidden><label for="discTextCol">用户原句所在列</label><select id="discTextCol" disabled><option value="">请先导入文件</option></select></div>
+          </div><div id="discInputSample"></div>
+        </div>
+        <div id="discRunSettings" hidden><div class="form-section-label"><span>02</span> 运行设置</div>
+        <div class="form-row two-cols">
+          <div class="field"><label for="discWorkers">原子意图分析并发数</label><input id="discWorkers" type="number" min="1" max="32" value="4"></div>
+          <div class="field"><label for="discLimit">处理原句数（留空为全部）</label><input id="discLimit" type="number" min="1" placeholder="例如 100"></div>
+        </div>
+        <p class="muted">默认先生成首版聚类与原生主题层级，检查结果后再从「继续迭代」创建派生版本。</p><div class="form-row two-cols"><label class="check"><input id="discIterate" type="checkbox"> 生成初版后自动迭代候选体系（默认关闭）</label><div class="field" id="discIterationSettings" hidden><label for="discIterationRounds">最大迭代轮数</label><input id="discIterationRounds" type="number" min="1" max="10" value="3"><small class="muted">无变更时提前停止；达到上限不代表已收敛。</small><label for="discIterationScope">迭代分类范围</label><select id="discIterationScope"><option value="">使用配置文件设置</option><option value="all">全部有效原子意图</option><option value="unresolved_only">仅未确认归属的意图（噪声及待确认簇）</option></select><small class="muted">主流程已解析对象和动作；增量模式从首轮起复用已确认归属，重试噪声与待确认簇中的意图。归属失效时补做必要校验。</small></div></div>
+        <p class="section-caption">完整流程自动执行簇审核与层级归纳。迭代复用已拆分的原子意图，更新本流程草稿；正式分类文件保持独立。</p>
+        <div class="notice" id="discoverySettings">正在检查 Embedding 配置…</div>
+        <p class="section-caption">每条原子意图直接计算向量；指代补全保留上下文依据。重复文本不增加聚类密度，噪声与待确认意图区分保存。</p>
+        <div class="actions form-submit"><button class="btn primary" id="runDiscoveryBtn" disabled>开始分类与迭代</button><button class="btn" id="discoverySettingsBtn" type="button">重新检查配置</button><button class="btn" data-open-panel="modelSettings">配置模型</button><button class="btn" data-open-panel="reports">前往结果导出</button></div>
+        </div><div class="status-line" id="discoveryStatus"></div>
+      </div>
+
+      <div class="card section">
+        <div class="card-heading"><div><h2 class="section-title">已有流程与中间结果</h2><p class="section-caption">选择一次运行查看结果，或从二级菜单重跑单个阶段，生成派生版本。</p></div><div class="actions"><button class="btn" id="refreshWorkflowsBtn">刷新流程</button><button class="btn danger" id="deleteWorkflowBtn" type="button" disabled>删除所选流程文件</button></div></div>
+        <div class="field"><label for="workspaceRun">流程版本</label><select id="workspaceRun"><option value="">尚无流程</option></select></div>
+        <div class="status-line" id="workspaceRunInfo"></div>
+        <button class="btn" data-open-panel="reports">前往结果导出</button>
+      </div>
+
+      <section id="workspaceDiagnostics" class="card section workflow-diagnostics" aria-label="流程总览" hidden></section>
+
+      <div class="card section">
+        <h2 class="section-title">阶段结果</h2>
+        <p class="section-caption">选择阶段查看该阶段保存的结果快照。</p>
+        <div class="field" id="workspaceArtifactStep" hidden><label for="workspaceArtifact">阶段结果</label><select id="workspaceArtifact"><option value="">请先选择流程</option></select></div>
+        <div id="workspaceVisualMount"><section id="workflowVisual" class="workflow-visual" aria-label="意图与聚类可视化" hidden>
+          <h3 class="section-title">意图与聚类可视化</h3><p class="section-caption">统计覆盖所选阶段的全部数据；明细分页展示。点击分布条或选择簇，查看对应原句与成员。</p>
+          <div id="visualMetrics" class="visual-metrics"></div>
+          <div class="visual-toolbar"><div class="visual-tabs" role="group" aria-label="可视化视图"><button class="btn" id="visualIntentsTab" type="button" aria-pressed="true">原句 → 原子意图</button><button class="btn" id="visualClustersTab" type="button" aria-pressed="false">聚类分布与成员</button><button class="btn" id="visualHierarchyTab" type="button" aria-pressed="false">BERTopic 层级树</button></div><label id="visualClusterField">筛选簇 <select id="visualCluster"><option value="all">全部簇 / 意图</option></select></label><label id="visualTopicField" hidden>层级主题 <select id="visualTopic"><option value="all">全部层级主题</option></select></label><label>搜索 <input id="visualQuery" type="search" placeholder="原句或原子意图，回车搜索"></label><button class="btn" id="visualSearchBtn" type="button">搜索</button></div>
+          <div id="visualStatus" class="status-line" role="status"></div>
+          <div id="visualClusterLayout" class="visual-cluster-layout" hidden><div><h4>簇规模分布</h4><p class="section-caption">按意图条数排列前 20 项，含噪声与未分簇；下拉框可选全部簇。条长表示数量。</p><div id="visualBars"></div></div><div id="visualClusterReview"></div></div>
+          <section id="visualHierarchyLayout" hidden><div class="topic-hierarchy-heading"><p id="visualHierarchySummary" class="section-caption"></p><button class="btn" id="visualRebuildHierarchy" type="button" hidden>前往重跑聚类与主题树</button></div><div class="topic-hierarchy-layout"><div id="visualTopicTree" class="topic-tree" aria-label="BERTopic 主题层级树"></div><div id="visualTopicInfo" class="topic-info"></div></div></section>
+          <div id="visualRecords"></div>
+          <div class="visual-pagination"><button class="btn" id="visualPrev" type="button">上一页</button><span id="visualPageInfo"></span><button class="btn" id="visualNext" type="button">下一页</button></div>
+        </section></div>
+        <div class="filters" id="workspaceTableStep" hidden><select id="workspaceResultTable" aria-label="结果表类型"></select><button class="btn" data-open-panel="stageTools">使用阶段工具</button></div>
+        <div id="workspaceResult" class="empty" hidden>运行总流程后，在这里查看原句、原子意图、簇审核与候选层级。</div>
+      </div>
+    </section>
+
+
+
+
+
+
+
+
+
+
+
+
+    <section id="taxonomy" class="panel">
+      <div class="card">
+        <div class="section-title">浏览流程候选层级</div><div class="field section"><label for="taxonomyRun">① 选择流程</label><select id="taxonomyRun"><option value="">请选择流程</option></select></div><div id="taxonomyDiagnostics" class="workflow-diagnostics" hidden></div><div class="field section" id="taxonomyArtifactStep" hidden><label for="taxonomyArtifact">② 选择层级中间结果</label><select id="taxonomyArtifact"><option value="">请选择中间结果</option></select></div><div id="taxonomyBody" hidden>
+        <div class="filters"><select id="taxDomain"><option value="">全部 Domain</option></select><input id="taxSearch" placeholder="搜索 Object / Action / task_id"><button class="btn" id="refreshTaxBtn">刷新</button></div>
+        <div id="taxTable" class="empty">请选择中间结果。</div></div>
+      </div>
+    </section>
+
+    <section id="taxonomyManager" class="panel">
+      <div class="card"><h2 class="section-title">整理流程候选层级</h2><div class="field"><label for="managerRun">① 选择流程</label><select id="managerRun"><option value="">请选择流程</option></select></div><div id="managerDiagnostics" class="workflow-diagnostics" hidden></div><div class="field section" id="managerArtifactStep" hidden><label for="managerArtifact">② 选择层级中间结果</label><select id="managerArtifact"><option value="">请选择中间结果</option></select></div></div>
+      <div id="taxonomyManagerBody" hidden>
+      <div class="card">
+        <div class="tax-manage-top">
+          <div><div class="section-title" style="margin-bottom:3px">分类体系管理</div><div class="muted" id="tmVersionLine">请选择中间结果。</div></div>
+          <div class="actions" style="margin-top:0"><button class="btn" id="tmReloadBtn">重新加载</button><button class="btn" id="tmAddDomainBtn">新增 Domain</button><button class="btn primary" id="tmAddBtn">新增 Task</button></div>
+        </div>
+        <div class="notice">编辑所选流程的候选层级。修改先进入草稿，保存时创建派生流程版本，并保留来源结果。</div>
+      </div>
+
+      <div class="section draft-bar" id="tmDraftBar">
+        <div class="draft-summary" id="tmDraftSummary">没有待保存修改</div>
+        <div class="actions" style="margin-top:0"><button class="btn" id="tmDiscardBtn" disabled>放弃修改</button><button class="btn primary" id="tmSaveBtn" disabled>保存全部修改</button></div>
+      </div>
+      <div class="section taxonomy-manager">
+        <div class="domain-pane">
+          <div class="domain-pane-head">Domain · 点击查看对应 Tasks</div>
+          <div class="domain-list" id="tmDomainList"><div class="empty">加载中…</div></div>
+        </div>
+        <div class="card" style="min-width:0">
+          <div class="tax-manage-top"><div><div class="tax-manage-title" id="tmDomainTitle">-</div><div class="tax-manage-meta" id="tmDomainMeta"></div></div><div class="actions" style="margin-top:0"><button class="btn" id="tmEditDomainBtn">编辑 Domain</button></div></div>
+          <div class="manager-search"><input id="tmSearch" placeholder="搜索 Object / Action / alias / description / task_id"><button class="btn" id="tmClearSearchBtn">清空</button></div>
+          <div id="tmTaskGrid" class="task-manage-grid"></div>
+        </div>
+      </div>
+
+      <dialog id="tmEditDialog" class="tax-dialog">
+        <form id="tmEditForm">
+          <div class="dialog-head"><div><b id="tmDialogTitle">编辑 Task</b><div class="muted" style="font-size:11px;margin-top:3px" id="tmDialogId"></div></div><button class="btn" type="button" id="tmDialogClose">关闭</button></div>
+          <div class="dialog-body">
+            <div class="edit-grid">
+              <div class="field"><label>Domain *</label><select id="tmEditDomain" required></select></div>
+              <div class="field"><label>Object *</label><input id="tmEditObject" required></div>
+              <div class="field"><label>Action *</label><input id="tmEditAction" required></div>
+              <div class="field wide"><label>Description</label><textarea id="tmEditDescription" placeholder="说明这个 Task 的 fulfillment 边界"></textarea></div>
+              <div class="field"><label>Object aliases</label><textarea id="tmEditObjectAliases" placeholder="每行一个；也支持 | 分隔"></textarea></div>
+              <div class="field"><label>Action aliases</label><textarea id="tmEditActionAliases" placeholder="每行一个；也支持 | 分隔"></textarea></div>
+              <div class="field"><label>Domain aliases</label><textarea id="tmEditDomainAliases" placeholder="每行一个；也支持 | 分隔"></textarea></div>
+              <div class="field span2"><label>Subtasks（具体子任务）</label><textarea id="tmEditSubtasks" placeholder="每行一个；不会生成额外 task_id"></textarea></div>
+              <div class="field span2"><label>Positive examples</label><textarea id="tmEditExamples" placeholder="每行一个样例"></textarea></div>
+              <div class="field"><label>Boundary notes</label><textarea id="tmEditBoundary" placeholder="每行一条边界说明"></textarea></div>
+            </div>
+          </div>
+          <div class="dialog-actions"><button class="btn" type="button" id="tmDialogCancel">取消</button><button class="btn primary" type="submit">保存到草稿</button></div>
+        </form>
+      </dialog>
+
+      <dialog id="tmDomainDialog" class="tax-dialog">
+        <form id="tmDomainForm">
+          <div class="dialog-head"><div><b id="tmDomainDialogTitle">编辑 Domain</b><div class="muted" style="font-size:11px;margin-top:3px">parent_domain → domain</div></div><button class="btn" type="button" id="tmDomainDialogClose">关闭</button></div>
+          <div class="dialog-body">
+            <div class="edit-grid">
+              <div class="field"><label>Parent Domain</label><input id="tmDomainParent" placeholder="例如 GUI操控"></div>
+              <div class="field"><label>Domain *</label><input id="tmDomainName" required placeholder="例如 通讯-运营商APP"></div>
+              <div class="field wide"><label>Description</label><textarea id="tmDomainDescription"></textarea></div>
+            </div>
+          </div>
+          <div class="dialog-actions"><button class="btn danger" type="button" id="tmDomainDeleteBtn">删除空 Domain</button><button class="btn" type="button" id="tmDomainCancel">取消</button><button class="btn primary" type="submit">保存到草稿</button></div>
+        </form>
+      </dialog>
+      </div>
+    </section>
+
+    <section id="reports" class="panel">
+      <div class="card"><div class="section-title">结果导出</div><div class="field"><label for="reportsRun">所属流程</label><select id="reportsRun"><option value="">尚无流程</option></select></div><div class="field section" id="reportArtifactStep" hidden><label for="reportArtifact">② 选择导出依据（结果快照）</label><select id="reportArtifact"><option value="">请选择结果</option></select></div><p class="section-caption">所有结果下载集中在这里。query 与原子意图按所选快照生成；其余文件下载该流程已保存的版本。导出不请求模型。</p><div id="exportStatus" class="status-line" role="status"></div><div id="reportList" class="file-list" hidden></div></div>
+
+      <details class="advanced-settings"><summary>高级：查看其他历史文件</summary><div class="advanced-body"><button class="btn" id="loadOtherReportsBtn">读取全部历史文件</button><div id="otherReportList"></div></div></details>
+    </section>
+
+    <section id="jobs" class="panel">
+      <div class="card job-progress" id="jobProgress" data-status="idle" aria-live="polite">
+        <div class="progress-heading"><div><div class="eyebrow">RUN PROGRESS</div><h2 class="section-title">任务整体进度 <span id="jobProgressStatus" class="tag">尚未选择任务</span></h2></div><span id="jobElapsed" class="muted">—</span></div>
+        <div class="progress-overview"><div><strong id="jobStageTitle">选择一个任务查看进度</strong><div id="jobRoundInfo" class="progress-caption">启动任务后，进度会自动更新；刷新页面可恢复当前任务的显示。</div></div><div class="progress-percent"><strong id="jobOverallPercent">—</strong><span id="jobProgressEstimate">按阶段估算</span></div></div>
+        <div class="progress-track" id="jobOverallBar" role="progressbar" aria-label="任务整体进度" aria-valuemin="0" aria-valuemax="100"><span></span></div>
+        <div class="stage-progress"><div class="stage-progress-heading"><span>当前阶段</span><span id="jobStageCount">等待任务启动</span></div><div class="progress-track small" id="jobStageBar" role="progressbar" aria-label="当前阶段进度" aria-valuemin="0" aria-valuemax="100"><span></span></div><div id="jobStageDetail" class="progress-caption">实际条数单独计数；整体百分比不代表剩余时间。</div></div>
+        <div class="model-token-summary" id="jobTokenUsage" role="status">尚未请求模型</div><div id="jobStageList" class="job-stage-navigation" aria-label="执行阶段"></div>
+        <section id="jobStageUsage" class="stage-usage-detail" hidden aria-live="polite"></section>
+      </div>
+      <div class="two section">
+        <div class="card"><div class="section-title">最近任务</div><div id="jobList"></div></div>
+        <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div class="section-title">实时日志</div><div class="actions"><a class="btn" id="jobLogsDownload" hidden>下载完整日志</a><button class="btn" id="resumeJobBtn" disabled>复制并续跑</button><button class="btn" id="deleteJobBtn" disabled>删除任务记录</button><button class="btn danger" id="cancelJobBtn" disabled>停止当前任务</button></div></div><div class="terminal" id="terminal">尚未运行任务。</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+<dialog id="deleteWorkflowDialog" class="tax-dialog" aria-labelledby="deleteWorkflowTitle">
+  <div class="dialog-head"><h2 class="section-title" id="deleteWorkflowTitle">删除流程文件</h2><button class="btn" id="deleteWorkflowClose" type="button" aria-label="关闭删除窗口">关闭</button></div>
+  <div class="dialog-body"><p id="deleteWorkflowIdentity"></p><div class="notice">删除该版本的报告、中间结果、流程记录及关联的已结束任务历史与请求记录，无法撤销。原始导入文件和共享向量缓存保留。</div><p id="deleteWorkflowSummary" role="status"></p><ul id="deleteWorkflowFiles" class="delete-file-list"></ul><div id="deleteWorkflowRetained" hidden></div><p class="status-line" id="deleteWorkflowError" role="status"></p></div>
+  <div class="dialog-actions"><button class="btn" id="deleteWorkflowCancel" type="button">取消</button><button class="btn danger" id="deleteWorkflowConfirm" type="button" disabled>确认删除</button></div>
+</dialog>
+<script src="/static/js/console.js" defer></script>
+<script src="/static/js/model-pool.js" defer></script>
+<script src="/static/js/scene-mapping.js" defer></script>
+<script src="/static/js/clustering-settings.js" defer></script>
+<script src="/static/js/prompt-settings.js" defer></script>
+<script src="/static/js/job-stages.js" defer></script>
+<script src="/static/js/workflow-visuals.js" defer></script>
+<script src="/static/js/topic-hierarchy.js" defer></script>
+<script src="/static/js/workflow-diagnostics.js" defer></script>
+<script src="/static/js/workflow-cleanup.js" defer></script>
+</body>
+</html>

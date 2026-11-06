@@ -1,0 +1,13 @@
+-r base.txt
+bertopic>=0.17,<0.18
+jieba>=0.42.1
+# Keep validation keyword names compatible across the clustering stack.
+scikit-learn>=1.6,<1.10
+hdbscan>=0.8.44,<0.9
+umap-learn>=0.5.12,<0.6
+# Intel macOS has no wheels for newer LLVM/Numba/PyTorch releases.
+numba>=0.61,<0.62; sys_platform == "darwin" and platform_machine == "x86_64"
+llvmlite>=0.44,<0.45; sys_platform == "darwin" and platform_machine == "x86_64"
+numpy>=1.26,<2; sys_platform == "darwin" and platform_machine == "x86_64"
+transformers>=4.41,<5; sys_platform == "darwin" and platform_machine == "x86_64"
+sentence-transformers>=3,<4; sys_platform == "darwin" and platform_machine == "x86_64"

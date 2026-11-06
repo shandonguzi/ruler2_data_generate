@@ -1,0 +1,10 @@
+openai>=1.40.0
+pandas>=2.1.0
+openpyxl>=3.1.2
+pydantic>=2.7.0
+PyYAML>=6.0.1
+json-repair>=0.30.0
+tqdm>=4.66.0
+fastapi>=0.115.0
+uvicorn>=0.30.0
+python-multipart>=0.0.9
