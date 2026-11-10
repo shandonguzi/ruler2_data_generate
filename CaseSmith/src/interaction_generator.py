@@ -201,6 +201,8 @@ class AssistantModel:
         """
         self.llm_client = llm_client
         self.system_prompt = system_prompt or "You are a helpful AI assistant. Answer based on what the user explicitly asks. Do not make assumptions about the user's background or expertise."
+        template_path = Path(__file__).resolve().parents[1] / 'prompts' / 'assistant_response.txt'
+        self.response_template = template_path.read_text(encoding='utf-8').rstrip('\n')
         self.model_pool = model_pool or []
         # Thread-local storage for locked client and model info (ensures thread-safe model locking in concurrent execution)
         self._thread_local = threading.local()
@@ -232,14 +234,10 @@ class AssistantModel:
             # Format conversation history
             history_text = self._format_conversation_history(conversation_history)
 
-            # Build prompt directly (no external template file)
-            prompt = (
-                f"{self.system_prompt}\n\n"
-                f"Conversation History:\n{history_text}\n\n"
-                f"User Query:\n{user_query}\n\n"
-                "Provide a concise, direct, and accurate response based on the conversation context "
-                "and the user's needs. Lead with the answer and include only the details needed to "
-                "address the current question. Avoid repeating context or adding unsolicited examples."
+            prompt = self.response_template.format(
+                system_prompt=self.system_prompt,
+                conversation_history=history_text,
+                user_query=user_query,
             )
             
             # Generate response with token tracking
