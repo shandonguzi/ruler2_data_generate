@@ -22,7 +22,7 @@ _DEPENDENCIES_STARTED = time.perf_counter()
 
 import pandas as pd
 import uvicorn
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Request, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
@@ -145,8 +145,8 @@ class JobManager:
                 job.history_log_path = path.parent / "logs.jsonl"
                 job.logs_loaded = False
                 job.log_start_offset = max(0,state.get("log_count",0))
-                interrupted = job.status in {"queued", "running"}
-                if job.status in {"queued", "running"}:
+                interrupted = job.status in {"queued", "running", "paused"}
+                if job.status in {"queued", "running", "paused"}:
                     job.status = "failed"
                     job.error = "服务已重启，无法继续追踪此任务；任务未自动恢复执行。"
                     job.finished_at = time.time()
@@ -162,7 +162,7 @@ class JobManager:
         # Share the job reservation lock across version check and file writes.
         # This serializes saves and prevents a pipeline starting mid-save.
         with self.lock:
-            active = [j for j in self.jobs.values() if j.status in {"queued", "running"}]
+            active = [j for j in self.jobs.values() if j.status in {"queued", "running", "paused"}]
             if active:
                 job = active[0]
                 raise HTTPException(409, f"任务 {job.job_id} ({job.job_type}) 正在运行，完成后可修改体系或模型配置")
@@ -182,7 +182,7 @@ class JobManager:
 
     def start(self, job_type: str, command: list[str]) -> Job:
         with self.lock:
-            active = [j for j in self.jobs.values() if j.status in {"queued", "running"}]
+            active = [j for j in self.jobs.values() if j.status in {"queued", "running", "paused"}]
             if active:
                 raise RuntimeError(f"Another job is already running: {active[0].job_id} ({active[0].job_type})")
             job = Job(job_id=uuid.uuid4().hex[:12], job_type=job_type, command=command)
@@ -267,6 +267,9 @@ class JobManager:
         env["PYTHONUTF8"] = "1"
         env["INTENT_PROGRESS"] = "1"
         env["INTENT_JOB_ID"] = job.job_id
+        marker = self.history_dir / job.job_id / "pause" if self.history_dir else None
+        if marker is not None:
+            env["INTENT_JOB_PAUSE_FILE"] = str(marker.resolve())
         job.status = "running"
         job.started_at = time.time()
         self._append(job, "$ " + " ".join(job.command))
@@ -311,9 +314,30 @@ class JobManager:
         finally:
             job.process = None
             job.finished_at = time.time()
+            self.sync_workflow_status(job)
             with self.lock:
+                if marker is not None:
+                    marker.unlink(missing_ok=True)
                 if self.jobs.get(job.job_id) is job:
                     self._save(job)
+
+    def sync_workflow_status(self, job):
+        """Reconcile only this job's unfinished manifest, preserving saved results."""
+        if job.status not in {"cancelled", "failed"} or job.finished_at is None:
+            return
+        from intent_engine.workflows.workflow_layout import find_manifest
+        from intent_engine.infrastructure.atomic_json import write_json_atomically
+        if not job.workflow_run_id:
+            return
+        try:
+            path = find_manifest(_reports_dir(), job.workflow_run_id)
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if data.get("job_id") != job.job_id or data.get("status") not in {"running", "queued"}:
+                return
+            data.update(status=job.status, finished_at=job.finished_at)
+            write_json_atomically(path, data)
+        except (OSError, ValueError, KeyError) as exc:
+            print(f"[WEB] Unable to synchronize workflow status: {exc}", flush=True)
 
     def get(self, job_id: str) -> Job:
         with self.lock:
@@ -322,10 +346,27 @@ class JobManager:
             raise KeyError(job_id)
         return job
 
+    def set_paused(self, job_id: str, paused: bool) -> Job:
+        with self.lock:
+            job = self.jobs[job_id]
+            process = job.process
+            if self.history_dir is None or process is None or process.poll() is not None:
+                raise ValueError("任务进程不可用")
+            if job.status not in {"running", "paused"}:
+                raise ValueError("仅运行中的任务可暂停或继续")
+            marker = self.history_dir / job_id / "pause"
+            if paused:
+                marker.touch()
+            else:
+                marker.unlink(missing_ok=True)
+            job.status = "paused" if paused else "running"
+            self._save(job)
+            return job
+
     def cancel(self, job_id: str) -> Job:
         job = self.get(job_id)
         proc = job.process
-        if job.status not in {"queued", "running"} or proc is None:
+        if job.status not in {"queued", "running", "paused"} or proc is None:
             return job
         self._append(job, "[WEB] Cancel requested by user")
         try:
@@ -338,6 +379,7 @@ class JobManager:
             job.status = "cancelled"
             job.returncode = proc.returncode
             job.finished_at = time.time()
+            self.sync_workflow_status(job)
             with self.lock:
                 if self.jobs.get(job.job_id) is job:
                     self._save(job)
@@ -377,7 +419,7 @@ class DiscoveryRequest(BaseModel):
     limit: int | None = Field(default=None, ge=1)
     workers: int = Field(default=4, ge=1, le=32)
     review: bool = True
-    iteration_rounds: int = Field(default=0, ge=0, le=10)
+    iteration_rounds: int = Field(default=0, ge=-1, le=10)
     iteration_scope: Literal["all", "unresolved_only", "noise_only"] | None = None
 
 
@@ -391,7 +433,14 @@ class WorkflowStageRequest(BaseModel):
     text_column: str | None = None
     sheet_name: str | None = None
     stage: Literal["extract", "cluster", "review", "pairs", "domains", "iterate", "export"]
-    iteration_rounds: int = Field(default=3, ge=1, le=10)
+    iteration_rounds: int = Field(default=3, ge=-1, le=10)
+
+    @field_validator('iteration_rounds')
+    @classmethod
+    def nonzero_rounds(cls,value):
+        if value==0:raise ValueError('独立迭代请选择自动或1–10轮')
+        return value
+
     iteration_scope: Literal["all", "unresolved_only", "noise_only"] | None = None
     run_id: str | None = None
     artifact: str | None = None
@@ -617,6 +666,7 @@ class ClusteringSettingsRequest(BaseModel):
     revision: str = Field(pattern=r"^[0-9a-f]{64}$")
     language: Literal["english", "chinese"]
     languages: dict[str, TopicLanguageSettings]
+    flat_topics: bool | None = None
 
 
 @app.get("/api/clustering-settings")
@@ -631,7 +681,7 @@ def api_save_clustering_settings(req: ClusteringSettingsRequest):
     with jobs.taxonomy_edit():
         try:
             return save_clustering_settings(CONFIG_PATH, req.revision, req.language,
-                                            {key:value.model_dump() for key,value in req.languages.items()})
+                                            {key:value.model_dump() for key,value in req.languages.items()}, req.flat_topics)
         except ValueError as exc:
             raise HTTPException(409 if "已变更" in str(exc) else 400, str(exc)) from exc
 
@@ -952,14 +1002,31 @@ def api_job_discover(req: DiscoveryRequest):
 
 
 @app.get("/api/workflows")
-def api_workflows():
+def api_workflows(brief: bool = False):
+    started = time.perf_counter()
     from intent_engine.workflows.workflow_artifacts import list_workflows
     from intent_engine.atomic.atomic_discovery import WORKFLOW_STAGES, STAGE_REQUIRED
     from intent_engine.workflows.workflow_capabilities import workflow_capabilities
     reports = _reports_dir()
+    with jobs.lock:
+        terminal_jobs = list(jobs.jobs.values())
+    for job in terminal_jobs:
+        jobs.sync_workflow_status(job)
     runs = list_workflows(reports)
-    return {"runs": [{**run, **workflow_capabilities(reports, run)} for run in runs],
+    print(f"[流程清单耗时] {len(runs)} 个版本 | {time.perf_counter()-started:.4f}s | 轻量={brief}", flush=True)
+    return {"runs": runs if brief else [{**run, **workflow_capabilities(reports, run)} for run in runs],
             "stages": WORKFLOW_STAGES, "required": STAGE_REQUIRED}
+
+
+@app.get("/api/workflows/{run_id}/capabilities")
+def api_workflow_capabilities(run_id: str):
+    from intent_engine.workflows.workflow_artifacts import load_workflow
+    from intent_engine.workflows.workflow_capabilities import workflow_capabilities
+    try:
+        reports=_reports_dir()
+        return workflow_capabilities(reports,load_workflow(reports,run_id))
+    except (ValueError,OSError,KeyError,TypeError) as exc:
+        raise HTTPException(400,str(exc)) from exc
 
 
 @app.get("/api/workflows/{run_id}/delete-preview")
@@ -1017,6 +1084,11 @@ def api_workflow_artifact(run_id: str, artifact: str, limit: int = 50):
                   "错误": data.get("errors", [])[:maximum], "Token用量": data.get("token_usage", {}).get("models", [])[:maximum]}
         tables["迭代记录"] = [{key: value for key, value in record.items() if key not in {"taxonomy_before", "taxonomy_after", "assignments", "evidence", "changes"}}
                               for record in data.get("iteration", {}).get("rounds", [])]
+        tables["迭代停止指标"]=[{"轮次":r['round'],"单成员簇数量":r.get('cluster_counts',{}).get('singleton_clusters'),
+            "噪声意图数量":r.get('cluster_counts',{}).get('noise_intents'),
+            "上轮单成员簇数量":(r.get('previous_cluster_counts')or{}).get('singleton_clusters'),
+            "上轮噪声意图数量":(r.get('previous_cluster_counts')or{}).get('noise_intents')}
+            for r in data.get('iteration',{}).get('rounds',[])]
         if data.get("atomic_task_names"):
             tables["原子意图任务名称"]=data["atomic_task_names"].get("records",[])[:maximum]
         if data.get("scene_mapping"):
@@ -1213,6 +1285,17 @@ def api_job_workflow_stage(req: WorkflowStageRequest):
 
 
 
+@app.post("/api/jobs/{job_id}/pause")
+@app.post("/api/jobs/{job_id}/continue")
+def api_set_job_pause(job_id: str, request: Request):
+    try:
+        return jobs.set_paused(job_id, request.url.path.endswith("/pause")).to_dict()
+    except KeyError:
+        raise HTTPException(404, "Job not found")
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
 @app.post("/api/jobs/{job_id}/cancel")
 def api_cancel_job(job_id: str):
     try:
@@ -1281,6 +1364,7 @@ def api_resume_job(job_id: str):
                     index = command.index(flag)
                     del command[index:index+2]
             total = int((saved.get("iteration") or {}).get("max_rounds") or saved.get("parameters", {}).get("iteration_rounds", 3))
+            if saved.get("parameters",{}).get("iteration_auto"):total=-1
             command += ["--source", str(snapshot), "--stage", "iterate", "--iteration-rounds", str(total), "--resume-state"]
 
     return _start_job(previous.job_type + ":resume:" + job_id, command)
@@ -1293,7 +1377,7 @@ def api_delete_job(job_id: str):
         job = jobs.jobs.get(job_id)
         if job is None:
             raise HTTPException(404, "Job not found")
-        if job.status in {"queued", "running"} or job.process is not None or job.finished_at is None:
+        if job.status in {"queued", "running", "paused"} or job.process is not None or job.finished_at is None:
             raise HTTPException(409, "任务尚未结束，不能删除任务历史")
         try:
             with remove_histories(jobs, [job], PROJECT_ROOT / "data" / "request_traces") as result:

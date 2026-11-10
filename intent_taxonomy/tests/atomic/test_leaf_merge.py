@@ -308,3 +308,80 @@ def test_parent_regroup_preserves_leaf_tasks_and_members(setup,monkeypatch):
     assert data['parent_regroup']['passes'][-1]['applied']==1
     assert original==[(a['intent_id'],a['cluster_id']) for a in data['intents']]
     assert tasks==data['candidate_taxonomy']['tasks']
+
+
+@pytest.mark.parametrize('decision',['common_parent','normalize'])
+def test_semantic_relation_operations_are_applied_after_independent_validation(setup,decision):
+    data,vectors,reporter=seed();members=[a['cluster_id'] for a in data['intents']]
+    class Relation(LLM):
+        def chat_json(self,system,user,schema,**kwargs):
+            if schema is MergeProposal:
+                return schema(reason='语义审核',label='制作材料知识',description='物品材料相关请求',
+                    object='物品材料',action='查询',decision=decision)
+            return super().chat_json(system,user,schema,**kwargs)
+    record,_=merge_leaves(setup,data,Relation(),2,reporter,lambda:None,vectors=vectors)
+    if decision=='common_parent':
+        assert record['parent_applied']==1
+        assert [a['cluster_id'] for a in data['intents']]==members
+        assert len(data['candidate_taxonomy']['tasks'])==2
+        assert len(data['topic_hierarchy']['root_ids'])==1
+        assert any(n['label']=='制作材料知识' and not n['is_leaf'] for n in data['topic_hierarchy']['nodes'])
+    else:
+        assert record['applied']==1 and len(data['candidate_taxonomy']['tasks'])==1
+
+
+def test_invalid_common_parent_does_not_change_tree(setup):
+    data,vectors,reporter=seed();tree=copy.deepcopy(data['topic_hierarchy'])
+    class Invalid(LLM):
+        def chat_json(self,system,user,schema,**kwargs):
+            if schema is MergeProposal:return schema(reason='关系建议',parent_node_id='missing',decision='common_parent')
+            return super().chat_json(system,user,schema,**kwargs)
+    record,_=merge_leaves(setup,data,Invalid(),2,reporter,lambda:None,vectors=vectors)
+    assert record['parent_applied']==0 and data['topic_hierarchy']==tree
+    assert record['pairs'][0]['status']=='error'
+
+
+def test_flat_mode_retains_descriptions_ids_and_members_when_removing_parents():
+    from intent_engine.atomic.topic_mode import flatten_existing
+    from intent_engine.atomic.topic_hierarchy import index_topic_tree
+    data,_,_=seed()
+    leaves=copy.deepcopy(data['topic_hierarchy']['nodes'])
+    data['topic_hierarchy']['nodes'].append({'node_id':'p','label':'父主题','description':'上层归纳','is_leaf':False,'distance':0.0,
+        'children':[n['node_id'] for n in leaves],'semantic_status':'approved'})
+    index_topic_tree(data['topic_hierarchy'])
+    before=[(a['intent_id'],a['cluster_id']) for a in data['intents']]
+    tasks=set(data['task_topic_nodes'])
+    prior=initial_membership_assignments(data['intents'],data,Taxonomy.model_validate(data['candidate_taxonomy']))
+    flatten_existing(data)
+    for atom,assignment in zip(data['intents'],prior):
+        assert reusable_assignment(atom,assignment,data,Taxonomy.model_validate(data['candidate_taxonomy'])) is not None
+    assert set(data['task_topic_nodes'])==tasks
+    assert [(a['intent_id'],a['cluster_id']) for a in data['intents']]==before
+    assert all(n['is_leaf'] and n['description'] for n in data['topic_hierarchy']['nodes'])
+    assert data['topic_hierarchy']['max_depth']==1
+    assert all(len(a['topic_path'])==1 for a in data['intents'])
+
+
+def test_flat_review_never_requests_parent_naming_or_regroup():
+    data,_,reporter=seed()
+    data['topic_hierarchy']['nodes'].append({'node_id':'p','label':'父级','is_leaf':False,
+        'children':data['topic_hierarchy']['root_ids'][:],'description':'上层','semantic_status':'approved'})
+    llm=LLM()
+    review_hierarchy(data,llm,2,reporter,lambda:None,cfg={'atomic_discovery':{'flat_topics':True,'parent_regroup_enabled':True}})
+    assert not any(schema is NodeDecision for schema,_ in llm.calls)
+    assert data['hierarchy_review']['accepted_parents']==0
+    assert all(n['is_leaf'] for n in data['topic_hierarchy']['nodes'])
+
+
+def test_flat_merge_only_accepts_cluster_operations(setup):
+    from intent_engine.atomic.leaf_merge import FlatMergeProposal
+    data,vectors,reporter=seed();setup['atomic_discovery']['flat_topics']=True
+    class Flat(LLM):
+        def chat_json(self,prompt,user,schema,**kwargs):
+            if schema is FlatMergeProposal:
+                assert json.loads(user)['topic_mode']=='flat'
+                return schema(reason='不同类别',decision='keep')
+            return super().chat_json(prompt,user,schema,**kwargs)
+    record,_=merge_leaves(setup,data,Flat(),2,reporter,lambda:None,vectors=vectors)
+    assert record['applied']==0
+    with pytest.raises(ValueError):FlatMergeProposal(reason='相关',label='父级',description='说明',decision='common_parent')

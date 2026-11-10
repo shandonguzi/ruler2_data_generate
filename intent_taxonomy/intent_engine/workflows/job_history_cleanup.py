@@ -36,7 +36,7 @@ def remove_histories(manager, jobs, trace_root):
     result = {'deleted_jobs': [], 'cleanup_warnings': []}
     try:
         for job in jobs:
-            if job.status in {'queued', 'running'} or job.process is not None or job.finished_at is None:
+            if job.status in {'queued', 'running', 'paused'} or job.process is not None or job.finished_at is None:
                 raise ValueError(f'任务 {job.job_id} 尚未结束，不能删除任务历史')
             if not re.fullmatch(r'[a-f0-9]{12}', job.job_id):
                 raise ValueError('任务编号无效，无法安全清理历史文件')

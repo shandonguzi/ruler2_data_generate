@@ -111,7 +111,7 @@ def ensure_workflow_not_in_use(reports, run_id, active_jobs):
     owned = {path.resolve() for path in workflow_paths(reports, run_id, legacy=legacy).values()}
     directory = None if legacy else manifest.parent.resolve()
     for job in active_jobs:
-        if job.status not in {'queued', 'running'}:
+        if job.status not in {'queued', 'running', 'paused'}:
             continue
         reason = None
         if workflow.get('job_id') == job.job_id or getattr(job, 'workflow_run_id', None) == run_id:

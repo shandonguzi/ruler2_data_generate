@@ -118,6 +118,16 @@ for(const key of Object.keys(inputImports)){
 }
 async function startJob(url,payload,statusEl){try{const j=await post(url,payload);currentJob=j.job_id;if(url==='/api/jobs/classification-workflow'||url==='/api/jobs/workflow-stage'||url==='/api/jobs/scene-mapping'||url==='/api/jobs/atomic-tasks')workflowSelectNewest=true;jobSelection++;logOffset=0;$('#terminal').textContent='';renderJobProgress(j);if(statusEl)$(statusEl).textContent=`任务 ${j.job_id} 已启动`;$$('.nav button').find(b=>b.dataset.panel==='jobs').click();pollJob()}catch(e){alert(e.message)}}
 
+$('#pauseJobBtn').addEventListener('click',async()=>{
+  const button=$('#pauseJobBtn'), job=usageJobSnapshot;
+  if(!job||job.job_id!==currentJob)return;
+  button.disabled=true;
+  try{
+    const action=job.status==='paused'?'continue':'pause';
+    const updated=await post(`/api/jobs/${encodeURIComponent(job.job_id)}/${action}`,{});
+    if(currentJob===job.job_id){renderJobProgress(updated);pollJob();}
+  }catch(e){alert(e.message);if(currentJob===job.job_id)pollJob();}
+});
 $('#cancelJobBtn').addEventListener('click',async()=>{if(!currentJob)return alert('当前没有任务');if(!confirm('确认停止当前运行任务？'))return;try{await post(`/api/jobs/${currentJob}/cancel`,{});pollJob()}catch(e){alert(e.message)}});
 function forgetDeletedJobs(ids){
   if(!ids?.includes(currentJob))return;
@@ -126,7 +136,7 @@ function forgetDeletedJobs(ids){
   $('#jobProgress').hidden=true;$('#jobStageUsage').hidden=true;jobTraceViewer.reset();requestPanel.hidden=true;
   $('#jobStageList').innerHTML='';$('#terminal').textContent='任务记录已删除。';
   $('#jobLogsDownload').hidden=true;$('#jobLogsDownload').removeAttribute('href');
-  $('#deleteJobBtn').disabled=true;$('#cancelJobBtn').disabled=true;
+  $('#deleteJobBtn').disabled=true;$('#cancelJobBtn').disabled=true;$('#pauseJobBtn').disabled=true;
 }
 $('#deleteJobBtn').addEventListener('click',async()=>{
   const id=currentJob;if(!id||$('#deleteJobBtn').disabled)return;
@@ -136,7 +146,7 @@ $('#deleteJobBtn').addEventListener('click',async()=>{
   catch(error){alert(error.message);if(currentJob===id)$('#deleteJobBtn').disabled=false;}
 });
 
-const jobStatusNames={queued:'排队中',running:'运行中',succeeded:'已完成',failed:'运行失败',cancelled:'已取消'};
+const jobStatusNames={queued:'排队中',running:'运行中',paused:'已暂停',succeeded:'已完成',failed:'运行失败',cancelled:'已取消'};
 const phaseStatusNames={pending:'等待',running:'执行中',completed:'已完成',completed_with_errors:'部分失败',blocked:'条件不足',skipped:'已跳过',failed:'失败',cancelled:'已取消'};
 function setProgressBar(selector,percent,indeterminate=false){
   const bar=$(selector);bar.classList.toggle('indeterminate',indeterminate);
@@ -149,7 +159,7 @@ function renderJobProgress(job){
   $('#jobProgress').hidden=false;requestPanel.hidden=false;
   if(displayedUsageJob!==job.job_id){displayedUsageJob=job.job_id;selectedUsageStage=null;}
   usageJobSnapshot=job;
-  const p=job.progress||{},stage=p.current,active=['running','queued'].includes(job.status),percent=p.percent??null;
+  const p=job.progress||{},stage=p.current,active=['running','queued','paused'].includes(job.status),percent=p.percent??null;
   $('#jobProgress').dataset.status=job.status;$('#jobProgressStatus').textContent=jobStatusNames[job.status]||job.status;
   $('#jobTokenUsage').textContent=formatTokenUsage(job.token_usage);
   $('#jobElapsed').textContent='已用时 '+formatElapsed(job.elapsed_seconds);
@@ -170,11 +180,14 @@ function renderJobProgress(job){
   if(stage?.reused)detail.push(stage.unit==='个簇'?`复用已有簇审核 ${stage.reused} 个，计入已处理数量`:`直接复用已有归属 ${stage.reused} 条，不计入本阶段待分类数`);
   if(stage?.cached)detail.push(`复用缓存 ${stage.cached} 条`);
   if(stage?.failed)detail.push(`其中失败 ${stage.failed} 条，重跑时会重试`);
+  if(job.status==='paused')detail.push('已请求暂停，在途请求可完成，工作进程在下一个检查点等待');
   if(job.error)detail.push(job.error);
   $('#jobStageDetail').textContent=detail.join(' · ')||(hasCount?'计数表示已处理条数；阶段结束后还会继续后续流程。':'该阶段按执行状态更新，整体百分比不代表剩余时间。');
   renderJobStageNavigation(job);
   renderStageUsage(job);
   $('#jobLogsDownload').hidden=false;$('#jobLogsDownload').href=`/api/jobs/${encodeURIComponent(job.job_id)}/logs-download`;
+  $('#pauseJobBtn').disabled=!['running','paused'].includes(job.status);
+  $('#pauseJobBtn').textContent=job.status==='paused'?'继续任务':'暂停任务';
   $('#cancelJobBtn').disabled=!active;
   $('#deleteJobBtn').disabled=active||job.finished_at==null;
   $('#resumeJobBtn').disabled=!['failed','cancelled'].includes(job.status)||job.finished_at==null;
@@ -203,7 +216,7 @@ async function pollJob(){
       t.scrollTop=t.scrollHeight;
     }
     logOffset=j.next_offset??logOffset;
-    if(j.status==='running'||j.status==='queued')pollTimer=setTimeout(pollJob,900);
+    if(['running','queued','paused'].includes(j.status))pollTimer=setTimeout(pollJob,900);
     else{
       $('#terminal').textContent+=`\n\n[${j.status.toUpperCase()}] returncode=${j.returncode}`;
       await Promise.allSettled([loadStatus(),loadReports(),loadJobs()]);
@@ -304,7 +317,7 @@ $('#runDiscoveryBtn').addEventListener('click',()=>{
   const workers=Number($('#discWorkers').value),rawLimit=$('#discLimit').value,limit=rawLimit?Number(rawLimit):null;
   if(!Number.isInteger(workers)||workers<1||workers>32||(limit!==null&&(!Number.isInteger(limit)||limit<1)))return alert('并发数需要为 1–32 的整数，处理条数需要为正整数。');
   const iteration_rounds=$('#discIterate').checked?Number($('#discIterationRounds').value):0;
-  if($('#discIterate').checked&&(!Number.isInteger(iteration_rounds)||iteration_rounds<1||iteration_rounds>10))return alert('最大迭代轮数需要为 1–10 的整数。');
+  if($('#discIterate').checked&&(!Number.isInteger(iteration_rounds)||(iteration_rounds!==-1&&(iteration_rounds<1||iteration_rounds>10))))return alert('请选择自动或1–10轮。');
   startJob('/api/jobs/classification-workflow',{input:inputPath('disc'),text_column:$('#discTextCol').value,
     sheet_name:inputImports.disc.metadata.sheet,workers,limit,review:true,iteration_rounds,iteration_scope:$('#discIterationScope').value||null},'#discoveryStatus');
 });
@@ -380,15 +393,15 @@ let workflowRuns=[],workflowStageLabels={},workflowRequired={},selectedWorkflowI
 let workflowPreviewTables={},tmSourceContext=null;
 const workflowRunSelectors=['workspaceRun','stageRun','reportsRun','taxonomyRun','managerRun'];
 const artifactLabels={query_atomic_intents:'query 与原子意图（CSV）',report:'完整过程报告',workbook:'过程审核工作簿',sentence_results:'原句与主题（JSON）',sentence_workbook:'原句与主题（Excel）'};
-function workflowLabel(run){return `${run.created_at?.replace('T',' ').slice(0,19)||run.run_id} · ${run.source?'派生版本':'完整流程'} · ${({running:'运行中',completed:'已完成',completed_with_errors:'完成，含错误',failed:'失败'})[run.status]||run.status}`}
-function stageCapability(run,stage){return run?.capabilities?.[stage]||{available:false,sources:[],reason:'尚未取得文件校验结果，请刷新流程'};}
+function workflowLabel(run){return `${run.created_at?.replace('T',' ').slice(0,19)||run.run_id} · ${run.source?'派生版本':'完整流程'} · ${({running:'运行中',completed:'已完成',completed_with_errors:'完成，含错误',failed:'失败',cancelled:'已停止'})[run.status]||run.status}`}
+function stageCapability(run,stage){return run?.capabilities?.[stage]||{available:false,sources:[],reason:run?.capabilityError||'正在检查所选版本的可用能力…'};}
 function briefReason(reason){return reason.length>70?reason.slice(0,70)+'…':reason;}
 function renderStageRunOptions(){
   const select=$('#stageRun'),continuing=stageToolMode==='iterate';
   select.innerHTML='<option value="">① 请选择流程</option>'+workflowRuns.map(run=>{
     const capability=stageCapability(run,'iterate'),count=Object.entries(run.capabilities||{}).filter(([key,value])=>key!=='iterate'&&value.available).length;
-    const disabled=continuing&&!capability.available;
-    const suffix=continuing?(disabled?'不可继续迭代：'+briefReason(capability.reason):'可继续迭代'):`可用 ${count} 项单阶段能力`;
+    const disabled=continuing&&Boolean(run.capabilities)&&!capability.available;
+    const suffix=!run.capabilities?(run.capabilityError?'检查失败，请刷新':'选中后检查可用能力'):continuing?(disabled?'不可继续迭代：'+briefReason(capability.reason):'可继续迭代'):`可用 ${count} 项单阶段能力`;
     return `<option value="${esc(run.run_id)}" ${disabled?'disabled':''} title="${esc(disabled?capability.reason:suffix)}">${esc(workflowLabel(run)+' · '+suffix)}</option>`;
   }).join('');
   select.value=selectedWorkflowId;
@@ -410,7 +423,7 @@ function artifactsFor(run,required=null){
   return Object.keys(run.artifacts||{}).filter(key=>workflowStageLabels[key]&&(!required||key==='export'||order.indexOf(key)>=order.indexOf(required)));
 }
 async function loadWorkflows(){
-  const revision=++workflowLoadRevision,data=await api('/api/workflows');if(revision!==workflowLoadRevision)return;
+  const revision=++workflowLoadRevision,data=await api('/api/workflows?brief=true');if(revision!==workflowLoadRevision)return;
   workflowRuns=data.runs;workflowStageLabels=data.stages;workflowRequired=data.required;
   if(workflowSelectNewest&&workflowRuns[0]&&workflowRuns[0].run_id!==selectedWorkflowId){selectedWorkflowId=workflowRuns[0].run_id;workflowSelectNewest=false;resetWorkflowChoices();}
   if(selectedWorkflowId&&!workflowRuns.some(run=>run.run_id===selectedWorkflowId)){selectedWorkflowId='';resetWorkflowChoices();}
@@ -418,6 +431,10 @@ async function loadWorkflows(){
 }
 function renderWorkflowChoices(){
   const run=selectedWorkflow();
+  if(run&&!run.capabilities&&!run.capabilityLoading&&!run.capabilityError){
+    run.capabilityLoading=true;
+    api(`/api/workflows/${encodeURIComponent(run.run_id)}/capabilities`).then(data=>{Object.assign(run,data);}).catch(e=>{run.capabilityError=e.message;}).finally(()=>{run.capabilityLoading=false;if(selectedWorkflow()===run)renderWorkflowChoices();});
+  }
   $('#deleteWorkflowBtn').disabled=!run;
   loadWorkflowDiagnostics(selectedWorkflowId);
   for(const id of workflowRunSelectors){chooseOptions($('#'+id),workflowRuns.map(item=>[item.run_id,workflowLabel(item)]),'① 请选择流程');$('#'+id).value=selectedWorkflowId;}
@@ -554,7 +571,7 @@ $('#runStageBtn').addEventListener('click',()=>{
   if(!external&&(!stageCapability(selectedWorkflow(),$('#stageAction').value).available||!stageCapability(selectedWorkflow(),$('#stageAction').value).sources.includes($('#stageSource').value))){$('#stageToolStatus').textContent='所选输入未通过校验，请刷新流程并查看不可用原因。';return;}
   const workers=Number($('#stageWorkers').value);if(!Number.isInteger(workers)||workers<1||workers>32){$('#stageToolStatus').textContent='并发数需要为 1–32 的整数。';return;}
   const iteration_rounds=Number($('#stageIterationRounds').value);
-  if($('#stageAction').value==='iterate'&&(!Number.isInteger(iteration_rounds)||iteration_rounds<1||iteration_rounds>10)){$('#stageToolStatus').textContent='最大迭代轮数需要为 1–10 的整数。';return;}
+  if($('#stageAction').value==='iterate'&&(!Number.isInteger(iteration_rounds)||(iteration_rounds!==-1&&(iteration_rounds<1||iteration_rounds>10)))){$('#stageToolStatus').textContent='请选择自动或1–10轮。';return;}
   if($('#stageAction').value==='iterate'&&appendSelected()&&!inputReady('append'))return alert('请等待文件读取完成，并选择工作表和文本列；也可以清除追加文件。');
   const use_external=$('#externalStageSettings').open&&$('#stageUseExternal').checked;
   startJob('/api/jobs/workflow-stage',{stage:$('#stageAction').value,run_id:selectedWorkflowId||null,artifact:$('#stageSource').value||null,workers,iteration_scope:$('#stageIterationScope').value||null,iteration_rounds:$('#stageAction').value==='iterate'?iteration_rounds:3,use_external,external_source:use_external?$('#stageExternalPath').value.trim():null,...($('#stageAction').value==='iterate'&&inputReady('append')?{append_input:inputPath('append'),text_column:$('#appendTextCol').value,sheet_name:inputImports.append.metadata.sheet||null}:{})},'#stageToolStatus');

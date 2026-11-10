@@ -25,13 +25,20 @@ class MergeProposal(BaseModel):
     label: str = Field(default='', max_length=160)
     object: str = Field(default='', max_length=500)
     action: str = Field(default='', max_length=500)
-    decision: Literal['merge', 'keep', 'uncertain']
+    parent_node_id: str | None = None
+    decision: Literal['merge', 'normalize', 'common_parent', 'keep', 'uncertain']
 
     @model_validator(mode='after')
     def definition_required(self):
-        if self.decision == 'merge' and not all((self.label,self.description,self.object,self.action)):
+        if self.decision in {'merge','normalize'} and not all((self.label,self.description,self.object,self.action)):
             raise ValueError('合并方案必须包含完整且非空的通用定义')
+        if self.decision=='common_parent' and not self.parent_node_id and not (self.label and self.description):
+            raise ValueError('新建共同祖先需要名称和定义')
         return self
+
+
+class FlatMergeProposal(MergeProposal):
+    decision: Literal['merge','normalize','keep','uncertain']
 
 
 class MergeValidation(BaseModel):
@@ -63,6 +70,7 @@ def completion_identity(cfg, data, llm, options, conflicts):
     return digest({'version':1,
         'tasks':sorted(data.get('candidate_taxonomy',{}).get('tasks',[]),key=lambda t:t['task_id']),
         'members':sorted((a['intent_id'],a.get('text'),a.get('cluster_id')) for a in data['intents'] if a.get('status')=='valid'),
+        'hierarchy':[(n['node_id'],n.get('label'),n.get('description'),n.get('children')) for n in data['topic_hierarchy']['nodes']],
         'leaves':sorted((n['node_id'],n.get('topic_id'),n.get('label'),n.get('semantic_status'))
                         for n in data['topic_hierarchy']['nodes'] if n.get('is_leaf')),
         'mapping':data.get('task_topic_nodes',{}), 'aliases':data.get('task_aliases',{}),
@@ -70,7 +78,7 @@ def completion_identity(cfg, data, llm, options, conflicts):
                            for c in data.get('clusters',[])), key=lambda c:c['cluster_id']),
         'conflicts':sorted((a.get('intent_id',''),a.get('text',''),tuple(sorted(a.get('conflicting_task_ids',[]))))
                            for a in conflicts if a.get('status')=='ambiguous' and not a.get('error')),
-        'options':{k:options.get(k) for k in ('leaf_merge_top_k','leaf_merge_min_similarity','leaf_merge_max_pairs','leaf_merge_max_merges','review_examples')},
+        'options':{k:options.get(k) for k in ('flat_topics','leaf_merge_top_k','leaf_merge_min_similarity','leaf_merge_max_pairs','leaf_merge_max_merges','review_examples')},
         'embedding':{k:cfg.get('embedding',{}).get(k) for k in ('base_url','model','dimensions','cache_version','extra_body')},
         'proposal':model_identity(llm,MERGE_PROMPT,1600),'verify':model_identity(llm,VERIFY_PROMPT,1000)})
 
@@ -83,6 +91,11 @@ def merge_leaves(cfg, data, llm, workers, reporter, persist, *, vectors=None, co
     from intent_engine.models import Taxonomy
     from intent_engine.workflows.candidate_iteration import fingerprint
     options = {**cfg.get('atomic_discovery', {}), **data.get('parameters', {})}
+    # The current switch can enable semantic repair for historical snapshots.
+    if 'leaf_merge_enabled' in cfg.get('atomic_discovery',{}):
+        options['leaf_merge_enabled']=cfg['atomic_discovery']['leaf_merge_enabled']
+    from intent_engine.atomic.topic_mode import apply_topic_mode
+    apply_topic_mode(options,cfg)
     history = data.setdefault('leaf_merging', {'passes': [], 'cache': {}})
     record = {'phase':phase, 'status':'running', 'pairs':[], 'applied':0, 'logical_requests':0, 'cached':0}
     history.setdefault('passes',[]).append(record)
@@ -154,14 +167,15 @@ def merge_leaves(cfg, data, llm, workers, reporter, persist, *, vectors=None, co
             if task_id in side_payloads:return side_payloads[task_id]
             task=tasks[task_id];members=grouped[leaves[task_id]]
             samples=review_sample(members,vectors,limit)
-            side_payloads[task_id] = {'task_id':task_id,'label':nodes[data['task_topic_nodes'][task_id]]['label'],
+            from intent_engine.atomic.topic_context import topic_context
+            side_payloads[task_id] = {'topic_context':topic_context(data,leaves[task_id]),'task_id':task_id,'label':nodes[data['task_topic_nodes'][task_id]]['label'],
                     **{key:task.get(key) for key in ('object','action','description','boundary_notes')},
                     'members':[{'text':text} for text in sorted({s['text'] for s in samples})]}
             return side_payloads[task_id]
         work=[];budget=max(1,int(options.get('leaf_merge_max_pairs',64)))
         cache=history.setdefault('cache',{})
         for pair in sorted(candidates,key=lambda pair:(-candidates[pair][0],-candidates[pair][1],pair)):
-            payload={'left':side(pair[0]),'right':side(pair[1]),'conflict_texts':sorted(conflict_texts.get(pair,set()))[:8]}
+            payload={'topic_mode':'flat' if options['flat_topics'] else 'hierarchical','left':side(pair[0]),'right':side(pair[1]),'conflict_texts':sorted(conflict_texts.get(pair,set()))[:8]}
             identity=digest({'version':1,'payload':payload,'settings':settings,
                 'full_members':{key:sorted({a['text'] for a in grouped[leaves[key]]}) for key in pair}})
             if identity in cache:
@@ -175,17 +189,18 @@ def merge_leaves(cfg, data, llm, workers, reporter, persist, *, vectors=None, co
             pair,payload,identity=item
             entry={'task_ids':list(pair),'cache_hit':False,'sample_counts':[len(payload[side]['members']) for side in ('left','right')], 'logical_requests':1}
             try:
-                proposal=llm.chat_json(MERGE_PROMPT,json.dumps(payload,ensure_ascii=False),schema=MergeProposal,max_tokens=1600)
+                proposal=llm.chat_json(MERGE_PROMPT,json.dumps(payload,ensure_ascii=False),schema=FlatMergeProposal if options['flat_topics'] else MergeProposal,max_tokens=1600)
                 entry['proposal']=proposal.model_dump()
-                if proposal.decision=='merge':
-                    verification={'definition':proposal.model_dump(), 'left':payload['left']['members'],'right':payload['right']['members']}
+                if proposal.decision in {'merge','normalize','common_parent'}:
+                    from intent_engine.atomic.topic_context import merge_verification_payload
+                    verification=merge_verification_payload(data,payload,proposal.model_dump())
                     entry['logical_requests']+=1
                     result=llm.chat_json(VERIFY_PROMPT,json.dumps(verification,ensure_ascii=False),schema=MergeValidation,max_tokens=1000)
                     allowed={sample['text'] for side in ('left','right') for sample in payload[side]['members']}
                     if not set(result.rejected_texts)<=allowed:
                         raise ValueError('合并复核引用了未提供的样本')
                     entry['validation']=result.model_dump()
-                entry['status']='verified' if entry.get('validation',{}).get('valid') else proposal.decision if proposal.decision!='merge' else 'rejected'
+                entry['status']='verified' if entry.get('validation',{}).get('valid') else proposal.decision if proposal.decision in {'keep','uncertain'} else 'rejected'
             except Exception as exc:
                 entry.update(status='error',error=str(exc))
             return entry
@@ -210,18 +225,29 @@ def merge_leaves(cfg, data, llm, workers, reporter, persist, *, vectors=None, co
         for pair,_,_ in work:
             record['pairs'].append(outcomes[pair])
         record['logical_requests']=sum(entry.get('logical_requests',0) for entry in outcomes.values())
+        structural=[entry for entry in record['pairs'] if entry['status']=='verified' and entry['proposal']['decision']=='common_parent']
         accepted=[];used=set();max_merges=max(1,int(options.get('leaf_merge_max_merges',16)))
         for entry in record['pairs']:
             pair=entry['task_ids']
-            if entry['status']!='verified':continue
+            if entry['status']!='verified' or entry in structural:continue
             if used.intersection(pair) or len(accepted)>=max_merges:
                 entry['status']='deferred_overlap'
                 continue
             used.update(pair);accepted.append(entry)
+        selected_structural=[]
+        for entry in structural:
+            if used.intersection(entry['task_ids']) or len(accepted)+len(selected_structural)>=max_merges:
+                entry['status']='deferred_overlap';continue
+            used.update(entry['task_ids']);selected_structural.append(entry)
+        structural=selected_structural
         if not accepted:
-            record['status']='completed_with_errors' if any(e['status']=='error' for e in record['pairs']) else 'completed'
+            from intent_engine.atomic.semantic_parent import apply_common_parents
+            record['parent_applied']=apply_common_parents(data,structural,persist)
+            record['status']='completed_with_errors' if any(e['status'] in {'error','parent_rejected'} for e in record['pairs']) else 'completed'
             if record['status']=='completed' and not record['deferred_candidates'] and not any(e['status']=='deferred_overlap' for e in record['pairs']):
-                history['completed_identity']=completed_identity
+                history['completed_identity']=completion_identity(cfg,data,llm,options,conflicts)
+            data['leaf_merging']=history
+            persist()
             return record,vectors
         history.pop('completed_identity',None)
         staged=copy.deepcopy(data)
@@ -292,6 +318,8 @@ def merge_leaves(cfg, data, llm, workers, reporter, persist, *, vectors=None, co
         for entry in accepted:entry['status']='applied'
         record['applied']=len(accepted)
         record['status']='completed_with_errors' if any(e['status']=='error' for e in record['pairs']) or staged.get('hierarchy_review',{}).get('status')=='completed_with_errors' else 'completed'
+        from intent_engine.atomic.semantic_parent import apply_common_parents
+        record['parent_applied']=apply_common_parents(staged,structural,lambda:None)
         staged['leaf_merging']=copy.deepcopy(history)
         before_publish=copy.deepcopy(data)
         data.clear();data.update(staged)

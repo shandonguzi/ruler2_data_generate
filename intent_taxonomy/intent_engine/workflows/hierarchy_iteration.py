@@ -10,9 +10,9 @@ from pathlib import Path
 from intent_engine.infrastructure.model_requests import USAGE, usage_since
 
 
-def hierarchy_iteration_steps(rounds):
+def hierarchy_iteration_steps(rounds, flat_topics=False):
     phases = [('classify','叶子主题向量召回与匹配'), ('cluster','未覆盖意图聚类'),
-              ('review','成员一致性审核与细分'), ('domains','重建与逐层审核主题树'), ('merge','叶子实例泛化与归并')]
+              ('review','成员一致性审核与细分'), ('domains','簇命名与语义审核' if flat_topics else '重建与逐层审核主题树'), ('merge','叶子实例泛化与归并')]
     return [{'id':'iteration_prepare','label':'迭代准备：叶子准入与归并'}] + [{'id':f'round_{r}:{key}','label':label,'round':r}
             for r in range(1,rounds+1) for key,label in phases] + [
             {'id':'iteration_validation','label':'验证最终叶子归属'},
@@ -120,11 +120,13 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
     resumed = data.pop('resume_iteration', {})
     completed_rounds = copy.deepcopy(resumed.get('rounds', []))
     # A round that ended with processing errors must be retried, not skipped.
-    while completed_rounds and completed_rounds[-1].get('processing_errors'):
+    while completed_rounds and completed_rounds[-1].get('blocking_errors', completed_rounds[-1].get('processing_errors')):
         completed_rounds.pop()
     start_round = len(completed_rounds) + 1
     prior_conflicts = copy.deepcopy((resumed or data.get('iteration') or {}).get('assignments', []))
-    state = {'iteration_scope':scope, 'status':'running','max_rounds':rounds,'rounds':completed_rounds, 'assignments':copy.deepcopy(prior_conflicts) if resumed else [], 'converged':False,
+    automatic=bool(data.get('parameters',{}).get('iteration_auto'))
+    from intent_engine.infrastructure.iteration_stop import cluster_counts,counts_stable
+    state = {'automatic':automatic,'convergence_basis':'singleton_and_noise_counts' if automatic else 'hierarchy_and_memberships','iteration_scope':scope, 'status':'running','max_rounds':rounds,'rounds':completed_rounds, 'assignments':copy.deepcopy(prior_conflicts) if resumed else [], 'converged':False,
              'stop_reason':None, 'mode':'bertopic_hierarchy', 'initial_taxonomy':copy.deepcopy(data['candidate_taxonomy'])}
     data['iteration'] = state
     local = copy.deepcopy(cfg)
@@ -133,6 +135,9 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
     pipeline = IterativePipeline(local, progress=reporter)
     frame = pd.DataFrame([{'_atomic_text':a['text'], '_atomic_slots':a.get('slots', {}), '_atomic_semantics':{'text':a['text'],'object':a.get('object',''),'action':a.get('action','')}} for a in atoms])
     options = data['parameters']
+    from intent_engine.atomic.topic_mode import apply_topic_mode,flatten_existing
+    apply_topic_mode(options,cfg)
+    if options['flat_topics']:flatten_existing(data)
     from intent_engine.atomic.leaf_merge import merge_leaves
     reporter.start('iteration_prepare')
     # Revisit legacy singleton vetoes even when matching does not change memberships.
@@ -185,7 +190,7 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
         retained, selected = {}, []
         for index, atom in enumerate(atoms):
             prior = previous[index] if previous is not None else None
-            reused = reusable_assignment(atom, prior, data, taxonomy) if scope=='unresolved_only' else None
+            reused = reusable_assignment(atom, prior, data, taxonomy) if scope=='unresolved_only' and not (prior or {}).get('model_error') else None
             if reused is not None:
                 retained[index] = reused
             else:
@@ -196,7 +201,24 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
         if selected:
             results = pipeline.classify_dataframe(frame.iloc[selected].reset_index(drop=True),taxonomy,number)
             fresh = assignments([atoms[i] for i in selected], results, taxonomy.version, digest)
+        task_ids = {task.task_id for task in taxonomy.tasks}
+        failed = 0
         for index, record in zip(selected,fresh):
+            error = record['error']
+            if record['status'] == 'known' and record['task_id'] not in task_ids:
+                error = error or '匹配返回了当前体系之外的任务'
+            if error:
+                failed += 1
+                data['errors'].append({'stage': 'iterate', 'intent_id': atoms[index]['intent_id'], 'error': error})
+                prior = previous[index] if previous is not None else None
+                fallback = reusable_assignment(atoms[index], prior, data, taxonomy)
+                if fallback and fallback['status'] == 'known':
+                    record = fallback
+                else:
+                    record.update(status='processing_error', task_id=None, error=error)
+                record['model_error'] = error
+                retained[index] = record
+                continue
             record['assignment_source'] = 'llm_classification'
             record['assignment_basis'] = 'llm_classification'
             task = next((t for t in taxonomy.tasks if t.task_id==record.get('task_id')),None)
@@ -205,7 +227,7 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
             retained[index] = record
         step = reporter.state.snapshot().get('current') or {}
         reporter.update(len(selected),len(selected),cached=step.get('cached',0),
-                        failed=sum(bool(record.get('error')) for record in fresh))
+                        failed=failed)
         return [retained[i] for i in range(len(atoms))], selected
     try:
         if completed_rounds:
@@ -223,11 +245,9 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
             error_count_before = len(data["errors"])
             reporter.start(f'round_{number}:classify')
             current, selected = classify(before, number)
-            active = set(selected)
+            active = {i for i in selected if not current[i].get('model_error')}
             state['assignments'] = current
             latest_fingerprint = fingerprint(before)
-            if any(r['error'] for r in current):
-                raise ValueError('原子意图匹配请求失败，保留上一版主题树，不视为已收敛')
             reporter.start(f'round_{number}:cluster')
             # Vector discovery changes only memberships; no independent domain ADD/MERGE.
             task_clusters = {task:int(topic) for topic,task in data['cluster_task_ids'].items()}
@@ -278,7 +298,7 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
                 reporter.start(f'round_{number}:review')
                 def audit(c):
                     decision = pipeline.llm.chat_json(REVIEW_PROMPT,
-                        json.dumps(consistency_review_payload(c),ensure_ascii=False),schema=ClusterReview,max_tokens=2400)
+                        json.dumps(consistency_review_payload(c, data),ensure_ascii=False),schema=ClusterReview,max_tokens=2400)
                     check_evidence(decision,set(c['reviewed_ids']))
                     return decision.model_dump()
                 needs_review = []
@@ -323,7 +343,15 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
                 review_hierarchy(data,pipeline.llm,workers,reporter,lambda:None,previous_hierarchy=hierarchy_before,cfg=cfg)
                 after = Taxonomy.model_validate(data['candidate_taxonomy'])
                 if not after.tasks:
-                    raise ValueError('重建后没有审核通过的叶子主题，保留上一版层级')
+                    new_errors = data['errors'][error_count_before:]
+                    data.clear()
+                    data.update(copy.deepcopy(committed))
+                    data['errors'].extend(new_errors)
+                    data['errors'].append({'stage': 'iterate', 'error': '本轮重建未保留可用叶子，已回退到上一轮'})
+                    atoms = [atom for atom in data['intents'] if atom['status'] == 'valid']
+                    current = initial_membership_assignments(atoms, data, before)
+                    state['assignments'] = current
+                    after = before
             else:
                 reporter.skip([f'round_{number}:review',f'round_{number}:domains'])
                 after = before
@@ -337,28 +365,40 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
                 after.version = before.version+1
                 data['candidate_taxonomy'] = after.model_dump()
             changed = signature!=hierarchy_signature(data)
-            processing_errors = len(data['errors'])-error_count_before + int(number==1 and preparation['status'] in {'failed','completed_with_errors'})
+            round_errors = data['errors'][error_count_before:]
+            processing_errors = len(round_errors) + int(
+                number == 1 and preparation['status'] in {'failed', 'completed_with_errors'}
+            )
+            # Rejected proposals leave their original memberships intact.
+            blocking_errors = sum(
+                error.get('stage') not in {'review', 'iterate', 'domains', 'leaf_merge'}
+                for error in round_errors
+            )
             changes = taxonomy_changes(before,after)
             if changed:
                 changes.append({'kind':'hierarchy','id':'topic_hierarchy','operation':'REBUILD',
                     'before':{'root_ids':hierarchy_before['root_ids'],'nodes':len(hierarchy_before['nodes'])},
                     'after':{'root_ids':data['topic_hierarchy']['root_ids'],'nodes':len(data['topic_hierarchy']['nodes'])}})
-            state['rounds'].append({'round':number,'changed':changed,'taxonomy_before':before.model_dump(),
+            metrics=cluster_counts(atoms)
+            previous_metrics=(state['rounds'][-1].get('cluster_counts') or cluster_counts(state['rounds'][-1].get('memberships',[]))) if state['rounds'] else None
+            state['rounds'].append({'cluster_counts':metrics,'previous_cluster_counts':previous_metrics,'round':number,'changed':changed,'taxonomy_before':before.model_dump(),
                 'taxonomy_after':after.model_dump(),'changes':changes,
                 'hierarchy_before':hierarchy_before,'hierarchy_after':copy.deepcopy(data['topic_hierarchy']),
                 'memberships':[{k:a.get(k) for k in ('intent_id','cluster_id','topic_path','topic_pending')} for a in atoms],
                 'classification_scope':scope,'classified_count':len(selected),'reused_count':len(atoms)-len(selected),
                 'assignments':current,'task_count_before':len(before.tasks),'task_count_after':len(after.tasks),
-                'leaf_merge':copy.deepcopy(merge_result),'processing_errors':processing_errors,'status_counts':{key:sum(r['status']==key for r in current) for key in ('known','discovery','ambiguous')},
+                'leaf_merge':copy.deepcopy(merge_result),'processing_errors':processing_errors,'blocking_errors':blocking_errors,'status_counts':{key:sum(r['status']==key for r in current) for key in ('known','discovery','ambiguous')},
                 'token_usage':usage_since(usage_before),'review_reuse':copy.deepcopy(data.get('review_reuse')), 'hierarchy_review':copy.deepcopy(data.get('hierarchy_review'))})
-            if processing_errors:
+            if blocking_errors:
                 state.update(stop_reason='processing_errors',converged=False)
-            elif not changed and not merge_result.get('deferred_candidates') and not any(p.get('status')=='deferred_overlap' for p in merge_result.get('pairs',[])):
+            elif automatic and counts_stable(previous_metrics,metrics):
+                state.update(stop_reason='counts_stable',converged=True)
+            elif not processing_errors and not changed and not merge_result.get('deferred_candidates') and not any(p.get('status')=='deferred_overlap' for p in merge_result.get('pairs',[])):
                 state.update(stop_reason='no_changes',converged=True)
             elif changed and hierarchy_signature(data) in seen:
                 state['stop_reason'] = 'cycle_detected'
             elif number==rounds:
-                state['stop_reason'] = 'max_rounds'
+                state['stop_reason'] = 'auto_limit' if automatic else 'max_rounds'
             seen.add(hierarchy_signature(data))
             previous = copy.deepcopy(current)
             persist()
@@ -374,14 +414,18 @@ def run_hierarchy_iterations(cfg, data, rounds, workers, reporter, persist, vect
             state['validation_classified_count'] = len(validation_selected)
             state['validation_reused_count'] = len(atoms)-len(validation_selected)
         state['validated_taxonomy_version'] = final.version if state['assignments'] and all(
-            r['taxonomy_fingerprint']==fingerprint(final) and not r['error'] for r in state['assignments']) else None
+            r['taxonomy_fingerprint']==fingerprint(final) for r in state['assignments']) else None
         state['validation_mode'] = 'incremental_leaf_check' if scope=='unresolved_only' else 'full_classification'
         state['validation_token_usage'] = usage_since(validation_before)
         if state['validated_taxonomy_version'] is None:
             raise ValueError('最终叶子主题归属未通过验证')
-        state['status'] = 'completed_with_errors' if state['stop_reason'] in {'cycle_detected','processing_errors'} else 'completed'
+        state['validation_failed_count'] = sum(bool(record.get('error') or record.get('model_error')) for record in state['assignments'])
+        had_errors = state['validation_failed_count'] or any(record.get('processing_errors') for record in state['rounds'])
+        state['status'] = 'completed_with_errors' if had_errors or state['stop_reason'] in {'cycle_detected','processing_errors'} else 'completed'
         state['stop_message'] = {'no_changes':'叶子归属与层级未变化，停止迭代',
             'cycle_detected':'层级出现循环，保留当前结果待确认',
+            'counts_stable':'单成员簇数量与噪声意图数量均与上一轮相同，自动停止（不代表分类准确率已验证）',
+            'auto_limit':'达到自动迭代安全上限，数量尚未确认稳定',
             'processing_errors':'本轮审核或层级重建有错误，保留可用分支待复核，不视为收敛', 'max_rounds':'达到最大轮数，尚未确认收敛'}[state['stop_reason']]
     except Exception as exc:
         data.clear()

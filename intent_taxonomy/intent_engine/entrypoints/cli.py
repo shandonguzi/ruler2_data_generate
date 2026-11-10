@@ -6,6 +6,7 @@ from pathlib import Path
 
 from intent_engine.settings.config import load_config
 from intent_engine.paths import PROJECT_ROOT
+from intent_engine.infrastructure.iteration_stop import parse_rounds
 
 
 def cmd_discover(args):
@@ -46,7 +47,7 @@ def build_parser():
     discovery_source.add_argument("--input", default=None)
     discovery_source.add_argument("--source", default=None, help="existing workflow intermediate JSON")
     discover.add_argument("--stage", choices=["all", "extract", "cluster", "review", "pairs", "domains", "iterate", "export"], default="all")
-    discover.add_argument("--iteration-rounds", type=int, default=None, help="candidate taxonomy iterations (0 disables; default 3)")
+    discover.add_argument("--iteration-rounds", type=parse_rounds, default=None, help="iterations: auto or 0–10 (0 disables)")
     discover.add_argument("--resume-state", action="store_true", help="restore persisted iteration rounds")
     discover.add_argument("--resume-trace", default=None, help="reuse successful requests from a previous task")
     discover.add_argument("--iteration-scope", choices=["all", "unresolved_only", "noise_only"], default=None, help="from first round: all intents or unresolved memberships only")

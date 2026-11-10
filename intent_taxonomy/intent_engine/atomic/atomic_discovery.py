@@ -337,7 +337,7 @@ def cluster_atomic_texts(texts, embeddings, cfg):
         raise ValueError("层级聚类 linkage 仅支持 average、complete 或 single（余弦距离）")
     if len(keywords) < 2:
         tree = build_topic_tree(labels, keywords, linkage=linkage)
-    elif not cfg.get("hierarchical_topics", True):
+    elif cfg.get("flat_topics",False) or not cfg.get("hierarchical_topics", True):
         tree = build_topic_tree(labels, keywords, status="disabled", message="本次未启用层级主题合并", linkage=linkage)
     else:
         try:
@@ -369,12 +369,14 @@ def review_sample(members, vectors, limit):
     return [{k: m[k] for k in ("intent_id", "text", "span", "raw_text")} for m in selected]
 
 
-def consistency_review_payload(cluster):
+def consistency_review_payload(cluster, data=None):
+    from intent_engine.atomic.topic_context import topic_context
     """Project audit evidence for the model; keep full samples in the artifact."""
     metadata = ("cluster_id", "parent_cluster_id", "refinement_round", "sample_count",
                 "unique_text_count", "keywords", "review_scope")
     return {
         **{key: cluster[key] for key in metadata if key in cluster},
+        "topic_context": topic_context(data, cluster["cluster_id"], cluster.get("parent_cluster_id")),
         "members": [{"intent_id": sample["intent_id"], "text": sample["text"]}
                     for sample in cluster["review_samples"]],
     }
@@ -542,10 +544,14 @@ def run_atomic_discovery(cfg: dict, input_path: str | None = None, *, text_colum
     if settings:
         check_dependencies()
     options = dict(cfg.get("atomic_discovery", {}))
+    from intent_engine.atomic.topic_mode import apply_topic_mode
+    apply_topic_mode(options,cfg)
     from intent_engine.infrastructure.iteration_scope import normalize_iteration_scope
     options['iteration_scope'] = normalize_iteration_scope(iteration_scope or options.get('iteration_scope','unresolved_only'))
-    iteration_rounds = int(options.get("iteration_rounds", 0) if iteration_rounds is None else iteration_rounds)
-    if not 0 <= iteration_rounds <= 10 or (stage == "iterate" and not iteration_rounds):
+    from intent_engine.infrastructure.iteration_stop import resolve_rounds
+    iteration_rounds,automatic=resolve_rounds(options.get("iteration_rounds",0) if iteration_rounds is None else iteration_rounds,options)
+    options.update(iteration_auto=automatic,iteration_rounds=-1 if automatic else iteration_rounds)
+    if stage == "iterate" and not iteration_rounds:
         raise ValueError("总流程迭代轮数需为 0–10，独立迭代至少 1 轮")
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:8]
     from intent_engine.workflows.workflow_layout import create_workflow_directory
@@ -621,11 +627,11 @@ def run_atomic_discovery(cfg: dict, input_path: str | None = None, *, text_colum
         if key in execute:
             if key == "iterate" and iteration_rounds:
                 from intent_engine.workflows.hierarchy_iteration import hierarchy_iteration_steps
-                progress_steps.extend(hierarchy_iteration_steps(iteration_rounds))
+                progress_steps.extend(hierarchy_iteration_steps(iteration_rounds,options.get('flat_topics',False)))
                 continue
             if key == "cluster":
                 progress_steps.append({"id": "embed", "label": "计算原子意图向量"})
-            progress_steps.append({"id": key, "label": label})
+            progress_steps.append({"id": key, "label": "簇命名与语义审核" if key=="domains" and options.get("flat_topics",False) else label})
             if key == "domains":
                 progress_steps.append({"id":"leaf_merge_initial","label":"初版叶子实例泛化与归并"})
     reporter = ProgressReporter()
@@ -782,7 +788,7 @@ def run_atomic_discovery(cfg: dict, input_path: str | None = None, *, text_colum
             # Workers only return decisions; the coordinator owns snapshot mutations.
             def audit_cluster(payload):
                 samples = payload["review_samples"]
-                decision = llm.chat_json(REVIEW_PROMPT, json.dumps(consistency_review_payload(payload), ensure_ascii=False),
+                decision = llm.chat_json(REVIEW_PROMPT, json.dumps(consistency_review_payload(payload, result), ensure_ascii=False),
                                          schema=ClusterReview, max_tokens=2400)
                 check_evidence(decision, {s["intent_id"] for s in samples})
                 return decision.model_dump()
@@ -837,8 +843,9 @@ def run_atomic_discovery(cfg: dict, input_path: str | None = None, *, text_colum
             reporter.start("pairs")
             clusters = {c["cluster_id"]: c for c in result["clusters"]}
             pairs = result.get("neighbor_pairs", [])
-            def audit_pair(left_samples, right_samples):
-                decision = llm.chat_json(PAIR_PROMPT, json.dumps({"left": left_samples, "right": right_samples}, ensure_ascii=False),
+            def audit_pair(left_samples, right_samples, left_id, right_id):
+                from intent_engine.atomic.topic_context import pair_review_payload
+                decision = llm.chat_json(PAIR_PROMPT, json.dumps(pair_review_payload(result,left_samples,right_samples,left_id,right_id), ensure_ascii=False),
                                          schema=PairReview, max_tokens=1000)
                 if not set(decision.left_evidence_ids) <= {s["intent_id"] for s in left_samples} or not set(decision.right_evidence_ids) <= {s["intent_id"] for s in right_samples}:
                     raise ValueError("跨簇审核引用了未提供的样本")
@@ -848,7 +855,7 @@ def run_atomic_discovery(cfg: dict, input_path: str | None = None, *, text_colum
             pair_results = {}
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 pending = {pool.submit(audit_pair, copy.deepcopy(clusters[left]["review_samples"]),
-                                      copy.deepcopy(clusters[right]["review_samples"])): (index, left, right)
+                                      copy.deepcopy(clusters[right]["review_samples"]), left, right): (index, left, right)
                            for index, (left, right) in enumerate(pairs)}
                 for i, future in enumerate(as_completed(pending), 1):
                     index, left, right = pending[future]

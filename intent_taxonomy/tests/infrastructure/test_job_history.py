@@ -80,3 +80,46 @@ def test_tail_limits_bytes_even_for_a_giant_line(tmp_path):
     path=tmp_path/'logs.jsonl'
     path.write_bytes(json.dumps('x'*100000).encode()+b'\n'+json.dumps('last').encode()+b'\n')
     assert read_log_tail(path,max_bytes=128)==['last']
+
+
+def test_log_file_timing_includes_path_counts_and_failure(tmp_path, capsys):
+    from intent_engine.infrastructure.log_tail import read_log_tail
+    import pytest
+    path=tmp_path/'logs.jsonl'
+    path.write_text('"hello"\ninvalid\n',encoding='utf-8')
+    assert read_log_tail(path)==['hello']
+    output=capsys.readouterr().out
+    assert str(path) in output and '有效行=1' in output and '行数=2' in output
+    assert '读取=' in output and '解析=' in output and '总计=' in output
+    with pytest.raises(FileNotFoundError):
+        read_log_tail(tmp_path/'missing.jsonl')
+    assert '失败' in capsys.readouterr().out
+
+
+def test_pause_and_continue_control_worker_checkpoint(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from intent_engine.infrastructure import job_pause
+
+    manager = JobManager(tmp_path)
+    job = Job(job_id='123456abcdef', job_type='workflow', command=[], status='running')
+    job.process = SimpleNamespace(poll=lambda: None)
+    manager.jobs[job.job_id] = job
+    manager._save(job)
+
+    marker = tmp_path / job.job_id / 'pause'
+    monkeypatch.setenv('INTENT_JOB_PAUSE_FILE', str(marker))
+    assert manager.set_paused(job.job_id, True).status == 'paused'
+    assert marker.is_file()
+
+    checkpoints = []
+
+    def resume_at_checkpoint(_):
+        checkpoints.append(job.status)
+        manager.set_paused(job.job_id, False)
+
+    monkeypatch.setattr(job_pause.time, 'sleep', resume_at_checkpoint)
+    job_pause.wait_if_paused()
+    assert checkpoints == ['paused']
+    assert not marker.exists()
+    assert job.status == 'running'

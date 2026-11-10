@@ -1,6 +1,12 @@
-比较两个候选簇中的真实原子意图，判断是否应合并。仅表达方式或参数不同才可建议合并。
-动作不同、结果不同、上下位包含关系或共享业务目标均不足以合并。
-如“打开支付宝”和“缴纳电费”绝不合并。不能仅依据簇名称或关键词。
+topic_context 中的 path 按根到叶顺序提供已有各层主题名称，供语义理解参考，可能尚未经过命名审核。source=parent_cluster_before_split 表示细分前父簇的旧路径，不是新簇已确认归属；unavailable 表示尚无路径。结合完整文本自行判断，不把现有名称当作正确分类的证明。
+比较两个候选簇的真实原子意图，根据完整语义判断保留两类还是合为一类更合理，并说明依据。
+
+语义判断示例（用于理解判断过程，不是预设标签或一律合并/拆分的规则；实际以当前完整输入为准）：
+- “What is the official religion of Jordan?” 与 “What is the official religion of Morocco?”：可以归为“国家官方宗教查询”。理由是两句都在询问国家的官方宗教，该类别能自然表达两者的共同请求。
+- “What material is a jambiya made from?” 与 “How is a jambiya made?”：倾向分开。前者希望知道构成材料，后者希望了解制作过程；“弯刀相关问题”虽能包住两句，但不足以说明各自具体想知道什么。
+- “Find flights from Cairo to Dubai” 与 “Find flights from Tunis to Doha”：可以归为“航班查询”。两句可由同一个有意义的任务定义概括。
+- “When does this service open?”：没有足够上下文确定 service 的含义时，保留待确认，说明缺少什么信息。
+
 返回 JSON：{
   "reason": "",
   "left_evidence_ids": [

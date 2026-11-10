@@ -1,0 +1,524 @@
+{
+  "units": "Unicode字符数；user JSON不含system模板，非Token",
+  "historical": {
+    "20261104_222248_4b638fba": {
+      "atomic_discovery.EXTRACT_PROMPT": {
+        "requests": 2082,
+        "max_chars": 1106,
+        "p95_chars": 170,
+        "mean_chars": 110,
+        "max_request": {
+          "chars": 1106,
+          "system_chars": 1477,
+          "request_id": "9e6e95fecb9343cf8b40fe94aecc88e3",
+          "fields": {
+            "user_text": 147,
+            "previous": 848,
+            "validation_feedback": 57
+          }
+        }
+      },
+      "atomic_discovery.REVIEW_PROMPT": {
+        "requests": 1770,
+        "max_chars": 1688,
+        "p95_chars": 1416,
+        "mean_chars": 886,
+        "max_request": {
+          "chars": 1688,
+          "system_chars": 981,
+          "request_id": "c26802e9adb4406ba264e371cfb831af",
+          "fields": {
+            "cluster_id": 3,
+            "parent_cluster_id": 3,
+            "refinement_round": 1,
+            "sample_count": 1,
+            "unique_text_count": 1,
+            "keywords": 126,
+            "review_scope": 9,
+            "members": 1397
+          }
+        }
+      },
+      "atomic_discovery.PAIR_PROMPT": {
+        "requests": 784,
+        "max_chars": 6422,
+        "p95_chars": 5054,
+        "mean_chars": 2926,
+        "max_request": {
+          "chars": 6422,
+          "system_chars": 361,
+          "request_id": "b3e23eceec644003981244c09f9ed3f7",
+          "fields": {
+            "left": 3511,
+            "right": 2890
+          }
+        }
+      },
+      "hierarchy_review.LEAF_PROMPT": {
+        "requests": 915,
+        "max_chars": 1457,
+        "p95_chars": 1274,
+        "mean_chars": 701,
+        "max_request": {
+          "chars": 1457,
+          "system_chars": 1032,
+          "request_id": "c957eb16b1f74fb0bb568dc9926e9cc4",
+          "fields": {
+            "node_id": 10,
+            "kind": 6,
+            "review": 297,
+            "members": 1096
+          }
+        }
+      },
+      "hierarchy_review.NODE_PROMPT": {
+        "requests": 906,
+        "max_chars": 2495,
+        "p95_chars": 938,
+        "mean_chars": 594,
+        "max_request": {
+          "chars": 2495,
+          "system_chars": 611,
+          "request_id": "2a7ab8f3ddd44e9db0aecbd0aa3d5624",
+          "fields": {
+            "node_id": 12,
+            "kind": 8,
+            "children": 2438
+          }
+        }
+      },
+      "classifier.PAIRWISE_SYSTEM": {
+        "requests": 20058,
+        "max_chars": 1532,
+        "p95_chars": 1249,
+        "mean_chars": 946,
+        "max_request": {
+          "chars": 1532,
+          "system_chars": 513,
+          "request_id": "f6b868460ee449d9884a6354f6ca61f3",
+          "fields": {
+            "intent_text": 184,
+            "atomic_intent": 409,
+            "candidate_task": 883
+          }
+        }
+      },
+      "classifier.FINAL_MATCH_SYSTEM": {
+        "requests": 3827,
+        "max_chars": 5126,
+        "p95_chars": 2952,
+        "mean_chars": 1684,
+        "max_request": {
+          "chars": 5126,
+          "system_chars": 735,
+          "request_id": "18b0164ffefc49b1af1943f7a6686fd1",
+          "fields": {
+            "intent_text": 150,
+            "atomic_intent": 274,
+            "shortlist": 4651
+          }
+        }
+      },
+      "cluster_refinement.SPLIT_PROMPT": {
+        "requests": 58,
+        "max_chars": 1263,
+        "p95_chars": 1172,
+        "mean_chars": 858,
+        "max_request": {
+          "chars": 1263,
+          "system_chars": 501,
+          "request_id": "59157efec3b84103b9721e76f1190b67",
+          "fields": {
+            "cluster_id": 3,
+            "parent_cluster_id": 4,
+            "refinement_round": 1,
+            "members": 542,
+            "review": 627
+          }
+        }
+      }
+    },
+    "20261105_195042_057d470e": {
+      "classifier.PAIRWISE_SYSTEM": {
+        "requests": 7338,
+        "max_chars": 1524,
+        "p95_chars": 1235,
+        "mean_chars": 908,
+        "max_request": {
+          "chars": 1524,
+          "system_chars": 513,
+          "request_id": "9d6664bfb4254f7d8b801a6f887989ce",
+          "fields": {
+            "intent_text": 197,
+            "atomic_intent": 307,
+            "candidate_task": 964
+          }
+        }
+      },
+      "classifier.FINAL_MATCH_SYSTEM": {
+        "requests": 1311,
+        "max_chars": 4923,
+        "p95_chars": 3027,
+        "mean_chars": 1688,
+        "max_request": {
+          "chars": 4923,
+          "system_chars": 735,
+          "request_id": "a0a45d4034b94ec2a69d9aadf8ff0b8a",
+          "fields": {
+            "intent_text": 151,
+            "atomic_intent": 236,
+            "shortlist": 4485
+          }
+        }
+      },
+      "atomic_discovery.REVIEW_PROMPT": {
+        "requests": 562,
+        "max_chars": 1642,
+        "p95_chars": 1418,
+        "mean_chars": 890,
+        "max_request": {
+          "chars": 1642,
+          "system_chars": 981,
+          "request_id": "6e9c4dfd0f2c4036ab04cad1bfa8a461",
+          "fields": {
+            "cluster_id": 3,
+            "sample_count": 1,
+            "unique_text_count": 1,
+            "keywords": 160,
+            "review_scope": 9,
+            "members": 1366
+          }
+        }
+      },
+      "cluster_refinement.SPLIT_PROMPT": {
+        "requests": 85,
+        "max_chars": 1542,
+        "p95_chars": 1232,
+        "mean_chars": 890,
+        "max_request": {
+          "chars": 1542,
+          "system_chars": 501,
+          "request_id": "dcb805da7639412586efa3596006d72a",
+          "fields": {
+            "cluster_id": 3,
+            "parent_cluster_id": 4,
+            "refinement_round": 1,
+            "members": 756,
+            "review": 692
+          }
+        }
+      },
+      "hierarchy_review.NODE_PROMPT": {
+        "requests": 1530,
+        "max_chars": 4032,
+        "p95_chars": 1532,
+        "mean_chars": 717,
+        "max_request": {
+          "chars": 4032,
+          "system_chars": 611,
+          "request_id": "929648f805174fb28403422c5930cdf6",
+          "fields": {
+            "node_id": 12,
+            "kind": 8,
+            "children": 3975
+          }
+        }
+      },
+      "hierarchy_review.LEAF_PROMPT": {
+        "requests": 443,
+        "max_chars": 1510,
+        "p95_chars": 1212,
+        "mean_chars": 582,
+        "max_request": {
+          "chars": 1510,
+          "system_chars": 1032,
+          "request_id": "efb59ffcbcab446caa6080dece4ab391",
+          "fields": {
+            "node_id": 11,
+            "kind": 6,
+            "review": 274,
+            "members": 1171
+          }
+        }
+      }
+    }
+  },
+  "real_fixtures": [
+    {
+      "id": "atomic_discovery.EXTRACT_PROMPT:real_multi",
+      "chars": 112,
+      "fields": {
+        "user_text": 97
+      }
+    },
+    {
+      "id": "atomic_discovery.EXTRACT_PROMPT:real_single",
+      "chars": 93,
+      "fields": {
+        "user_text": 78
+      }
+    },
+    {
+      "id": "atomic_discovery.PAIR_PROMPT:real_keep",
+      "chars": 4456,
+      "fields": {
+        "left": 2947,
+        "right": 1488
+      }
+    },
+    {
+      "id": "atomic_discovery.PAIR_PROMPT:real_merge",
+      "chars": 3026,
+      "fields": {
+        "left": 2263,
+        "right": 742
+      }
+    },
+    {
+      "id": "atomic_discovery.REVIEW_PROMPT:real_consistent",
+      "chars": 1437,
+      "fields": {
+        "cluster_id": 3,
+        "sample_count": 1,
+        "unique_text_count": 1,
+        "keywords": 148,
+        "review_scope": 18,
+        "members": 1164
+      }
+    },
+    {
+      "id": "atomic_discovery.REVIEW_PROMPT:real_mixed",
+      "chars": 1067,
+      "fields": {
+        "cluster_id": 3,
+        "sample_count": 1,
+        "unique_text_count": 1,
+        "keywords": 186,
+        "review_scope": 18,
+        "members": 756
+      }
+    },
+    {
+      "id": "classifier.ATOMIC_CLASSIFY_SYSTEM:real_material",
+      "chars": 94,
+      "fields": {
+        "atomic_text": 64,
+        "slots": 2
+      }
+    },
+    {
+      "id": "classifier.ATOMIC_CLASSIFY_SYSTEM:real_singleton",
+      "chars": 123,
+      "fields": {
+        "atomic_text": 93,
+        "slots": 2
+      }
+    },
+    {
+      "id": "classifier.FINAL_MATCH_SYSTEM:real_ambiguous",
+      "chars": 2187,
+      "fields": {
+        "intent_text": 59,
+        "atomic_intent": 148,
+        "shortlist": 1929
+      }
+    },
+    {
+      "id": "classifier.FINAL_MATCH_SYSTEM:real_known",
+      "chars": 1079,
+      "fields": {
+        "intent_text": 77,
+        "atomic_intent": 168,
+        "shortlist": 783
+      }
+    },
+    {
+      "id": "classifier.PAIRWISE_SYSTEM:real_False",
+      "chars": 722,
+      "fields": {
+        "intent_text": 64,
+        "atomic_intent": 146,
+        "candidate_task": 456
+      }
+    },
+    {
+      "id": "classifier.PAIRWISE_SYSTEM:real_True",
+      "chars": 832,
+      "fields": {
+        "intent_text": 80,
+        "atomic_intent": 168,
+        "candidate_task": 528
+      }
+    },
+    {
+      "id": "cluster_refinement.SPLIT_PROMPT:real_small_cluster",
+      "chars": 1542,
+      "fields": {
+        "cluster_id": 3,
+        "parent_cluster_id": 4,
+        "refinement_round": 1,
+        "members": 756,
+        "review": 692
+      }
+    },
+    {
+      "id": "cluster_refinement.SPLIT_PROMPT:real_two_members",
+      "chars": 714,
+      "fields": {
+        "cluster_id": 4,
+        "parent_cluster_id": 3,
+        "refinement_round": 1,
+        "members": 217,
+        "review": 403
+      }
+    },
+    {
+      "id": "hierarchy_review.LEAF_PROMPT:real_False",
+      "chars": 506,
+      "fields": {
+        "node_id": 12,
+        "kind": 6,
+        "review": 219,
+        "members": 221
+      }
+    },
+    {
+      "id": "hierarchy_review.LEAF_PROMPT:real_True",
+      "chars": 1294,
+      "fields": {
+        "node_id": 12,
+        "kind": 6,
+        "review": 292,
+        "members": 936
+      }
+    },
+    {
+      "id": "hierarchy_review.NODE_PROMPT:real_group",
+      "chars": 563,
+      "fields": {
+        "node_id": 12,
+        "kind": 8,
+        "children": 506
+      }
+    },
+    {
+      "id": "hierarchy_review.NODE_PROMPT:real_separate",
+      "chars": 503,
+      "fields": {
+        "node_id": 12,
+        "kind": 8,
+        "children": 446
+      }
+    },
+    {
+      "id": "leaf_merge.MERGE_PROMPT:real_diwaniya",
+      "chars": 114350,
+      "fields": {
+        "left": 451,
+        "right": 400,
+        "hierarchy_context": 80707,
+        "existing_parents": 32704,
+        "conflict_texts": 2
+      }
+    },
+    {
+      "id": "leaf_merge.MERGE_PROMPT:real_religions",
+      "chars": 114929,
+      "fields": {
+        "left": 924,
+        "right": 506,
+        "hierarchy_context": 80707,
+        "existing_parents": 32704,
+        "conflict_texts": 2
+      }
+    },
+    {
+      "id": "leaf_merge.VERIFY_PROMPT:real_diwaniya",
+      "chars": 81423,
+      "fields": {
+        "definition": 203,
+        "left": 78,
+        "right": 55,
+        "hierarchy_context": 80707,
+        "left_topic_context": 138,
+        "right_topic_context": 133
+      }
+    },
+    {
+      "id": "leaf_merge.VERIFY_PROMPT:real_religions",
+      "chars": 81994,
+      "fields": {
+        "definition": 197,
+        "left": 517,
+        "right": 215,
+        "hierarchy_context": 80707,
+        "left_topic_context": 170,
+        "right_topic_context": 79
+      }
+    },
+    {
+      "id": "parent_regroup.PROPOSE:real_diwaniya",
+      "chars": 1361,
+      "fields": {
+        "branch": 142,
+        "existing_parents": 1167,
+        "peer_roots": 2
+      }
+    },
+    {
+      "id": "parent_regroup.PROPOSE:real_religion",
+      "chars": 1327,
+      "fields": {
+        "branch": 145,
+        "existing_parents": 1130,
+        "peer_roots": 2
+      }
+    },
+    {
+      "id": "parent_regroup.VERIFY:real_diwaniya",
+      "chars": 1494,
+      "fields": {
+        "input": 1361,
+        "proposal": 108
+      }
+    },
+    {
+      "id": "parent_regroup.VERIFY:real_religion",
+      "chars": 1460,
+      "fields": {
+        "input": 1327,
+        "proposal": 108
+      }
+    },
+    {
+      "id": "scene_mapping.MAP_PROMPT:real_material",
+      "chars": 5181,
+      "fields": {
+        "atomic_intent": 64,
+        "scenes": 5086
+      }
+    },
+    {
+      "id": "scene_mapping.MAP_PROMPT:real_singleton",
+      "chars": 5210,
+      "fields": {
+        "atomic_intent": 93,
+        "scenes": 5086
+      }
+    },
+    {
+      "id": "scene_mapping.NAME_PROMPT:real_material",
+      "chars": 83,
+      "fields": {
+        "atomic_intent": 64
+      }
+    },
+    {
+      "id": "scene_mapping.NAME_PROMPT:real_singleton",
+      "chars": 112,
+      "fields": {
+        "atomic_intent": 93
+      }
+    }
+  ]
+}

@@ -128,6 +128,8 @@ def usage_since(before: dict) -> dict:
 
 
 def tracked_request(kind: str, cfg: dict, request: Callable, **kwargs):
+    from intent_engine.infrastructure.job_pause import wait_if_paused
+    wait_if_paused()
     event = {"kind": kind, "model": cfg["model"], "base_url": cfg.get("base_url", "")}
     trace = None
     if kind == "embedding" and os.environ.get("INTENT_PROGRESS") == "1":

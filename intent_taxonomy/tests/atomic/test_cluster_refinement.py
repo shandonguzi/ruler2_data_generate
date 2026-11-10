@@ -58,7 +58,7 @@ def test_local_split_reaudits_all_children_expands_duplicates_and_replaces_paths
     assert all(c['review']['verdict'] == 'consistent' for c in data['clusters'])
     assert data['adjustments_applied'] is True
     assert data['cluster_refinement']['history'][0]['parent']['cluster_id'] == 0
-    assert data['cluster_refinement']['history'][0]['method'] == 'local_bertopic'
+    assert data['cluster_refinement']['history'][0]['method'] == 'llm_full_partition'
     assert len(data['neighbor_pairs']) == 1
     assert data['rows'][0]['topic_paths'][0]['node_ids'] == ['topic:1']
     for snapshot in snapshots:
@@ -87,6 +87,7 @@ def test_repeated_mixed_stops_at_branch_limit_and_keeps_raw_sentences(monkeypatc
     monkeypatch.setattr(refinement, 'cluster_atomic_texts', lambda texts,vectors,cfg: ([0 if i < len(texts)//2 else 1 for i in range(len(texts))], {}))
     class Mixed(LLM):
         def chat_json(self, system, user, schema, **kwargs):
+            if schema is refinement.FullPartition:return super().chat_json(system,user,schema,**kwargs)
             ids = [m['intent_id'] for m in json.loads(user)['members']]
             return schema(verdict='mixed', reason='不同动作',
                           split_groups=[{'label':'A','evidence_ids':ids[:1]}, {'label':'B','evidence_ids':ids[1:]}])
@@ -107,17 +108,19 @@ def test_large_unseparated_cluster_never_assigns_from_sample_suggestions(monkeyp
     assert data['cluster_refinement']['history'][0]['applied'] is False
 
 
-def test_noise_and_failed_child_review_remain_pending(monkeypatch):
+def test_failed_semantic_review_preserves_original_cluster_pending(monkeypatch):
     monkeypatch.setattr(refinement, 'cluster_atomic_texts', lambda *args: ([0,0,1,-1], {}))
     class Failing(LLM):
         def chat_json(self, *args, **kwargs):
             raise RuntimeError('offline')
     data = dataset()
     run(data, monkeypatch, Failing())
-    assert data['intents'][3]['cluster_id'] == -1
+    assert all(a['cluster_id']==0 for a in data['intents'])
+    assert data['clusters'][0]['refinement_stop']=='no_reliable_split'
     assert data['intents'][3]['topic_pending'] is True
     assert all(a['topic_pending'] for a in data['intents'])
-    assert len(data['errors']) == 2
+    assert not data['errors']
+    assert data['cluster_refinement']['history'][0]['errors']
 
 
 def test_stop_words_filter_topic_features_without_removing_actions_or_negation():
@@ -182,3 +185,23 @@ def test_singleton_skip_requires_matching_semantic_evidence():
     assert not review_eligible({'unique_text_count':1,'review':review.model_dump()})
     assert singleton_review(dataset()['intents'][:2],[]) is None
     assert singleton_review(members,None) is None  # Initial discovery keeps existing behavior.
+
+
+def test_model_can_keep_even_when_vector_split_proposes_children(monkeypatch):
+    monkeypatch.setattr(refinement,'cluster_atomic_texts',lambda *a:([0,0,1,1],{}))
+    data=dataset();before=[a['cluster_id'] for a in data['intents']]
+    class Keep:
+        def chat_json(self,system,user,schema,**kwargs):
+            payload=json.loads(user)
+            assert schema is refinement.FullPartition and len(payload['candidate_groups'])==2
+            return schema(reason='完整语义支持同类',object='账单',action='处理',
+                groups=[{'label':'账单处理','evidence_ids':[m['intent_id'] for m in payload['members']]}],decision='keep')
+    run(data,monkeypatch,llm=Keep())
+    assert [a['cluster_id'] for a in data['intents']]==before
+    assert len(data['clusters'])==1 and data['clusters'][0]['review']['verdict']=='consistent'
+    assert data['clusters'][0]['refinement_stop']=='semantic_keep'
+
+
+def test_keep_cannot_hide_omitted_or_uncertain_members():
+    partition=refinement.FullPartition(object='账单',action='查询',groups=[{'label':'账单','evidence_ids':['a']}],decision='keep')
+    with pytest.raises(ValueError):refinement.validate_partition(partition,[{'intent_id':'a'},{'intent_id':'b'}])

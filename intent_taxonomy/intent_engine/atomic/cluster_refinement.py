@@ -1,19 +1,25 @@
 """Bounded local refinement; sampled review evidence never assigns unseen members."""
 from __future__ import annotations
+from intent_engine.atomic.topic_context import topic_context
 
 import copy
 import json
 from collections import defaultdict
 
 from pydantic import Field
+from typing import Literal
 
 from intent_engine.atomic.atomic_discovery import (StrictModel, SplitGroup, ClusterReview, REVIEW_PROMPT,
                                check_evidence, review_sample, cluster_atomic_texts, neighbor_pairs, review_eligible, consistency_review_payload)
 
 
 class FullPartition(StrictModel):
-    groups: list[SplitGroup] = Field(min_length=2)
+    reason: str = ''
+    object: str = ''
+    action: str = ''
+    groups: list[SplitGroup] = Field(min_length=1)
     uncertain_ids: list[str] = Field(default_factory=list)
+    decision: Literal['keep','split'] = 'split'
 
 
 from intent_engine.settings.prompt_settings import prompt_ref
@@ -23,6 +29,10 @@ SPLIT_PROMPT = prompt_ref("cluster_refinement.SPLIT_PROMPT")
 
 
 def validate_partition(partition, members):
+    if partition.decision=='keep' and (len(partition.groups)!=1 or partition.uncertain_ids or not partition.object.strip() or not partition.action.strip()):
+        raise ValueError('保留原簇需提供统一对象动作、一组完整成员且无待确认项')
+    if partition.decision=='split' and len(partition.groups)<2:
+        raise ValueError('选择拆分时至少需要两个分组')
     ids = [i for group in partition.groups for i in group.evidence_ids] + partition.uncertain_ids
     if len(ids) != len(set(ids)) or set(ids) != {m['intent_id'] for m in members}:
         raise ValueError('拆分必须完整且不重复地覆盖所有真实样本')
@@ -53,7 +63,7 @@ def rebuild_hierarchy(texts, vectors, labels, options):
                 for label in set(mapped) if label >= 0}
     method = options.get('hierarchy_linkage', 'average')
     merges = []
-    if len(keywords) > 1 and options.get('hierarchical_topics', True):
+    if len(keywords) > 1 and options.get('hierarchical_topics', True) and not options.get('flat_topics',False):
         table = model.hierarchical_topics(texts, use_ctfidf=True,
             linkage_function=lambda d: linkage(d, method=method, optimal_ordering=True))
         parent_map = {int(row.Parent_ID): max(labels) + 1 + i for i, row in enumerate(table.itertuples())}
@@ -63,7 +73,7 @@ def rebuild_hierarchy(texts, vectors, labels, options):
                 child = int(row[key])
                 row[key] = back[child] if child in back and child >= 0 else parent_map[child]
             merges.append(row)
-    status = 'disabled' if len(keywords) > 1 and not options.get('hierarchical_topics', True) else None
+    status = 'disabled' if len(keywords) > 1 and (not options.get('hierarchical_topics', True) or options.get('flat_topics',False)) else None
     return keywords, build_topic_tree(labels, keywords, merges, status=status, linkage=method)
 
 
@@ -123,19 +133,30 @@ def refine_clusters(data, vectors, options, llm, reporter, persist, *, semantic_
                 event['method'] = 'local_bertopic'
         except Exception as exc:
             event['errors'].append(str(exc))
-        if not groups and len(unique) <= limit:
+        if len(unique) <= limit:
             try:
                 partition = llm.chat_json(SPLIT_PROMPT, json.dumps({'cluster_id': cluster['cluster_id'],
                     'parent_cluster_id': cluster.get('parent_cluster_id'), 'refinement_round': depth + 1,
+                    'topic_context':topic_context(data,cluster['cluster_id'],cluster.get('parent_cluster_id')),
                     'members': [
                     {k: m[k] for k in ('intent_id', 'text')} for m in unique],
+                    'candidate_groups':[{'label':' / '.join(names[j]),'evidence_ids':ids} for j,ids in enumerate(groups)],
                     'review': cluster['review']}, ensure_ascii=False), schema=FullPartition, max_tokens=6000)
                 validate_partition(partition, unique)
+                if partition.decision=='keep':
+                    cluster['review']={'reason':partition.reason,'object':partition.object,'action':partition.action,
+                        'semantic_clear':True,'verdict':'consistent','boundary_ids':[],'split_groups':[]}
+                    cluster['refinement_stop']='semantic_keep'
+                    cluster['semantic_label']=partition.groups[0].label
+                    event.update(method='llm_full_partition',decision='keep',reason=partition.reason)
+                    history['history'].append(event);persist()
+                    continue
                 groups = [g.evidence_ids for g in partition.groups]
                 names = [[g.label] for g in partition.groups]
                 noise = partition.uncertain_ids
                 event['method'] = 'llm_full_partition'
             except Exception as exc:
+                groups,noise,names=[],[],[]
                 event['errors'].append(str(exc))
         if not groups:
             cluster['refinement_stop'] = 'llm_limit' if len(unique) > limit else 'no_reliable_split'
@@ -164,7 +185,7 @@ def refine_clusters(data, vectors, options, llm, reporter, persist, *, semantic_
                 else:
                     decision = singleton_review(child_members, semantic_records)
                     if decision is None:
-                        decision = llm.chat_json(REVIEW_PROMPT, json.dumps(consistency_review_payload(child), ensure_ascii=False),
+                        decision = llm.chat_json(REVIEW_PROMPT, json.dumps(consistency_review_payload(child, data), ensure_ascii=False),
                                                  schema=ClusterReview, max_tokens=2400)
                     else:
                         child.update(review_source='singleton_skip',support_level='single_example')

@@ -46,6 +46,8 @@ def review_hierarchy(data, llm, workers, reporter, persist, *, previous_hierarch
     """Cut rejected parent merges; retain raw topology and every source leaf."""
     from intent_engine.atomic.atomic_discovery import review_eligible
     from intent_engine.infrastructure.model_requests import USAGE, usage_since
+    from intent_engine.atomic.topic_mode import apply_topic_mode,flat_tree
+    mode=apply_topic_mode(data.setdefault('parameters',{}),cfg)
     previous = previous_hierarchy if previous_hierarchy is not None else data.get('topic_hierarchy',{})
     previous_nodes = {n['node_id']:n for n in (previous or {}).get('nodes',[])
                       if n.get('is_leaf') and n.get('semantic_status')=='approved'
@@ -71,6 +73,7 @@ def review_hierarchy(data, llm, workers, reporter, persist, *, previous_hierarch
         raw = build_topic_tree([c['cluster_id'] for c in data['clusters']],
                                {c['cluster_id']:c.get('keywords',[]) for c in data['clusters']},
                                status='not_generated', message='历史结果缺少父主题，仅审核已有叶子')
+    if mode['flat_topics']:raw=flat_tree(raw)
     nodes, _ = index_topic_tree(raw)
     clusters = {c['cluster_id']: c for c in data['clusters']}
     # Native depth determines parallel waves; children finish before their parent.
@@ -216,7 +219,7 @@ def review_hierarchy(data, llm, workers, reporter, persist, *, previous_hierarch
     roots = [c for key in raw['root_ids'] for c in frontiers[key]]
     tree = {**raw, 'source':'BERTopic+LLM', 'representation':'reviewed_c_tf_idf',
             'nodes':list(active.values()), 'status':'ready' if len(roots)==1 else 'forest' if roots else 'no_topics',
-            'message':'保留审核通过的父主题；不合理的合并已展开为独立分支'}
+            'message':'仅一级簇：保留簇名称、定义及成员，不生成父主题' if mode['flat_topics'] else '保留审核通过的父主题；不合理的合并已展开为独立分支'}
     index_topic_tree(tree, set(clusters))
     data['topic_hierarchy'] = tree
     state['reused_nodes'] = sum(level['reused_nodes'] for level in state['levels'])
@@ -227,7 +230,7 @@ def review_hierarchy(data, llm, workers, reporter, persist, *, previous_hierarch
         c = clusters.get(atom.get('cluster_id'))
         if c:
             atom['topic_pending'] = not (review_eligible(c) and c.get('hierarchy_eligible'))
-    if cfg is not None:
+    if cfg is not None and not mode['flat_topics']:
         from intent_engine.atomic.parent_regroup import regroup
         regroup(data,cfg,llm,workers)
     attach_topic_memberships(data)

@@ -44,3 +44,5 @@ Thumbs.db
 /data/job_history/
 
 /data/request_traces/
+
+/data/cache/workflow_capabilities/

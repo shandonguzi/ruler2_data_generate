@@ -325,3 +325,74 @@ def test_legacy_singleton_veto_is_rechecked_before_matching_without_membership_c
     assert all(record['status']=='known' for record in state['assignments'])
     assert data['clusters'][1]['support_level']=='single_example'
     assert data['clusters'][1]['hierarchy_eligible'] is True
+
+
+def test_auto_stops_when_singleton_and_noise_counts_match_previous_round(setup):
+    cfg,_=setup;data=dataset();data['parameters']['iteration_auto']=True
+    reporter=ProgressReporter();reporter.plan(hierarchy_iteration_steps(8))
+    state=run_hierarchy_iterations(cfg,data,8,2,reporter,lambda:None,np.array([[1,0],[0,1],[1,1],[.9,1]]))
+    assert state['stop_reason']=='counts_stable'
+    assert len(state['rounds'])==2 and state['converged']
+    assert state['rounds'][0]['previous_cluster_counts'] is None
+    assert state['rounds'][1]['previous_cluster_counts']==state['rounds'][1]['cluster_counts']
+    assert state['validated_taxonomy_version'] is not None
+
+
+def test_auto_cap_is_not_reported_as_count_convergence(setup):
+    cfg,_=setup;data=dataset();data['parameters']['iteration_auto']=True
+    reporter=ProgressReporter();reporter.plan(hierarchy_iteration_steps(1))
+    state=run_hierarchy_iterations(cfg,data,1,2,reporter,lambda:None,np.array([[1,0],[0,1],[1,1],[.9,1]]))
+    assert state['stop_reason']=='auto_limit' and not state['converged']
+
+
+def test_rejected_merge_does_not_stop_next_round(setup, monkeypatch):
+    from intent_engine.atomic import leaf_merge
+
+    cfg, _ = setup
+    data = dataset()
+    original = leaf_merge.merge_leaves
+
+    def merge(*args, **kwargs):
+        record, vectors = original(*args, **kwargs)
+        if kwargs.get('phase') == 'round_1':
+            args[1]['errors'].append({'stage': 'leaf_merge', 'error': 'invalid proposal'})
+            record['status'] = 'completed_with_errors'
+        return record, vectors
+
+    monkeypatch.setattr(leaf_merge, 'merge_leaves', merge)
+    reporter = ProgressReporter()
+    reporter.plan(hierarchy_iteration_steps(2))
+    state = run_hierarchy_iterations(
+        cfg, data, 2, 2, reporter, lambda: None,
+        np.array([[1, 0], [0, 1], [1, 1], [.9, 1]]),
+    )
+    assert len(state['rounds']) == 2
+    assert state['rounds'][0]['processing_errors'] == 1
+    assert state['rounds'][0]['blocking_errors'] == 0
+    assert state['status'] == 'completed_with_errors'
+
+
+def test_missing_model_response_keeps_membership_and_continues(setup, monkeypatch):
+    from intent_engine.workflows import pipeline
+
+    cfg, _ = setup
+    data = dataset()
+    original = pipeline.IterativePipeline.classify_dataframe
+
+    def classify(self, frame, taxonomy, number):
+        results = original(self, frame, taxonomy, number)
+        if number == 1:
+            results[0] = SemanticResult(raw_text='A', intents=[])
+        return results
+
+    monkeypatch.setattr(pipeline.IterativePipeline, 'classify_dataframe', classify)
+    reporter = ProgressReporter()
+    reporter.plan(hierarchy_iteration_steps(2))
+    state = run_hierarchy_iterations(
+        cfg, data, 2, 2, reporter, lambda: None,
+        np.array([[1, 0], [0, 1], [1, 1], [.9, 1]]),
+    )
+    assert len(state['rounds']) == 2
+    assert state['rounds'][0]['assignments'][0]['model_error']
+    assert state['rounds'][0]['memberships'][0]['cluster_id'] == 0
+    assert state['status'] == 'completed_with_errors'

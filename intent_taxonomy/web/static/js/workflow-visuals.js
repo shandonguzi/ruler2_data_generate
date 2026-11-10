@@ -1,10 +1,25 @@
 let visualContext=null,visualRevision=0,visualView='intents',visualPage=1,visualData=null;
-function resetWorkflowVisual(){$('#stagePreviewStep').open=false;workflowRequestDialog.close();workflowRequestViewer.reset();visualRevision++;visualContext=null;visualData=null;resetTopicHierarchy();$('#workflowVisual').hidden=true;for(const id of ['visualRecords','visualMetrics','visualBars','visualClusterReview','visualPageInfo'])$('#'+id).innerHTML='';}
+const visualClustersPerPage=20;
+let visualClusterPage=1;
+function resetWorkflowVisual(){$('#visualClusterPagination').hidden=true;$('#visualSizeDistribution').hidden=true;$('#stagePreviewStep').open=false;workflowRequestDialog.close();workflowRequestViewer.reset();visualRevision++;visualContext=null;visualData=null;resetTopicHierarchy();$('#workflowVisual').hidden=true;for(const id of ['visualRecords','visualMetrics','visualBars','visualClusterReview','visualPageInfo'])$('#'+id).innerHTML='';}
 function loadWorkflowVisual(run,artifact,host='workspaceVisualMount'){
   $('#'+host).append($('#workflowVisual'));
-  visualContext={run,artifact};visualView='intents';visualPage=1;
+  visualContext={run,artifact};visualView='intents';visualPage=1;visualClusterPage=1;
   $('#visualQuery').value='';$('#visualCluster').innerHTML='<option value="all">全部簇 / 意图</option>';
   $('#workflowVisual').hidden=false;return refreshWorkflowVisual();
+}
+function clusterSizeDistribution(clusters){
+  const counts=new Map();
+  for(const cluster of clusters){
+    if(['-1','unassigned'].includes(String(cluster.key))||cluster.count<=0)continue;
+    counts.set(cluster.count,(counts.get(cluster.count)||0)+1);
+  }
+  return [...counts].sort((a,b)=>a[0]-b[0]).map(([size,count])=>({'每簇意图数':size,'簇数量':count,'意图总数':size*count}));
+}
+function renderClusterSizeDistribution(data){
+  $('#visualSizeDistribution').hidden=!data.clustered;
+  const rows=clusterSizeDistribution(data.clusters);
+  renderTable($('#visualSizeTable'),rows);
 }
 function visualClusterName(key){return key==='unassigned'?'尚未分簇 / 待确认':String(key)==='-1'?'噪声':`簇 ${key}`;}
 function visualAtomKey(atom){return atom.cluster_id==null?'unassigned':String(atom.cluster_id);}
@@ -34,24 +49,49 @@ async function refreshWorkflowVisual(){
     $('#visualCluster').innerHTML='<option value="all">全部簇 / 意图</option>'+data.clusters.map(c=>`<option value="${esc(c.key)}">${esc(c.label)} · ${c.count} 条 / ${c.unique_count} 种文本</option>`).join('');$('#visualCluster').value=key;
     $('#visualStatus').textContent=data.clustered?`全部原子意图中有 ${data.totals.ambiguous} 条待确认。噪声表示未被聚类接纳；未分簇也可能尚未执行聚类。`:'这个阶段尚未执行聚类，可先检查原子意图拆分，再到「阶段处理」执行无监督聚类。';
     if(data.delivery_source==='reviewed_bertopic')$('#visualStatus').textContent+=' 最终导出使用这套逐层审核的 BERTopic 主题路径。';
+    renderClusterSizeDistribution(data);
     renderVisualClusters(data,key);
     renderTopicHierarchy(data,topic);
     $('#visualRecords').innerHTML=data.records.length?data.records.map(record=>visualView!=='clusters'?`<article class="visual-row"><header><b>原句 #${esc(record.row_id)}</b><span class="tag">${esc(visualStatusName(record.status))}</span><span>${record.intents.length} 个原子意图</span></header><p class="visual-raw">${visualRaw(record)}</p>${visualSentenceTopics(record)}${record.reason?`<p class="muted">${esc(record.reason)}</p>`:''}<div class="visual-atoms">${record.intents.map(visualAtom).join('')||'<span class="muted">此原句没有提取出原子意图。</span>'}</div>${record.relations?.length?`<div class="visual-relations">${record.relations.map(r=>`<span>${Number(r.source)+1} → ${Number(r.target)+1} · ${esc(({before:'先于',depends_on:'依赖',parallel:'并行'})[r.kind]||r.kind)}${r.reason?'：'+esc(r.reason):''}</span>`).join('')}</div>`:''}</article>`:`<article class="visual-row">${visualAtom(record)}<p class="visual-source"><b>来源原句 #${esc(record.row_id)}</b> ${esc(record.raw_text)}</p></article>`).join(''):'<div class="empty">当前筛选没有匹配结果。</div>';
     addWorkflowRequestButtons();
     $('#visualPageInfo').textContent=`第 ${data.page} / ${data.pages} 页 · 匹配 ${data.total} ${visualView!=='clusters'?'条原句':'条原子意图'}`;
     $('#visualPrev').disabled=data.page<=1;$('#visualNext').disabled=data.page>=data.pages;
-  }catch(error){if(rev===visualRevision){$('#visualStatus').textContent=error.message;$('#visualRecords').innerHTML='<div class="empty">可视化加载失败，请重新选择阶段或重试搜索。</div>';$('#visualMetrics').innerHTML='';$('#visualBars').innerHTML='';$('#visualClusterReview').innerHTML='';$('#visualPageInfo').textContent='';}}
+  }catch(error){if(rev===visualRevision){visualData=null;$('#visualClusterPagination').hidden=true;$('#visualSizeDistribution').hidden=true;$('#visualStatus').textContent=error.message;$('#visualRecords').innerHTML='<div class="empty">可视化加载失败，请重新选择阶段或重试搜索。</div>';$('#visualMetrics').innerHTML='';$('#visualBars').innerHTML='';$('#visualClusterReview').innerHTML='';$('#visualPageInfo').textContent='';}}
 }
-function renderVisualClusters(data,key){
+function renderClusterBars(data,key){
   const maximum=data.clusters.reduce((maximum,c)=>Math.max(maximum,c.count),1);
-  $('#visualBars').innerHTML=data.clusters.slice(0,20).map(c=>`<button type="button" class="visual-bar ${c.key===key?'selected':''}" data-visual-cluster="${esc(c.key)}" aria-label="查看${esc(c.label)}，${c.count}条意图"><span>${esc(c.label)}</span><span class="visual-bar-track"><i style="width:${c.count/maximum*100}%"></i></span><b>${c.count}</b></button>`).join('')||'<p class="muted">尚无原子意图。</p>';
+  const total=data.clusters.length;
+  const pages=Math.max(1,Math.ceil(total/visualClustersPerPage));
+  visualClusterPage=Math.max(1,Math.min(visualClusterPage,pages));
+  const start=(visualClusterPage-1)*visualClustersPerPage;
+  $('#visualClusterPagination').hidden=total<=visualClustersPerPage;
+  $('#visualClusterPageInfo').textContent=`第 ${visualClusterPage} / ${pages} 页 · 共 ${total} 项`;
+  $('#visualClusterPrev').disabled=visualClusterPage===1;
+  $('#visualClusterNext').disabled=visualClusterPage===pages;
+  $('#visualBars').innerHTML=data.clusters.slice(start,start+visualClustersPerPage).map(c=>`<button type="button" class="visual-bar ${c.key===key?'selected':''}" data-visual-cluster="${esc(c.key)}" aria-label="查看${esc(c.label)}，${c.count}条意图"><span>${esc(c.label)}</span><span class="visual-bar-track"><i style="width:${c.count/maximum*100}%"></i></span><b>${c.count}</b></button>`).join('')||'<p class="muted">尚无原子意图。</p>';
+}
+
+function renderVisualClusters(data,key){
+  renderClusterBars(data,key);
   const c=data.clusters.find(c=>c.key===key),r=c?.review;
   $('#visualClusterReview').innerHTML=c?`<h4>${esc(c.label)} · ${c.count} 条意图</h4><p class="muted">${c.unique_count} 种不同文本；成员按原始出现次数计数，聚类时相同文本去重。${c.support_level==='single_example'?(c.hierarchy_eligible?' 低支持叶子已准入，可参与分类；尚无多样本稳定性证据。':' 单文本支持量低；是否可用取决于语义与命名审核，样本少本身不构成拒绝理由。'):''}</p><div class="visual-keywords">${c.keywords.map(word=>`<span class="tag">${esc(word)}</span>`).join('')}</div>${r?`<p><b>${esc(c.review_source==='reused_review'?'簇内一致 · 复用已有审核':c.review_source==='singleton_skip'?'单样本 · 已跳过一致性请求':({consistent:'簇内一致',mixed:'混合意图，建议拆分',uncertain:'边界待确认'})[r.verdict]||r.verdict)}</b>${[r.object,r.action].filter(Boolean).length?' · '+[r.object,r.action].filter(Boolean).map(esc).join(' / '):''}</p><p>${esc(r.reason)}</p><p class="muted">${c.review_source==='singleton_skip'?'未请求一致性模型；复用已有解析，不表示类别稳定性已验证。':c.review_scope==='all_unique_texts'?'审核覆盖全部不同文本；重复出现次数单独计入成员数量。':'审核依据为所选代表样本，不代表逐条审核全部成员。'}</p>${r.split_groups?.length?`<p>拆分建议：${r.split_groups.map(g=>esc(g.label)+'（'+visualEvidence(g.evidence_ids||[])+'）').join('；')}</p>`:''}${r.boundary_ids?.length?`<p>边界样本：${visualEvidence(r.boundary_ids)}</p>`:''}`:'<p class="muted">'+(key==='-1'?'这些意图未被聚类接纳，仍保留来源，可在配置文件中调整聚类参数后重跑。':key==='unassigned'?'包括尚未聚类的有效意图与对象不明的待确认意图，请结合各条状态判断。':'这个阶段尚无簇审核结论，可执行「簇一致性审核」。')+'</p>'}${data.pair_reviews.length?`<h4>跨簇复核建议</h4>${data.pair_reviews.map(p=>`<p>簇 ${esc(p.left_cluster_id)} ↔ 簇 ${esc(p.right_cluster_id)}：${esc(({merge:'建议合并',keep:'保持独立',uncertain:'待确认'})[p.decision]||'处理失败')}<br>${esc(p.reason||p.error||'')}</p>`).join('')}`:''}`:'<h4>先选择一个簇</h4><p class="muted">点击左侧分布条或使用上方筛选框，查看簇关键词、审核结论和全部成员。这里展示规模分布，不表示簇之间的语义距离。</p>';
   if(c?.review_error)$('#visualClusterReview').innerHTML+=`<p class="notice">审核失败：${esc(c.review_error)}</p>`;
 }
+for(const [id,offset] of [['visualClusterPrev',-1],['visualClusterNext',1]]){
+  $('#'+id).addEventListener('click',()=>{
+    if(!visualData)return;
+    visualClusterPage+=offset;
+    renderClusterBars(visualData,$('#visualCluster').value);
+  });
+}
 $('#visualBars').addEventListener('click',event=>{const button=event.target.closest('[data-visual-cluster]');if(button){$('#visualCluster').value=button.dataset.visualCluster;visualPage=1;refreshWorkflowVisual();}});
 $('#visualClusterReview').addEventListener('click',event=>{const button=event.target.closest('[data-visual-evidence]');if(button){visualView='intents';visualPage=1;$('#visualCluster').value='all';$('#visualQuery').value=button.dataset.visualEvidence;refreshWorkflowVisual();}});
-$('#visualCluster').addEventListener('change',()=>{visualPage=1;refreshWorkflowVisual();});
+$('#visualCluster').addEventListener('change',()=>{
+  const index=visualData?.clusters.findIndex(c=>c.key===$('#visualCluster').value)??-1;
+  if(index>=0)visualClusterPage=Math.floor(index/visualClustersPerPage)+1;
+  visualPage=1;
+  refreshWorkflowVisual();
+});
 $('#visualSearchBtn').addEventListener('click',()=>{visualPage=1;refreshWorkflowVisual();});
 $('#visualQuery').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();visualPage=1;refreshWorkflowVisual();}});
 for(const [id,view] of [['visualIntentsTab','intents'],['visualClustersTab','clusters'],['visualHierarchyTab','hierarchy']])$('#'+id).addEventListener('click',()=>{visualView=view;visualPage=1;if(view==='hierarchy')$('#visualCluster').value='all';refreshWorkflowVisual();});

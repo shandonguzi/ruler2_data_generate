@@ -56,3 +56,13 @@ def test_real_rebuilt_english_hierarchy_uses_phrases_and_keeps_original_ids():
     assert set(keywords) == {4,9}
     assert any(' ' in word for values in keywords.values() for word in values)
     assert tree['status']=='ready' and tree['leaf_count']==2
+
+
+def test_flat_switch_roundtrips_without_replacing_language_settings(tmp_path):
+    path=tmp_path/'config.yaml';path.write_text('atomic_discovery: {}\n')
+    first=clustering_settings_snapshot(path)
+    saved=save_clustering_settings(path,first['revision'],first['language'],first['languages'],True)
+    assert saved['flat_topics'] is True
+    assert saved['languages']==first['languages']
+    saved=save_clustering_settings(path,saved['revision'],saved['language'],saved['languages'],False)
+    assert saved['flat_topics'] is False

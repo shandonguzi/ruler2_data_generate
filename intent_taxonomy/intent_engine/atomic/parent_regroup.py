@@ -31,7 +31,7 @@ def regroup(data, cfg, llm, workers):
     from intent_engine.atomic.atomic_discovery import SemanticEmbeddings, embedding_settings
     from intent_engine.atomic.topic_hierarchy import index_topic_tree
     options={**cfg.get('atomic_discovery',{}),**data.get('parameters',{})}
-    if not options.get('parent_regroup_enabled',False):return
+    if cfg.get('atomic_discovery',{}).get('flat_topics',options.get('flat_topics',False)) or not options.get('parent_regroup_enabled',False):return
     history=data.setdefault('parent_regroup',{'cache':{},'passes':[]})
     record={'status':'running','proposals':[],'applied':0}
     history['passes'].append(record)

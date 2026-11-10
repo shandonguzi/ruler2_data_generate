@@ -102,6 +102,8 @@ class ProgressReporter:
         self._last_emit = 0.0
 
     def _emit(self, event: dict, *, publish: bool = True):
+        from intent_engine.infrastructure.job_pause import wait_if_paused
+        wait_if_paused()
         if self.state.apply(event) and publish and os.environ.get("INTENT_PROGRESS") == "1":
             # tqdm writes carriage-return lines without a trailing newline to
             # stderr, which shares the worker's pipe with stdout. Frame each

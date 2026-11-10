@@ -7,7 +7,7 @@
 
 规则：
 1. 最终选择以 fulfillment 等价为核心。
-2. App/实体/时间/地点等 Slot 差异不能成为选择不同 Task 的理由。
+2. 结合完整请求及候选定义，自行判断具体信息是否改变任务含义，并在 reason 中解释。
 3. 如果两个候选只是同义/上下位但 taxonomy 本身边界重叠，且无法稳定区分，返回 ambiguous。
 4. selected_task_id 只能来自输入 shortlist；discovery 时必须为 null。
 5. 不要为了提高 known rate 强行选一个。

@@ -1,13 +1,16 @@
 let sceneMappingRuns=[],sceneMappingRevision=0;
 function renderSceneMappingSource(){
  const run=sceneMappingRuns.find(r=>r.run_id===$('#sceneRun').value);
+ if(run&&!run.capabilities&&!run.capabilityLoading&&!run.capabilityError){
+  run.capabilityLoading=true;api(`/api/workflows/${encodeURIComponent(run.run_id)}/capabilities`).then(data=>Object.assign(run,data)).catch(e=>{run.capabilityError=e.message;}).finally(()=>{run.capabilityLoading=false;if($('#sceneRun').value===run.run_id)renderSceneMappingSource();});
+ }
  const sources=run?.capabilities?.cluster?.sources||[];
  const previous=$('#sceneSource').value;
  const ordered=['report','export','iterate','domains','pairs','review','cluster','extract'].filter(k=>sources.includes(k));
  $('#sceneSource').innerHTML='<option value="">请选择原子意图结果</option>'+ordered.map(k=>`<option value="${esc(k)}">${esc(workflowStageLabels[k]||artifactLabels[k]||k)}</option>`).join('');
  if(ordered.includes(previous))$('#sceneSource').value=previous;
  $('#sceneSourceField').hidden=!ordered.length;
- $('#sceneStatus').textContent=run?(ordered.length?'请选择中间结果后开始关联。':run.capabilities?.cluster?.reason||'该流程没有可用的原子意图结果。'):'请选择已有流程。';
+ $('#sceneStatus').textContent=run?(ordered.length?'请选择中间结果后开始关联。':run.capabilityError||run.capabilities?.cluster?.reason||'正在检查所选版本的原子意图结果…'):'请选择已有流程。';
  updateSceneMappingReady();
 }
 function updateSceneMappingReady(){
@@ -18,7 +21,7 @@ async function loadSceneMappingSources(){
  const revision=++sceneMappingRevision,previous=$('#sceneRun').value;
  $('#sceneStartBtn').disabled=true;$('#sceneStatus').textContent='正在读取已有原子意图结果…';
  try{
-  const data=await api('/api/workflows');if(revision!==sceneMappingRevision)return;
+  const data=await api('/api/workflows?brief=true');if(revision!==sceneMappingRevision)return;
   sceneMappingRuns=data.runs;workflowStageLabels=data.stages||workflowStageLabels;
   $('#sceneRun').innerHTML='<option value="">请选择已有流程</option>'+sceneMappingRuns.map(r=>`<option value="${esc(r.run_id)}">${esc(r.run_id)} · ${esc(r.status)}</option>`).join('');
   if(sceneMappingRuns.some(r=>r.run_id===previous))$('#sceneRun').value=previous;

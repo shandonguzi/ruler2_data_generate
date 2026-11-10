@@ -1,0 +1,4592 @@
+{
+  "description": "真实请求重放和真实结果组装；预期语义待人工确认",
+  "cases": [
+    {
+      "id": "atomic_discovery.EXTRACT_PROMPT:real_multi",
+      "prompt": "atomic_discovery.EXTRACT_PROMPT",
+      "name": "real_multi",
+      "input": {
+        "user_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?"
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261104_222248_4b638fba",
+        "file": "data/reports/20261104_222248_4b638fba/requests/requests.jsonl",
+        "line": 38,
+        "request_id": "adb1e0fd16634629b72fe1b97600342a",
+        "input_sha256": "86a3eed285cd3b7240d22806a29dd8b3a2ac346ee49c85b67f5b29faab3d4f3e",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r21:i0",
+          "r21:i1"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r21:i0",
+            "row_id": 21,
+            "raw_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?",
+            "text": "How can the role of the diwaniya in Kuwaiti society be described",
+            "previous_cluster_id": 761,
+            "cluster_id": 1773,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2926",
+                  "label": "diwaniya 文化社会现象",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1773",
+                  "label": "科威特 diwaniya 社会角色描述",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r21:i1",
+            "row_id": 21,
+            "raw_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?",
+            "text": "what is the main purpose of the diwaniya?",
+            "previous_cluster_id": 1247,
+            "cluster_id": 1247,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2926",
+                  "label": "diwaniya 文化社会现象",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1247",
+                  "label": "diwaniya主要目的询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "用户文本包含两个明确的询问：对科威特社会中diwaniya角色的描述，以及其主要目的。两者共享同一主题背景，需保留完整限定。",
+        "intents": [
+          {
+            "reason": "明确询问如何描述diwaniya在科威特社会中的角色，保留完整原句限定。",
+            "span": "How can the role of the diwaniya in Kuwaiti society be described",
+            "text": "How can the role of the diwaniya in Kuwaiti society be described",
+            "object": "diwaniya在科威特社会中的角色",
+            "action": "描述",
+            "context_indices": [],
+            "status": "valid"
+          },
+          {
+            "reason": "明确询问diwaniya的主要目的，指代其共享同一主题。",
+            "span": "what is its main purpose?",
+            "text": "what is the main purpose of the diwaniya?",
+            "object": "diwaniya的主要目的",
+            "action": "询问",
+            "context_indices": [
+              0
+            ],
+            "status": "valid"
+          }
+        ],
+        "relations": [
+          {
+            "reason": "两个询问并列提出，无先后依赖关系。",
+            "source": 0,
+            "target": 1,
+            "kind": "parallel"
+          }
+        ],
+        "status": "valid"
+      }
+    },
+    {
+      "id": "atomic_discovery.EXTRACT_PROMPT:real_single",
+      "prompt": "atomic_discovery.EXTRACT_PROMPT",
+      "name": "real_single",
+      "input": {
+        "user_text": "What is one of the first private television stations established in Lebanon?"
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261104_222248_4b638fba",
+        "file": "data/reports/20261104_222248_4b638fba/requests/requests.jsonl",
+        "line": 1,
+        "request_id": "99038221c42d4b46920e9ccc615f6c45",
+        "input_sha256": "82707e82433626b4f65200d971a9cdd48218c970e4c33112ca9dd3f30a1a7725",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r10:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r10:i0",
+            "row_id": 10,
+            "raw_text": "What is one of the first private television stations established in Lebanon?",
+            "text": "What is one of the first private television stations established in Lebanon?",
+            "previous_cluster_id": -1,
+            "cluster_id": -1,
+            "topic_context": {
+              "source": "unavailable",
+              "path": []
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "用户询问黎巴嫩最早建立的私营电视台之一，属于明确的知识问答请求，无前置动作或依赖指代。",
+        "intents": [
+          {
+            "reason": "完整保留原句，询问事实信息。",
+            "span": "What is one of the first private television stations established in Lebanon?",
+            "text": "What is one of the first private television stations established in Lebanon?",
+            "object": "黎巴嫩最早建立的私营电视台之一",
+            "action": "询问事实",
+            "context_indices": [],
+            "status": "valid"
+          }
+        ],
+        "relations": [],
+        "status": "valid"
+      }
+    },
+    {
+      "id": "atomic_discovery.PAIR_PROMPT:real_keep",
+      "prompt": "atomic_discovery.PAIR_PROMPT",
+      "name": "real_keep",
+      "input": {
+        "left": [
+          {
+            "intent_id": "r1603:i0",
+            "text": "What Levantine proverb is used to express the importance of maintaining the dignity of work, even if it is simple or humble?"
+          },
+          {
+            "intent_id": "r349:i0",
+            "text": "What does the phrase 'Knowing how to write doesn't necessarily mean you're a good person' mean?"
+          },
+          {
+            "intent_id": "r1801:i0",
+            "text": "What is the Levantine proverb that is said when someone wants to achieve their goal no matter the difficulties?"
+          },
+          {
+            "intent_id": "r715:i0",
+            "text": "What is the principle that reflects moderation in dealing with enmities according to the Syrian popular saying?"
+          },
+          {
+            "intent_id": "r1800:i0",
+            "text": "According to the Levantine proverb, what is a man advised to carry in his hand when entering the house?"
+          },
+          {
+            "intent_id": "r1727:i0",
+            "text": "What is the Jordanian proverb associated with the month of September?"
+          },
+          {
+            "intent_id": "r1356:i0",
+            "text": "What is the Levantine proverb that means a little that is constant is better than a lot that stops suddenly?"
+          },
+          {
+            "intent_id": "r736:i1",
+            "text": "Explain the meaning behind this proverb."
+          }
+        ],
+        "right": [
+          {
+            "intent_id": "r389:i0",
+            "text": "How is the word \"no\" usually expressed through body language in Lebanese culture?"
+          },
+          {
+            "intent_id": "r209:i0",
+            "text": "How is being late to appointments usually perceived in Lebanese culture?"
+          },
+          {
+            "intent_id": "r148:i0",
+            "text": "How is confusion about 'what' or 'where' expressed through hand gestures in Jordanian culture?"
+          },
+          {
+            "intent_id": "r420:i0",
+            "text": "How do men usually greet each other in Lebanon?"
+          },
+          {
+            "intent_id": "r459:i0",
+            "text": "How is the request for quiet or waiting expressed in Egyptian culture using hand gestures?"
+          }
+        ],
+        "left_topic_context": {
+          "source": "unavailable",
+          "path": []
+        },
+        "right_topic_context": {
+          "source": "unavailable",
+          "path": []
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "projected_historical_request",
+        "run_id": "20261104_222248_4b638fba",
+        "file": "data/reports/20261104_222248_4b638fba/requests/requests.jsonl",
+        "line": 2562,
+        "request_id": "055946a5eb334287867e28007b0625e8",
+        "input_sha256": "9279efac1755b8aa196a7b41364ee792b7b98e735c40a510a89a1d03f4273308",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r148:i0",
+          "r209:i0",
+          "r349:i0",
+          "r389:i0",
+          "r420:i0",
+          "r459:i0",
+          "r715:i0",
+          "r736:i1",
+          "r1356:i0",
+          "r1603:i0",
+          "r1727:i0",
+          "r1800:i0",
+          "r1801:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r148:i0",
+            "row_id": 148,
+            "raw_text": "How is confusion about 'what' or 'where' expressed through hand gestures in Jordanian culture?",
+            "text": "How is confusion about 'what' or 'where' expressed through hand gestures in Jordanian culture?",
+            "previous_cluster_id": 811,
+            "cluster_id": 811,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:811",
+                  "label": "文化手势表达方式查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r209:i0",
+            "row_id": 209,
+            "raw_text": "How is being late to appointments usually perceived in Lebanese culture?",
+            "text": "How is being late to appointments usually perceived in Lebanese culture?",
+            "previous_cluster_id": 812,
+            "cluster_id": 812,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:812",
+                  "label": "黎巴嫩文化习俗通常表现询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r349:i0",
+            "row_id": 349,
+            "raw_text": "What does the phrase 'Knowing how to write doesn't necessarily mean you're a good person' mean?",
+            "text": "What does the phrase 'Knowing how to write doesn't necessarily mean you're a good person' mean?",
+            "previous_cluster_id": 17,
+            "cluster_id": 17,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2659",
+                  "label": "谚语含义与文化解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2832",
+                  "label": "谚语含义与解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:17",
+                  "label": "谚语或短语含义解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r389:i0",
+            "row_id": 389,
+            "raw_text": "How is the word \"no\" usually expressed through body language in Lebanese culture?",
+            "text": "How is the word \"no\" usually expressed through body language in Lebanese culture?",
+            "previous_cluster_id": 812,
+            "cluster_id": 812,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:812",
+                  "label": "黎巴嫩文化习俗通常表现询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r420:i0",
+            "row_id": 420,
+            "raw_text": "How do men usually greet each other in Lebanon?",
+            "text": "How do men usually greet each other in Lebanon?",
+            "previous_cluster_id": 812,
+            "cluster_id": 812,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:812",
+                  "label": "黎巴嫩文化习俗通常表现询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r459:i0",
+            "row_id": 459,
+            "raw_text": "How is the request for quiet or waiting expressed in Egyptian culture using hand gestures?",
+            "text": "How is the request for quiet or waiting expressed in Egyptian culture using hand gestures?",
+            "previous_cluster_id": 811,
+            "cluster_id": 811,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:811",
+                  "label": "文化手势表达方式查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r715:i0",
+            "row_id": 715,
+            "raw_text": "What is the principle that reflects moderation in dealing with enmities according to the Syrian popular saying?",
+            "text": "What is the principle that reflects moderation in dealing with enmities according to the Syrian popular saying?",
+            "previous_cluster_id": 17,
+            "cluster_id": 17,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2659",
+                  "label": "谚语含义与文化解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2832",
+                  "label": "谚语含义与解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:17",
+                  "label": "谚语或短语含义解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r736:i1",
+            "row_id": 736,
+            "raw_text": "What is the main lesson conveyed by the Moroccan proverb 'He was asked why he fell, he replied: because he left the tent crooked'? Explain the meaning behind this proverb.",
+            "text": "Explain the meaning behind this proverb.",
+            "previous_cluster_id": 17,
+            "cluster_id": 17,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2659",
+                  "label": "谚语含义与文化解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2832",
+                  "label": "谚语含义与解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:17",
+                  "label": "谚语或短语含义解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1356:i0",
+            "row_id": 1356,
+            "raw_text": "What is the Levantine proverb that means a little that is constant is better than a lot that stops suddenly?",
+            "text": "What is the Levantine proverb that means a little that is constant is better than a lot that stops suddenly?",
+            "previous_cluster_id": 17,
+            "cluster_id": 1967,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2659",
+                  "label": "谚语含义与文化解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2832",
+                  "label": "谚语含义与解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1967",
+                  "label": "黎凡特/约旦谚语查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1603:i0",
+            "row_id": 1603,
+            "raw_text": "What Levantine proverb is used to express the importance of maintaining the dignity of work, even if it is simple or humble?",
+            "text": "What Levantine proverb is used to express the importance of maintaining the dignity of work, even if it is simple or humble?",
+            "previous_cluster_id": 17,
+            "cluster_id": 17,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2659",
+                  "label": "谚语含义与文化解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2832",
+                  "label": "谚语含义与解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:17",
+                  "label": "谚语或短语含义解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1727:i0",
+            "row_id": 1727,
+            "raw_text": "What is the Jordanian proverb associated with the month of September?",
+            "text": "What is the Jordanian proverb associated with the month of September?",
+            "previous_cluster_id": 17,
+            "cluster_id": 1967,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2659",
+                  "label": "谚语含义与文化解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2832",
+                  "label": "谚语含义与解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1967",
+                  "label": "黎凡特/约旦谚语查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1800:i0",
+            "row_id": 1800,
+            "raw_text": "According to the Levantine proverb, what is a man advised to carry in his hand when entering the house?",
+            "text": "According to the Levantine proverb, what is a man advised to carry in his hand when entering the house?",
+            "previous_cluster_id": 1422,
+            "cluster_id": 1967,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2659",
+                  "label": "谚语含义与文化解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2832",
+                  "label": "谚语含义与解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1967",
+                  "label": "黎凡特/约旦谚语查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1801:i0",
+            "row_id": 1801,
+            "raw_text": "What is the Levantine proverb that is said when someone wants to achieve their goal no matter the difficulties?",
+            "text": "What is the Levantine proverb that is said when someone wants to achieve their goal no matter the difficulties?",
+            "previous_cluster_id": 17,
+            "cluster_id": 17,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2659",
+                  "label": "谚语含义与文化解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2832",
+                  "label": "谚语含义与解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:17",
+                  "label": "谚语或短语含义解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "左簇询问谚语的含义或具体内容，右簇询问文化行为或手势的表达方式，真实意图不同，不属于仅表达方式或参数不同的情况。",
+        "left_evidence_ids": [
+          "r1603:i0",
+          "r349:i0",
+          "r1801:i0",
+          "r715:i0",
+          "r1800:i0",
+          "r1727:i0",
+          "r1356:i0",
+          "r736:i1"
+        ],
+        "right_evidence_ids": [
+          "r389:i0",
+          "r209:i0",
+          "r148:i0",
+          "r420:i0",
+          "r459:i0"
+        ],
+        "decision": "keep"
+      }
+    },
+    {
+      "id": "atomic_discovery.PAIR_PROMPT:real_merge",
+      "prompt": "atomic_discovery.PAIR_PROMPT",
+      "name": "real_merge",
+      "input": {
+        "left": [
+          {
+            "intent_id": "r117:i0",
+            "text": "What is the traditional clothing that most women wear in Kuwait?"
+          },
+          {
+            "intent_id": "r491:i0",
+            "text": "What are the common colors that the ghutra is usually made in?"
+          },
+          {
+            "intent_id": "r492:i0",
+            "text": "What is the garment worn over the dishdasha in Kuwait?"
+          },
+          {
+            "intent_id": "r356:i0",
+            "text": "What is the usual number of fabric pieces found inside a 'baqsha' in Kuwait?"
+          },
+          {
+            "intent_id": "r454:i0",
+            "text": "What is the name of the traditional garment worn by women in Qatar?"
+          },
+          {
+            "intent_id": "r456:i0",
+            "text": "What type of fabric is usually used to make traditional robes in winter in Bahrain?"
+          },
+          {
+            "intent_id": "r440:i0",
+            "text": "What is the item that is usually added to Kuwaiti men's attire in winter to provide warmth?"
+          },
+          {
+            "intent_id": "r1575:i0",
+            "text": "What are the garments considered part of the traditional men's attire in the UAE?"
+          }
+        ],
+        "right": [
+          {
+            "intent_id": "r271:i0",
+            "text": "What is the traditional woolen garment made in Yemen?"
+          },
+          {
+            "intent_id": "r73:i0",
+            "text": "What material were the clothes of the Al-Arasna in Yemen made from?"
+          },
+          {
+            "intent_id": "r27:i0",
+            "text": "What traditional materials are used in making Yemeni jambiyas?"
+          }
+        ],
+        "left_topic_context": {
+          "source": "unavailable",
+          "path": []
+        },
+        "right_topic_context": {
+          "source": "current_cluster",
+          "path": [
+            {
+              "node_id": "topic:404",
+              "label": "也门传统服饰材料查询",
+              "is_leaf": true
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "projected_historical_request",
+        "run_id": "20261104_222248_4b638fba",
+        "file": "data/reports/20261104_222248_4b638fba/requests/requests.jsonl",
+        "line": 2596,
+        "request_id": "21682d5c60824f65b469458d2552c7a4",
+        "input_sha256": "5c1bd782add0ed05b079ddbf060ecaba6276159bacbea4a8deed5bf6d336fe9d",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r27:i0",
+          "r73:i0",
+          "r117:i0",
+          "r271:i0",
+          "r356:i0",
+          "r440:i0",
+          "r454:i0",
+          "r456:i0",
+          "r491:i0",
+          "r492:i0",
+          "r1575:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r27:i0",
+            "row_id": 27,
+            "raw_text": "What traditional materials are used in making Yemeni jambiyas?",
+            "text": "What traditional materials are used in making Yemeni jambiyas?",
+            "previous_cluster_id": 404,
+            "cluster_id": 404,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:404",
+                  "label": "也门传统服饰材料查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r73:i0",
+            "row_id": 73,
+            "raw_text": "What material were the clothes of the Al-Arasna in Yemen made from?",
+            "text": "What material were the clothes of the Al-Arasna in Yemen made from?",
+            "previous_cluster_id": 404,
+            "cluster_id": 404,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:404",
+                  "label": "也门传统服饰材料查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r117:i0",
+            "row_id": 117,
+            "raw_text": "What is the traditional clothing that most women wear in Kuwait?",
+            "text": "What is the traditional clothing that most women wear in Kuwait?",
+            "previous_cluster_id": 32,
+            "cluster_id": 32,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2607",
+                  "label": "服装与着装知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2895",
+                  "label": "传统服饰询问",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:32",
+                  "label": "传统服饰询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r271:i0",
+            "row_id": 271,
+            "raw_text": "What is the traditional woolen garment made in Yemen?",
+            "text": "What is the traditional woolen garment made in Yemen?",
+            "previous_cluster_id": 404,
+            "cluster_id": 404,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:404",
+                  "label": "也门传统服饰材料查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r356:i0",
+            "row_id": 356,
+            "raw_text": "What is the usual number of fabric pieces found inside a 'baqsha' in Kuwait?",
+            "text": "What is the usual number of fabric pieces found inside a 'baqsha' in Kuwait?",
+            "previous_cluster_id": 694,
+            "cluster_id": 694,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:694",
+                  "label": "传统文化物品属性查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r440:i0",
+            "row_id": 440,
+            "raw_text": "What is the item that is usually added to Kuwaiti men's attire in winter to provide warmth?",
+            "text": "What is the item that is usually added to Kuwaiti men's attire in winter to provide warmth?",
+            "previous_cluster_id": 32,
+            "cluster_id": 32,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2607",
+                  "label": "服装与着装知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2895",
+                  "label": "传统服饰询问",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:32",
+                  "label": "传统服饰询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r454:i0",
+            "row_id": 454,
+            "raw_text": "What is the name of the traditional garment worn by women in Qatar?",
+            "text": "What is the name of the traditional garment worn by women in Qatar?",
+            "previous_cluster_id": 32,
+            "cluster_id": 32,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2607",
+                  "label": "服装与着装知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2895",
+                  "label": "传统服饰询问",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:32",
+                  "label": "传统服饰询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r456:i0",
+            "row_id": 456,
+            "raw_text": "What type of fabric is usually used to make traditional robes in winter in Bahrain?",
+            "text": "What type of fabric is usually used to make traditional robes in winter in Bahrain?",
+            "previous_cluster_id": 32,
+            "cluster_id": 32,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2607",
+                  "label": "服装与着装知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2895",
+                  "label": "传统服饰询问",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:32",
+                  "label": "传统服饰询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r491:i0",
+            "row_id": 491,
+            "raw_text": "What are the common colors that the ghutra is usually made in?",
+            "text": "What are the common colors that the ghutra is usually made in?",
+            "previous_cluster_id": 32,
+            "cluster_id": 32,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2607",
+                  "label": "服装与着装知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2895",
+                  "label": "传统服饰询问",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:32",
+                  "label": "传统服饰询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r492:i0",
+            "row_id": 492,
+            "raw_text": "What is the garment worn over the dishdasha in Kuwait?",
+            "text": "What is the garment worn over the dishdasha in Kuwait?",
+            "previous_cluster_id": 32,
+            "cluster_id": 32,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2607",
+                  "label": "服装与着装知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2895",
+                  "label": "传统服饰询问",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:32",
+                  "label": "传统服饰询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1575:i0",
+            "row_id": 1575,
+            "raw_text": "What are the garments considered part of the traditional men's attire in the UAE?",
+            "text": "What are the garments considered part of the traditional men's attire in the UAE?",
+            "previous_cluster_id": 32,
+            "cluster_id": 32,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2607",
+                  "label": "服装与着装知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2895",
+                  "label": "传统服饰询问",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:32",
+                  "label": "传统服饰询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "左簇询问海湾多国传统服饰的名称、颜色、材质、数量等具体属性，右簇聚焦也门传统服饰及刀具的材料，两者意图均为查询传统服饰/物品的具体信息，仅地域和对象不同，属于同一意图的不同参数，可建议合并。",
+        "left_evidence_ids": [
+          "r117:i0",
+          "r491:i0",
+          "r492:i0",
+          "r356:i0",
+          "r454:i0",
+          "r456:i0",
+          "r440:i0",
+          "r1575:i0"
+        ],
+        "right_evidence_ids": [
+          "r271:i0",
+          "r73:i0",
+          "r27:i0"
+        ],
+        "decision": "merge"
+      }
+    },
+    {
+      "id": "atomic_discovery.REVIEW_PROMPT:real_consistent",
+      "prompt": "atomic_discovery.REVIEW_PROMPT",
+      "name": "real_consistent",
+      "input": {
+        "cluster_id": 300,
+        "sample_count": 8,
+        "unique_text_count": 8,
+        "keywords": [
+          "al ashrafieh",
+          "al baqi",
+          "al gharqad",
+          "al hamoudi",
+          "al haram",
+          "baqi",
+          "ashrafieh site",
+          "ashrafieh",
+          "religious landmark",
+          "reason expanding"
+        ],
+        "review_scope": "all_unique_texts",
+        "members": [
+          {
+            "intent_id": "r1173:i0",
+            "text": "What factor that led to choosing Jabal Al-Ashrafieh as the site for building the religious landmark in Jordan?"
+          },
+          {
+            "intent_id": "r801:i0",
+            "text": "What was the main reason for expanding the Al-Baqi' al-Gharqad cemetery during the Umayyad era?"
+          },
+          {
+            "intent_id": "r593:i0",
+            "text": "What makes the shrine of Prophet Jad in Jordan special and an important religious site?"
+          },
+          {
+            "intent_id": "r1191:i0",
+            "text": "What can be inferred about why the pharaohs chose the location of Jebel Barkal to build a sacred temple during their conquest of Sudan, from the perspective of ancient Egyptian thought?"
+          },
+          {
+            "intent_id": "r777:i0",
+            "text": "What is the main reason that makes the Masjid al-Haram the holiest place for Muslims?"
+          },
+          {
+            "intent_id": "r1163:i0",
+            "text": "What makes Al-Hamoudi Mosque stand out as one of the most prominent historical landmarks in Djibouti in terms of its history and construction?"
+          },
+          {
+            "intent_id": "r260:i0",
+            "text": "What role does Al-Azhar Mosque play in the Islamic world?"
+          },
+          {
+            "intent_id": "r1121:i0",
+            "text": "What is the main reason the city of Karbala is considered a holy city for Shia Muslims in Iraq?"
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1574,
+        "request_id": "7663f59bf14049cc89a44df4e101f6d9",
+        "input_sha256": "db01b74f287003fbeb15297542acf6ff983b25c97d156a6615645f160a6858b8",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r260:i0",
+          "r593:i0",
+          "r777:i0",
+          "r801:i0",
+          "r1121:i0",
+          "r1163:i0",
+          "r1173:i0",
+          "r1191:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r260:i0",
+            "row_id": 260,
+            "raw_text": "What role does Al-Azhar Mosque play in the Islamic world?",
+            "text": "What role does Al-Azhar Mosque play in the Islamic world?",
+            "previous_cluster_id": 1468,
+            "cluster_id": 300,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2512",
+                  "label": "宗教地点与场所",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:300",
+                  "label": "宗教地标原因意义角色解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r593:i0",
+            "row_id": 593,
+            "raw_text": "What makes the shrine of Prophet Jad in Jordan special and an important religious site?",
+            "text": "What makes the shrine of Prophet Jad in Jordan special and an important religious site?",
+            "previous_cluster_id": 300,
+            "cluster_id": 300,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2512",
+                  "label": "宗教地点与场所",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:300",
+                  "label": "宗教地标原因意义角色解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r777:i0",
+            "row_id": 777,
+            "raw_text": "What is the main reason that makes the Masjid al-Haram the holiest place for Muslims?",
+            "text": "What is the main reason that makes the Masjid al-Haram the holiest place for Muslims?",
+            "previous_cluster_id": 300,
+            "cluster_id": 300,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2512",
+                  "label": "宗教地点与场所",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:300",
+                  "label": "宗教地标原因意义角色解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r801:i0",
+            "row_id": 801,
+            "raw_text": "What was the main reason for expanding the Al-Baqi' al-Gharqad cemetery during the Umayyad era?",
+            "text": "What was the main reason for expanding the Al-Baqi' al-Gharqad cemetery during the Umayyad era?",
+            "previous_cluster_id": 300,
+            "cluster_id": 300,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2512",
+                  "label": "宗教地点与场所",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:300",
+                  "label": "宗教地标原因意义角色解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1121:i0",
+            "row_id": 1121,
+            "raw_text": "What is the main reason the city of Karbala is considered a holy city for Shia Muslims in Iraq?",
+            "text": "What is the main reason the city of Karbala is considered a holy city for Shia Muslims in Iraq?",
+            "previous_cluster_id": 300,
+            "cluster_id": 300,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2512",
+                  "label": "宗教地点与场所",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:300",
+                  "label": "宗教地标原因意义角色解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1163:i0",
+            "row_id": 1163,
+            "raw_text": "What makes Al-Hamoudi Mosque stand out as one of the most prominent historical landmarks in Djibouti in terms of its history and construction?",
+            "text": "What makes Al-Hamoudi Mosque stand out as one of the most prominent historical landmarks in Djibouti in terms of its history and construction?",
+            "previous_cluster_id": 300,
+            "cluster_id": 300,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2512",
+                  "label": "宗教地点与场所",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:300",
+                  "label": "宗教地标原因意义角色解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1173:i0",
+            "row_id": 1173,
+            "raw_text": "What factor that led to choosing Jabal Al-Ashrafieh as the site for building the religious landmark in Jordan?",
+            "text": "What factor that led to choosing Jabal Al-Ashrafieh as the site for building the religious landmark in Jordan?",
+            "previous_cluster_id": 300,
+            "cluster_id": 300,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2512",
+                  "label": "宗教地点与场所",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:300",
+                  "label": "宗教地标原因意义角色解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1191:i0",
+            "row_id": 1191,
+            "raw_text": "What can be inferred about why the pharaohs chose the location of Jebel Barkal to build a sacred temple during their conquest of Sudan, from the perspective of ancient Egyptian thought?",
+            "text": "What can be inferred about why the pharaohs chose the location of Jebel Barkal to build a sacred temple during their conquest of Sudan, from the perspective of ancient Egyptian thought?",
+            "previous_cluster_id": 300,
+            "cluster_id": 300,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2512",
+                  "label": "宗教地点与场所",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:300",
+                  "label": "宗教地标原因意义角色解释",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "所有样本均为对特定宗教地标/圣地的原因、意义或角色进行解释性问答，动作类别一致（解释原因/意义/角色），对象类别均为宗教地标/圣地，具体地点和宗教背景属于参数差异，不构成拆分依据。",
+        "boundary_ids": [],
+        "split_groups": [],
+        "object": "宗教地标/圣地",
+        "action": "解释原因、意义或角色",
+        "semantic_clear": true,
+        "verdict": "consistent"
+      }
+    },
+    {
+      "id": "atomic_discovery.REVIEW_PROMPT:real_mixed",
+      "prompt": "atomic_discovery.REVIEW_PROMPT",
+      "name": "real_mixed",
+      "input": {
+        "cluster_id": 314,
+        "sample_count": 5,
+        "unique_text_count": 5,
+        "keywords": [
+          "dish mauritania",
+          "rice",
+          "accompanying ingredients",
+          "community on",
+          "chicken vegetables",
+          "balghman mauritanian",
+          "favorite dish",
+          "considered favorite",
+          "dish balghman",
+          "balghman"
+        ],
+        "review_scope": "all_unique_texts",
+        "members": [
+          {
+            "intent_id": "r1414:i0",
+            "text": "On what occasion is Mauritanian soup made with meat or chicken, vegetables, and spices considered a favorite dish in Mauritania?"
+          },
+          {
+            "intent_id": "r1365:i0",
+            "text": "What is the main ingredient used in preparing the dish 'balghman' in the Mauritanian Saharan community?"
+          },
+          {
+            "intent_id": "r555:i0",
+            "text": "What is the national dish of Mauritania that features ingredients like fish with rice and white and red sauces made from tomatoes?"
+          },
+          {
+            "intent_id": "r1616:i0",
+            "text": "What is one of the most important crops grown in Mauritania that is widely used in cooking?"
+          },
+          {
+            "intent_id": "r1775:i0",
+            "text": "How is the rice with meat dish usually served in Mauritania in terms of additions or accompanying ingredients?"
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1609,
+        "request_id": "7d452e793c454d90a2c06db52f958130",
+        "input_sha256": "8a08c12b68d222d3e7725a9254824c28f7e5ae9b56ce3a55f3bd541ab6e03764",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r555:i0",
+          "r1365:i0",
+          "r1414:i0",
+          "r1616:i0",
+          "r1775:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r555:i0",
+            "row_id": 555,
+            "raw_text": "What is the national dish of Mauritania that features ingredients like fish with rice and white and red sauces made from tomatoes?",
+            "text": "What is the national dish of Mauritania that features ingredients like fish with rice and white and red sauces made from tomatoes?",
+            "previous_cluster_id": 314,
+            "cluster_id": 1547,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2669",
+                  "label": "地域饮食与城市文化特色",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2778",
+                  "label": "地域菜肴与食材查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1547",
+                  "label": "毛里塔尼亚国菜查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1365:i0",
+            "row_id": 1365,
+            "raw_text": "What is the main ingredient used in preparing the dish 'balghman' in the Mauritanian Saharan community?",
+            "text": "What is the main ingredient used in preparing the dish 'balghman' in the Mauritanian Saharan community?",
+            "previous_cluster_id": 314,
+            "cluster_id": 1545,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2505",
+                  "label": "烹饪知识与食材特点",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2554",
+                  "label": "烹饪知识与操作原理",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2705",
+                  "label": "菜肴食材与烹饪知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2828",
+                  "label": "特定菜肴食材查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2891",
+                  "label": "特定菜肴主要食材查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1545",
+                  "label": "菜肴主要食材查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1414:i0",
+            "row_id": 1414,
+            "raw_text": "On what occasion is Mauritanian soup made with meat or chicken, vegetables, and spices considered a favorite dish in Mauritania?",
+            "text": "On what occasion is Mauritanian soup made with meat or chicken, vegetables, and spices considered a favorite dish in Mauritania?",
+            "previous_cluster_id": 314,
+            "cluster_id": 1546,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1546",
+                  "label": "毛里塔尼亚汤最受欢迎场合查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1616:i0",
+            "row_id": 1616,
+            "raw_text": "What is one of the most important crops grown in Mauritania that is widely used in cooking?",
+            "text": "What is one of the most important crops grown in Mauritania that is widely used in cooking?",
+            "previous_cluster_id": 1434,
+            "cluster_id": 1548,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2869",
+                  "label": "农作物类型或品种查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1548",
+                  "label": "毛里塔尼亚重要烹饪作物查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1775:i0",
+            "row_id": 1775,
+            "raw_text": "How is the rice with meat dish usually served in Mauritania in terms of additions or accompanying ingredients?",
+            "text": "How is the rice with meat dish usually served in Mauritania in terms of additions or accompanying ingredients?",
+            "previous_cluster_id": 314,
+            "cluster_id": 1549,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2386",
+                  "label": "饮食文化",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2469",
+                  "label": "地域与场景饮食文化",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2621",
+                  "label": "阿拉伯地区饮食文化",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2825",
+                  "label": "阿拉伯地区传统菜肴",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1549",
+                  "label": "毛里塔尼亚肉饭搭配方式查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "样本均为关于毛里塔尼亚饮食的知识问答，但动作和对象类别不一致：r1414 询问某道汤被视为最爱的场合（时间/场合查询），r1365 询问某道菜的主要食材（定义/成分查询），r555 询问国菜是什么（定义/识别查询），r1616 询问重要农作物（识别查询），r1775 询问某道菜通常如何搭配（方式/描述查询）。动作类型涵盖场合查询、成分查询、识别查询和方式查询，对象也涉及汤、菜、国菜、农作物和米饭肉菜，不能合并为同一原子意图。",
+        "boundary_ids": [
+          "r1414:i0",
+          "r1775:i0"
+        ],
+        "split_groups": [
+          {
+            "label": "询问某道菜被视为最爱的场合",
+            "evidence_ids": [
+              "r1414:i0"
+            ]
+          },
+          {
+            "label": "询问某道菜的主要食材",
+            "evidence_ids": [
+              "r1365:i0"
+            ]
+          },
+          {
+            "label": "询问某国的国菜是什么",
+            "evidence_ids": [
+              "r555:i0"
+            ]
+          },
+          {
+            "label": "询问某国重要农作物",
+            "evidence_ids": [
+              "r1616:i0"
+            ]
+          },
+          {
+            "label": "询问某道菜通常的搭配或佐料",
+            "evidence_ids": [
+              "r1775:i0"
+            ]
+          }
+        ],
+        "object": "毛里塔尼亚饮食相关实体（汤、菜、国菜、农作物、米饭肉菜）",
+        "action": "知识问答（场合查询、成分查询、识别查询、方式查询）",
+        "semantic_clear": true,
+        "verdict": "mixed"
+      }
+    },
+    {
+      "id": "classifier.ATOMIC_CLASSIFY_SYSTEM:real_material",
+      "prompt": "classifier.ATOMIC_CLASSIFY_SYSTEM",
+      "name": "real_material",
+      "input": {
+        "atomic_text": "What traditional materials are used in making Yemeni jambiyas?",
+        "slots": {}
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "真实原子意图补解析，核对对象动作是否合理",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r27:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r27:i0",
+            "row_id": 27,
+            "raw_text": "What traditional materials are used in making Yemeni jambiyas?",
+            "text": "What traditional materials are used in making Yemeni jambiyas?",
+            "previous_cluster_id": 404,
+            "cluster_id": 404,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:404",
+                  "label": "也门传统服饰材料查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "classifier.ATOMIC_CLASSIFY_SYSTEM:real_singleton",
+      "prompt": "classifier.ATOMIC_CLASSIFY_SYSTEM",
+      "name": "real_singleton",
+      "input": {
+        "atomic_text": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018.",
+        "slots": {}
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "真实原子意图补解析，核对对象动作是否合理",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r14:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r14:i0",
+            "row_id": 14,
+            "raw_text": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018.",
+            "text": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018.",
+            "previous_cluster_id": 1439,
+            "cluster_id": 1706,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2762",
+                  "label": "阿拉伯国家女性法律地位",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1706",
+                  "label": "沙特女性驾驶与旅行法律地位描述",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "classifier.FINAL_MATCH_SYSTEM:real_ambiguous",
+      "prompt": "classifier.FINAL_MATCH_SYSTEM",
+      "name": "real_ambiguous",
+      "input": {
+        "intent_text": "What is the common way women greet each other in Tunisia?",
+        "atomic_intent": {
+          "object": "突尼斯女性之间的问候方式",
+          "action": "询问事实/描述",
+          "span": "What is the common way women greet each other in Tunisia?",
+          "slots": {},
+          "confidence": 0.0
+        },
+        "shortlist": [
+          {
+            "task": {
+              "task_id": "candidate_20261104_222248_4b638fba_265",
+              "topic_path": [
+                "跨文化习俗与礼仪认知",
+                "跨文化习俗与问候礼仪",
+                "特定人群问候礼仪"
+              ],
+              "object": "特定性别组合的问候习俗",
+              "action": "询问问候方式或礼仪",
+              "description": "询问特定国家或地区中特定性别组合（如男-男、同性别、男-女）之间常见的问候方式或礼仪规范。",
+              "object_aliases": [],
+              "action_aliases": [],
+              "subtasks": [],
+              "positive_examples": [
+                "What is the common way that men greet each other in Morocco?",
+                "In Tunisian customs, who should extend their hand first when greeting between men and women?",
+                "What is the traditional way that people of the same gender greet each other in Morocco?",
+                "What is the appropriate behavior for men when greeting women with a handshake in Sudan?"
+              ],
+              "boundary_notes": []
+            },
+            "pairwise_match": true,
+            "pairwise_confidence": 0.95,
+            "pairwise_reason": "Atomic Intent 询问突尼斯女性之间的问候方式，属于特定国家、特定性别组合的问候习俗。Candidate Task 描述询问特定国家或地区中特定性别组合之间常见的问候方式或礼仪规范，其 positive_examples 包含类似“What is the common way that men greet each other in Morocco?”的示例，与当前意图在 Object（特定性别组合的问候习俗）、Action（询问问候方式）和最终履约目标（获取问候礼仪信息）上一致。因此判定为 fulfillment 等价。"
+          },
+          {
+            "task": {
+              "task_id": "candidate_20261104_222248_4b638fba_269",
+              "topic_path": [
+                "跨文化习俗与礼仪认知",
+                "跨文化习俗与问候礼仪",
+                "特定人群问候礼仪"
+              ],
+              "object": "特定人群的问候礼仪",
+              "action": "询问问候方式",
+              "description": "询问特定人群（如某国人群、宗教背景人群、特定性别或家庭角色）通常如何相互问候或常用何种问候语，预期获得该人群问候礼仪或问候用语的描述。",
+              "object_aliases": [],
+              "action_aliases": [],
+              "subtasks": [],
+              "positive_examples": [
+                "How do Kuwaitis usually greet each other",
+                "What is the phrase most commonly used to greet people of Islamic background?",
+                "What is the common way men in Iraq greet each other?",
+                "How is a senior family member usually greeted in Saudi Arabia?"
+              ],
+              "boundary_notes": []
+            },
+            "pairwise_match": true,
+            "pairwise_confidence": 0.95,
+            "pairwise_reason": "Atomic Intent 询问突尼斯女性之间的问候方式，属于特定人群（突尼斯女性）的问候礼仪询问；候选 Task 描述询问特定人群（如某国人群、特定性别等）通常如何相互问候，预期获得问候礼仪描述。两者在 Object（特定人群的问候礼仪）、Action（询问问候方式）和最终履约目标（获得该人群问候礼仪描述）上一致，候选 Task 的 positive_examples 也包含类似“某国男性如何问候”的示例，因此判定为 fulfillment 等价。"
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 189,
+        "request_id": "149ca9d760f14219a5a305b538f15f9c",
+        "input_sha256": "55bbf732a9f9a73031e197caab1913f9abbc0bdd4b962767583d5f2580a3500e",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r185:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r185:i0",
+            "row_id": 185,
+            "raw_text": "What is the common way women greet each other in Tunisia?",
+            "text": "What is the common way women greet each other in Tunisia?",
+            "previous_cluster_id": -1,
+            "cluster_id": -1,
+            "topic_context": {
+              "source": "unavailable",
+              "path": []
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "两个候选 Task 均覆盖“特定国家/地区中特定性别组合的问候方式”这一意图，且与当前 Atomic Intent 在 fulfillment 上等价。候选1 明确聚焦“特定性别组合的问候习俗”，候选2 覆盖“特定人群（含特定性别）的问候礼仪”，两者在 taxonomy 上边界重叠，现有信息无法稳定区分哪一个更等价。",
+        "confidence": 0.9,
+        "candidate_task_ids": [
+          "candidate_20261104_222248_4b638fba_265",
+          "candidate_20261104_222248_4b638fba_269"
+        ],
+        "selected_task_id": null,
+        "status": "ambiguous"
+      }
+    },
+    {
+      "id": "classifier.FINAL_MATCH_SYSTEM:real_known",
+      "prompt": "classifier.FINAL_MATCH_SYSTEM",
+      "name": "real_known",
+      "input": {
+        "intent_text": "Who is the writer who played a prominent role in spreading novels in Qatar?",
+        "atomic_intent": {
+          "object": "在卡塔尔推广小说中起重要作用的作家",
+          "action": "询问身份",
+          "span": "Who is the writer who played a prominent role in spreading novels in Qatar?",
+          "slots": {},
+          "confidence": 0.0
+        },
+        "shortlist": [
+          {
+            "task": {
+              "task_id": "candidate_20261104_222248_4b638fba_144",
+              "topic_path": [
+                "人物与作者身份查询",
+                "人物与作者身份查询",
+                "文学人物身份查询"
+              ],
+              "object": "文学/文化人物",
+              "action": "身份查询",
+              "description": "查询某位文学或文化人物（如作家、诗人、剧作家）的身份，具体国家、作品或主题作为限定参数。",
+              "object_aliases": [],
+              "action_aliases": [],
+              "subtasks": [],
+              "positive_examples": [
+                "Who is considered the father of modern Algerian novels?",
+                "Who is the author who wrote the play 'Al-Bakhil'?",
+                "Who is the famous Algerian writer who addresses politics and violence in her works?",
+                "Who is the poet who wrote the lyrics of the Algerian national anthem?"
+              ],
+              "boundary_notes": []
+            },
+            "pairwise_match": true,
+            "pairwise_confidence": 0.95,
+            "pairwise_reason": "意图询问在卡塔尔推广小说中起重要作用的作家身份，候选任务为文学/文化人物身份查询，国家、作品或主题作为限定参数，两者核心对象（作家/文学人物）与动作（身份查询）一致，且卡塔尔与小说推广可作为限定参数，属于同一履约目标。"
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 56,
+        "request_id": "442d725656b042f0ad9384cac43e2ba7",
+        "input_sha256": "ce35b78cdfab1638d24d5d65654b27fe2e63205d64c1c5a3b2b895955249c8e3",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r57:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r57:i0",
+            "row_id": 57,
+            "raw_text": "Who is the writer who played a prominent role in spreading novels in Qatar?",
+            "text": "Who is the writer who played a prominent role in spreading novels in Qatar?",
+            "previous_cluster_id": 1515,
+            "cluster_id": 144,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2333",
+                  "label": "文学作者与作品信息",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2380",
+                  "label": "作家与文学作品出版信息",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2522",
+                  "label": "作家身份与作品出版信息",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2722",
+                  "label": "作家身份与作品出版信息",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:144",
+                  "label": "作家或诗人身份查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "shortlist 中仅有一个候选任务，其核心对象为文学/文化人物，动作为身份查询，且国家、作品或主题可作为限定参数；用户意图询问在卡塔尔推广小说中起重要作用的作家身份，与该任务在履约目标上等价，卡塔尔和小说推广可作为限定参数，不存在其他候选造成歧义。",
+        "confidence": 0.95,
+        "candidate_task_ids": [
+          "candidate_20261104_222248_4b638fba_144"
+        ],
+        "selected_task_id": "candidate_20261104_222248_4b638fba_144",
+        "status": "known"
+      }
+    },
+    {
+      "id": "classifier.PAIRWISE_SYSTEM:real_False",
+      "prompt": "classifier.PAIRWISE_SYSTEM",
+      "name": "real_False",
+      "input": {
+        "intent_text": "What is a dish that is considered a traditional Tunisian dish?",
+        "atomic_intent": {
+          "object": "突尼斯传统菜肴",
+          "action": "询问/列举",
+          "span": "What is a dish that is considered a traditional Tunisian dish?",
+          "slots": {},
+          "confidence": 0.0
+        },
+        "candidate_task": {
+          "task_id": "candidate_20261104_222248_4b638fba_180",
+          "topic_path": [
+            "传统阿尔及利亚菜肴名称查询"
+          ],
+          "object": "传统阿尔及利亚菜肴",
+          "action": "定义/识别查询",
+          "description": "询问传统阿尔及利亚菜肴（如以小麦为主的主食或西部著名汤品）的名称，属于对特定传统食物名称的识别查询。",
+          "object_aliases": [],
+          "action_aliases": [],
+          "subtasks": [],
+          "positive_examples": [
+            "What is the traditional Algerian dish that is mainly made from wheat?",
+            "What is the name of the traditional soup that is famous in western Algeria?"
+          ],
+          "boundary_notes": []
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1,
+        "request_id": "7ccfaf5a917742209b18f90701722e59",
+        "input_sha256": "fd4c65d17b986c84bde4bae9d038ff7c4aa9dd927918ad41604f702890eaf4e5",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r44:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r44:i0",
+            "row_id": 44,
+            "raw_text": "What is a dish that is considered a traditional Tunisian dish?",
+            "text": "What is a dish that is considered a traditional Tunisian dish?",
+            "previous_cluster_id": 1403,
+            "cluster_id": 2145,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:2145",
+                  "label": "arabic home · inherited · inherited ingredients · dish inherited · support students",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "意图询问的是突尼斯传统菜肴，候选任务针对的是阿尔及利亚传统菜肴，国家/地域实体不同，属于不同对象，不构成 fulfillment 等价。",
+        "confidence": 0.99,
+        "task_id": "candidate_20261104_222248_4b638fba_180",
+        "match": false
+      }
+    },
+    {
+      "id": "classifier.PAIRWISE_SYSTEM:real_True",
+      "prompt": "classifier.PAIRWISE_SYSTEM",
+      "name": "real_True",
+      "input": {
+        "intent_text": "Is it legally allowed to practice other religions in the United Arab Emirates?",
+        "atomic_intent": {
+          "object": "在阿联酋实践其他宗教的合法性",
+          "action": "询问事实",
+          "span": "Is it legally allowed to practice other religions in the United Arab Emirates?",
+          "slots": {},
+          "confidence": 0.0
+        },
+        "candidate_task": {
+          "task_id": "candidate_20261104_222248_4b638fba_1346",
+          "topic_path": [
+            "宗教相关宪法与法律规定"
+          ],
+          "object": "宗教相关法律或宪法规定",
+          "action": "查询规定内容",
+          "description": "查询特定国家法律或宪法中关于宗教的规定内容，包括官方认可宗教、担任特定职位所需的宗教归属以及宪法条文中的宗教规定；国家与具体条文为实例参数。",
+          "object_aliases": [],
+          "action_aliases": [],
+          "subtasks": [],
+          "positive_examples": [
+            "What is the officially recognized religion among Saudi citizens?",
+            "What religion must the President of Lebanon belong to?",
+            "What does Article 3 of the Moroccan constitution state regarding religion?"
+          ],
+          "boundary_notes": []
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 16,
+        "request_id": "f6fd6aaa53144e43a9e62c11f785bdcf",
+        "input_sha256": "dbc06a3cef039669150c981ed937d26d9dfb715c405e9ec88849802125bb2620",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r72:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r72:i0",
+            "row_id": 72,
+            "raw_text": "Is it legally allowed to practice other religions in the United Arab Emirates?",
+            "text": "Is it legally allowed to practice other religions in the United Arab Emirates?",
+            "previous_cluster_id": 1375,
+            "cluster_id": 1772,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1772",
+                  "label": "阿联酋其他宗教实践合法性查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "Atomic Intent 询问在阿联酋实践其他宗教是否合法，核心是查询该国法律对宗教实践合法性的规定；Candidate Task 描述查询特定国家法律或宪法中关于宗教的规定内容，包括官方认可宗教、任职宗教归属及宪法条文，其对象为宗教相关法律或宪法规定，动作是查询规定内容。两者在对象（法律/宪法宗教规定）和动作（查询规定）上高度一致，且 Candidate Task 的实例参数可覆盖阿联酋及宗教实践合法性这一具体问题，因此 fulfillment 等价。",
+        "confidence": 0.95,
+        "task_id": "candidate_20261104_222248_4b638fba_1346",
+        "match": true
+      }
+    },
+    {
+      "id": "cluster_refinement.SPLIT_PROMPT:real_small_cluster",
+      "prompt": "cluster_refinement.SPLIT_PROMPT",
+      "name": "real_small_cluster",
+      "input": {
+        "cluster_id": 314,
+        "parent_cluster_id": null,
+        "refinement_round": 1,
+        "members": [
+          {
+            "intent_id": "r555:i0",
+            "text": "What is the national dish of Mauritania that features ingredients like fish with rice and white and red sauces made from tomatoes?"
+          },
+          {
+            "intent_id": "r1365:i0",
+            "text": "What is the main ingredient used in preparing the dish 'balghman' in the Mauritanian Saharan community?"
+          },
+          {
+            "intent_id": "r1414:i0",
+            "text": "On what occasion is Mauritanian soup made with meat or chicken, vegetables, and spices considered a favorite dish in Mauritania?"
+          },
+          {
+            "intent_id": "r1616:i0",
+            "text": "What is one of the most important crops grown in Mauritania that is widely used in cooking?"
+          },
+          {
+            "intent_id": "r1775:i0",
+            "text": "How is the rice with meat dish usually served in Mauritania in terms of additions or accompanying ingredients?"
+          }
+        ],
+        "review": {
+          "verdict": "mixed",
+          "semantic_clear": true,
+          "object": "毛里塔尼亚饮食相关实体（汤、菜、国菜、农作物、米饭肉菜）",
+          "action": "知识问答（场合查询、成分查询、识别查询、方式查询）",
+          "reason": "样本均为关于毛里塔尼亚饮食的知识问答，但动作和对象类别不一致：r1414 询问某道汤被视为最爱的场合（时间/场合查询），r1365 询问某道菜的主要食材（定义/成分查询），r555 询问国菜是什么（定义/识别查询），r1616 询问重要农作物（识别查询），r1775 询问某道菜通常如何搭配（方式/描述查询）。动作类型涵盖场合查询、成分查询、识别查询和方式查询，对象也涉及汤、菜、国菜、农作物和米饭肉菜，不能合并为同一原子意图。",
+          "split_groups": [
+            {
+              "label": "询问某道菜被视为最爱的场合",
+              "evidence_ids": [
+                "r1414:i0"
+              ]
+            },
+            {
+              "label": "询问某道菜的主要食材",
+              "evidence_ids": [
+                "r1365:i0"
+              ]
+            },
+            {
+              "label": "询问某国的国菜是什么",
+              "evidence_ids": [
+                "r555:i0"
+              ]
+            },
+            {
+              "label": "询问某国重要农作物",
+              "evidence_ids": [
+                "r1616:i0"
+              ]
+            },
+            {
+              "label": "询问某道菜通常的搭配或佐料",
+              "evidence_ids": [
+                "r1775:i0"
+              ]
+            }
+          ],
+          "boundary_ids": [
+            "r1414:i0",
+            "r1775:i0"
+          ]
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1649,
+        "request_id": "dcb805da7639412586efa3596006d72a",
+        "input_sha256": "78eaa789d1bc034b98c1f4635e9bc748422f48118dee5a196e898ff940ec2d28",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r555:i0",
+          "r1365:i0",
+          "r1414:i0",
+          "r1616:i0",
+          "r1775:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r555:i0",
+            "row_id": 555,
+            "raw_text": "What is the national dish of Mauritania that features ingredients like fish with rice and white and red sauces made from tomatoes?",
+            "text": "What is the national dish of Mauritania that features ingredients like fish with rice and white and red sauces made from tomatoes?",
+            "previous_cluster_id": 314,
+            "cluster_id": 1547,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2669",
+                  "label": "地域饮食与城市文化特色",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2778",
+                  "label": "地域菜肴与食材查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1547",
+                  "label": "毛里塔尼亚国菜查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1365:i0",
+            "row_id": 1365,
+            "raw_text": "What is the main ingredient used in preparing the dish 'balghman' in the Mauritanian Saharan community?",
+            "text": "What is the main ingredient used in preparing the dish 'balghman' in the Mauritanian Saharan community?",
+            "previous_cluster_id": 314,
+            "cluster_id": 1545,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2505",
+                  "label": "烹饪知识与食材特点",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2554",
+                  "label": "烹饪知识与操作原理",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2705",
+                  "label": "菜肴食材与烹饪知识",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2828",
+                  "label": "特定菜肴食材查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2891",
+                  "label": "特定菜肴主要食材查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1545",
+                  "label": "菜肴主要食材查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1414:i0",
+            "row_id": 1414,
+            "raw_text": "On what occasion is Mauritanian soup made with meat or chicken, vegetables, and spices considered a favorite dish in Mauritania?",
+            "text": "On what occasion is Mauritanian soup made with meat or chicken, vegetables, and spices considered a favorite dish in Mauritania?",
+            "previous_cluster_id": 314,
+            "cluster_id": 1546,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1546",
+                  "label": "毛里塔尼亚汤最受欢迎场合查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1616:i0",
+            "row_id": 1616,
+            "raw_text": "What is one of the most important crops grown in Mauritania that is widely used in cooking?",
+            "text": "What is one of the most important crops grown in Mauritania that is widely used in cooking?",
+            "previous_cluster_id": 1434,
+            "cluster_id": 1548,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2869",
+                  "label": "农作物类型或品种查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1548",
+                  "label": "毛里塔尼亚重要烹饪作物查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1775:i0",
+            "row_id": 1775,
+            "raw_text": "How is the rice with meat dish usually served in Mauritania in terms of additions or accompanying ingredients?",
+            "text": "How is the rice with meat dish usually served in Mauritania in terms of additions or accompanying ingredients?",
+            "previous_cluster_id": 314,
+            "cluster_id": 1549,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2386",
+                  "label": "饮食文化",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2469",
+                  "label": "地域与场景饮食文化",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2621",
+                  "label": "阿拉伯地区饮食文化",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2825",
+                  "label": "阿拉伯地区传统菜肴",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1549",
+                  "label": "毛里塔尼亚肉饭搭配方式查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "groups": [
+          {
+            "label": "询问某道菜的主要食材或成分",
+            "evidence_ids": [
+              "r1365:i0"
+            ]
+          },
+          {
+            "label": "询问某道菜被视为最爱的场合",
+            "evidence_ids": [
+              "r1414:i0"
+            ]
+          },
+          {
+            "label": "询问某国的国菜是什么",
+            "evidence_ids": [
+              "r555:i0"
+            ]
+          },
+          {
+            "label": "询问某国重要农作物",
+            "evidence_ids": [
+              "r1616:i0"
+            ]
+          },
+          {
+            "label": "询问某道菜通常的搭配或佐料",
+            "evidence_ids": [
+              "r1775:i0"
+            ]
+          }
+        ],
+        "uncertain_ids": []
+      }
+    },
+    {
+      "id": "cluster_refinement.SPLIT_PROMPT:real_two_members",
+      "prompt": "cluster_refinement.SPLIT_PROMPT",
+      "name": "real_two_members",
+      "input": {
+        "cluster_id": 1556,
+        "parent_cluster_id": 761,
+        "refinement_round": 2,
+        "members": [
+          {
+            "intent_id": "r460:i0",
+            "text": "Which country is not a main source of foreign workers in Qatar?"
+          },
+          {
+            "intent_id": "r1855:i0",
+            "text": "which age group are the Katara Hills in Qatar considered especially suitable?"
+          }
+        ],
+        "review": {
+          "verdict": "mixed",
+          "semantic_clear": true,
+          "object": "地点适用人群；外籍工人来源国家",
+          "action": "查询适用年龄群体；查询非主要来源国家",
+          "reason": "两个样本均为知识问答，但动作和对象类别不同：样本1询问特定地点（Katara Hills）适合的年龄群体，属于地点属性/适用人群查询；样本2询问不是卡塔尔外籍工人主要来源的国家，属于否定式来源国家查询。两者共享国家参数（卡塔尔）但问答动作与对象类别不一致，不能合并为同一原子意图。",
+          "split_groups": [
+            {
+              "label": "地点适用人群查询",
+              "evidence_ids": [
+                "r1855:i0"
+              ]
+            },
+            {
+              "label": "否定式来源国家查询",
+              "evidence_ids": [
+                "r460:i0"
+              ]
+            }
+          ],
+          "boundary_ids": []
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1759,
+        "request_id": "ff26adebc94a4aeca065979d6305b2ee",
+        "input_sha256": "24293e0a636c3ee8f97dad16c52329166f1bb1e7b97d39e27eb5398e8f43f038",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r460:i0",
+          "r1855:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r460:i0",
+            "row_id": 460,
+            "raw_text": "Which country is not a main source of foreign workers in Qatar?",
+            "text": "Which country is not a main source of foreign workers in Qatar?",
+            "previous_cluster_id": 761,
+            "cluster_id": 1662,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1662",
+                  "label": "卡塔尔外籍工人主要来源国排除查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1855:i0",
+            "row_id": 1855,
+            "raw_text": "which age group are the Katara Hills in Qatar considered especially suitable?",
+            "text": "which age group are the Katara Hills in Qatar considered especially suitable?",
+            "previous_cluster_id": 1435,
+            "cluster_id": 1661,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1661",
+                  "label": "卡塔拉山适合年龄段询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "groups": [
+          {
+            "label": "地点适用人群查询",
+            "evidence_ids": [
+              "r1855:i0"
+            ]
+          },
+          {
+            "label": "否定式来源国家查询",
+            "evidence_ids": [
+              "r460:i0"
+            ]
+          }
+        ],
+        "uncertain_ids": []
+      }
+    },
+    {
+      "id": "hierarchy_review.LEAF_PROMPT:real_False",
+      "prompt": "hierarchy_review.LEAF_PROMPT",
+      "name": "real_False",
+      "input": {
+        "node_id": "topic:1653",
+        "kind": "leaf",
+        "review": {
+          "reason": "两个样本均为关于阿联酋岛屿的地理事实查询，动作均为“查询事实/数量或属性”，对象类别均为“阿联酋的岛屿”，预期结果均为具体地理信息。具体问题（数量 vs 最大岛屿）属于同一动作对象类别下的参数差异，不构成不同原子意图。",
+          "object": "阿联酋的岛屿",
+          "action": "查询地理事实（数量或属性）",
+          "semantic_clear": true,
+          "verdict": "consistent"
+        },
+        "members": [
+          {
+            "text": "What is the estimated number of islands under the sovereignty of the United Arab Emirates according to contemporary geographical analysis?"
+          },
+          {
+            "text": "What is the largest island in the United Arab Emirates?"
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1830,
+        "request_id": "2b1d1ac7863e4e16b8a30cb17a3451d3",
+        "input_sha256": "009814edcf787d19a05641ae7df49a02054a679c5fb4b1a9f1c1fd79d807b510",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r1131:i0",
+          "r1381:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r1131:i0",
+            "row_id": 1131,
+            "raw_text": "What is the estimated number of islands under the sovereignty of the United Arab Emirates according to contemporary geographical analysis?",
+            "text": "What is the estimated number of islands under the sovereignty of the United Arab Emirates according to contemporary geographical analysis?",
+            "previous_cluster_id": 1377,
+            "cluster_id": 2017,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:2017",
+                  "label": "1968 · 1968 estimated · according contemporary · analysis issue · emirates according",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1381:i0",
+            "row_id": 1381,
+            "raw_text": "What is the largest island in the United Arab Emirates?",
+            "text": "What is the largest island in the United Arab Emirates?",
+            "previous_cluster_id": 1377,
+            "cluster_id": 2017,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:2017",
+                  "label": "1968 · 1968 estimated · according contemporary · analysis issue · emirates according",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "两个样本均以“阿联酋的岛屿”为对象，动作均为查询地理事实，但所问属性不同：一为岛屿数量，一为最大岛屿（面积/规模属性）。审核摘要将二者归为同一动作对象类别下的参数差异，但“数量”与“最大岛屿”属于不同所问属性，不能仅因同属地理事实查询而视为同一原子意图，存在实质语义矛盾。",
+        "description": "涉及阿拉伯联合酋长国岛屿的地理事实查询，但样本分别指向岛屿数量与最大岛屿两种不同属性，无法统一界定单一所问属性。",
+        "label": "阿联酋岛屿地理事实查询",
+        "semantic_issue": "conflicting_semantics",
+        "semantic_clear": false
+      }
+    },
+    {
+      "id": "hierarchy_review.LEAF_PROMPT:real_True",
+      "prompt": "hierarchy_review.LEAF_PROMPT",
+      "name": "real_True",
+      "input": {
+        "node_id": "topic:1550",
+        "kind": "leaf",
+        "review": {
+          "reason": "所有样本均为知识问答类，动作是询问某个事实或原因（What/Which），对象类别涉及阿联酋/卡塔尔的历史、地理、文化、建筑、家庭适宜性、产业等具体主题。虽然具体主题不同，但都属于同一原子动作意图：对特定实体或历史时期的事实性查询。国家、时间、具体实体均为参数，不构成动作或对象类别的差异。因此判定为一致。",
+          "object": "特定国家或地区（阿联酋、卡塔尔等）的历史、地理、文化、社会、经济等事实性信息",
+          "action": "询问或查询事实/原因",
+          "semantic_clear": true,
+          "verdict": "consistent"
+        },
+        "members": [
+          {
+            "text": "What is the main geographical factor that contributed to the development of trade and culture in the United Arab Emirates throughout the ages?"
+          },
+          {
+            "text": "What was the main impact of the 1914-1918 war on the course of development in Qatar during the twentieth century?"
+          },
+          {
+            "text": "What is the main source that inspired architecture in the United Arab Emirates?"
+          },
+          {
+            "text": "What was the main impact of the Portuguese expansion in the Indian Ocean during the 16th century on the Emirati coast?"
+          },
+          {
+            "text": "What is the main factor that affects house planning in the United Arab Emirates?"
+          },
+          {
+            "text": "Which Emirates are considered suitable for families according to the mentioned context?"
+          },
+          {
+            "text": "Which industry experienced significant growth in the UAE during the 19th century and the early 20th century?"
+          },
+          {
+            "text": "What is the main reason why Sharjah is known as the cultural capital of the United Arab Emirates?"
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1810,
+        "request_id": "dcf17deda79c421c929f417ada5a0c88",
+        "input_sha256": "f083884cb6db84739d9ca5938e03d830487a1b79dcfb6221e901538a8690f155",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [
+          "r158:i0",
+          "r462:i0",
+          "r717:i0",
+          "r778:i0",
+          "r842:i0",
+          "r995:i0",
+          "r1717:i0",
+          "r1916:i0"
+        ],
+        "comparison_origins": [
+          {
+            "intent_id": "r158:i0",
+            "row_id": 158,
+            "raw_text": "What is the main source that inspired architecture in the United Arab Emirates?",
+            "text": "What is the main source that inspired architecture in the United Arab Emirates?",
+            "previous_cluster_id": 1376,
+            "cluster_id": 1550,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2379",
+                  "label": "国家与区域现象成因解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2644",
+                  "label": "现象成因解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2771",
+                  "label": "现象成因与影响因素解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1550",
+                  "label": "现象主要成因或来源查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r462:i0",
+            "row_id": 462,
+            "raw_text": "What is the main factor that affects house planning in the United Arab Emirates?",
+            "text": "What is the main factor that affects house planning in the United Arab Emirates?",
+            "previous_cluster_id": 761,
+            "cluster_id": 1550,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2379",
+                  "label": "国家与区域现象成因解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2644",
+                  "label": "现象成因解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2771",
+                  "label": "现象成因与影响因素解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1550",
+                  "label": "现象主要成因或来源查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r717:i0",
+            "row_id": 717,
+            "raw_text": "What is the main reason why Sharjah is known as the cultural capital of the United Arab Emirates?",
+            "text": "What is the main reason why Sharjah is known as the cultural capital of the United Arab Emirates?",
+            "previous_cluster_id": 761,
+            "cluster_id": 1932,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1932",
+                  "label": "沙迦文化之都称号原因查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r778:i0",
+            "row_id": 778,
+            "raw_text": "What is the main geographical factor that contributed to the development of trade and culture in the United Arab Emirates throughout the ages?",
+            "text": "What is the main geographical factor that contributed to the development of trade and culture in the United Arab Emirates throughout the ages?",
+            "previous_cluster_id": 761,
+            "cluster_id": 1550,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2379",
+                  "label": "国家与区域现象成因解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2644",
+                  "label": "现象成因解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2771",
+                  "label": "现象成因与影响因素解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1550",
+                  "label": "现象主要成因或来源查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r842:i0",
+            "row_id": 842,
+            "raw_text": "What was the main impact of the Portuguese expansion in the Indian Ocean during the 16th century on the Emirati coast?",
+            "text": "What was the main impact of the Portuguese expansion in the Indian Ocean during the 16th century on the Emirati coast?",
+            "previous_cluster_id": 761,
+            "cluster_id": 1550,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2379",
+                  "label": "国家与区域现象成因解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2644",
+                  "label": "现象成因解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2771",
+                  "label": "现象成因与影响因素解释",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1550",
+                  "label": "现象主要成因或来源查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r995:i0",
+            "row_id": 995,
+            "raw_text": "What was the main impact of the 1914-1918 war on the course of development in Qatar during the twentieth century?",
+            "text": "What was the main impact of the 1914-1918 war on the course of development in Qatar during the twentieth century?",
+            "previous_cluster_id": 761,
+            "cluster_id": 44,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:44",
+                  "label": "卡塔尔历史社会事实查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1717:i0",
+            "row_id": 1717,
+            "raw_text": "Which Emirates are considered suitable for families according to the mentioned context?",
+            "text": "Which Emirates are considered suitable for families according to the mentioned context?",
+            "previous_cluster_id": 1375,
+            "cluster_id": 1930,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1930",
+                  "label": "适合家庭的酋长国查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1916:i0",
+            "row_id": 1916,
+            "raw_text": "Which industry experienced significant growth in the UAE during the 19th century and the early 20th century?",
+            "text": "Which industry experienced significant growth in the UAE during the 19th century and the early 20th century?",
+            "previous_cluster_id": 761,
+            "cluster_id": 1757,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2535",
+                  "label": "历史考古事实查询",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1757",
+                  "label": "历史考古事实查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "historical_response": {
+        "reason": "样本均为对阿联酋/卡塔尔等特定国家或地区的历史、地理、文化、社会、经济等具体事实或原因的询问，动作统一为事实性查询，对象可概括为特定国家或地区的事实性信息；国家、时间、具体实体为参数，不构成对象或动作类别差异。",
+        "description": "针对特定国家或地区（如阿联酋、卡塔尔）的历史、地理、文化、社会、经济等具体事实或原因进行询问的知识问答主题。",
+        "label": "特定国家或地区事实性信息查询",
+        "semantic_issue": "none",
+        "semantic_clear": true
+      }
+    },
+    {
+      "id": "hierarchy_review.NODE_PROMPT:real_group",
+      "prompt": "hierarchy_review.NODE_PROMPT",
+      "name": "real_group",
+      "input": {
+        "node_id": "merge:2401",
+        "kind": "parent",
+        "children": [
+          {
+            "node_id": "topic:839",
+            "label": "叙利亚城市历史宗教文化角色查询",
+            "description": "询问叙利亚城市Shahba和Apamea在宗教与文化重要性方面的历史角色或原因，预期获得解释性回答。",
+            "reason": "三个样本均围绕叙利亚城市Shahba和Apamea，询问其在宗教与文化重要性或历史角色方面的解释性内容；对象为城市的历史宗教文化地位，动作为询问历史角色或原因，措辞差异属于参数，语义一致且可清晰界定。",
+            "leaf_count": 1
+          },
+          {
+            "node_id": "topic:606",
+            "label": "叙利亚城市历史角色询问",
+            "description": "询问叙利亚城市Shahba和Apamea在历史上以何种角色闻名，包括其宗教与文化影响方面的历史角色。",
+            "reason": "两条样本均以叙利亚城市Shahba和Apamea为对象，动作是询问这些城市在历史上以何种角色闻名；第二条将所问属性限定为宗教与文化影响，但仍属于对同一对象历史角色的询问，对象和动作可明确界定，无实质矛盾。",
+            "leaf_count": 1
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1809,
+        "request_id": "5e17d8fb3b0f44b5bc69225c3aee80a5",
+        "input_sha256": "5be00367708099e23dd9fa5abc2667c7500dff48ef2ca4c8222aba074acf4d9f",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [],
+        "comparison_origins": []
+      },
+      "historical_response": {
+        "reason": "两个子主题均以叙利亚城市Shahba和Apamea为对象，询问其历史角色，其中宗教与文化重要性是历史角色的具体属性；对象和知识内容一致，可归入共同的历史城市主题。",
+        "description": "聚焦叙利亚城市Shahba和Apamea的历史角色，包括其在宗教与文化方面的重要性或影响。",
+        "label": "叙利亚城市历史角色",
+        "decision": "group"
+      }
+    },
+    {
+      "id": "hierarchy_review.NODE_PROMPT:real_separate",
+      "prompt": "hierarchy_review.NODE_PROMPT",
+      "name": "real_separate",
+      "input": {
+        "node_id": "merge:2207",
+        "kind": "parent",
+        "children": [
+          {
+            "node_id": "topic:1172",
+            "label": "伊拉克古亚述遗址城市查询",
+            "description": "询问哪座伊拉克城市以其代表古亚述文明的主要考古遗址而最为著名，即查询伊拉克城市与古亚述文明考古遗址之间的对应关系。",
+            "reason": "唯一成员文本明确询问哪座伊拉克城市以其代表古亚述文明的主要考古遗址最为著名；对象为伊拉克城市与古亚述文明考古遗址，动作为询问事实，所问属性是城市与遗址的对应关系，语义可界定。",
+            "leaf_count": 1
+          },
+          {
+            "node_id": "topic:1320",
+            "label": "叙利亚境内地点位置查询",
+            "description": "查询叙利亚境内某一具体地点或遗址所在的城市或区域位置。",
+            "reason": "三个样本均以叙利亚境内具体地点/遗址为对象，动作是询问其所在城市或区域，所问属性一致为位置信息；国家、城市、遗址名称为实例参数，不改变原子意图。",
+            "leaf_count": 1
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "复核真实请求，历史响应仅作对照，不作正确答案",
+      "source": {
+        "kind": "historical_request",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/requests/requests.jsonl",
+        "line": 1842,
+        "request_id": "25dfd21a73fe414a929e082d1db931c0",
+        "input_sha256": "e6f26692425cb72c5ab31209bcb5f51f88170ef79dad8847d59dbe788ab1e855",
+        "comparison_run_id": "20261105_195042_057d470e",
+        "intent_ids": [],
+        "comparison_origins": []
+      },
+      "historical_response": {
+        "reason": "两个子主题分别涉及伊拉克古亚述遗址城市与叙利亚境内地点位置，虽同属西亚考古/地理查询，但知识对象（古亚述文明遗址对应城市 vs 叙利亚具体地点位置）和所问属性（文明遗址对应关系 vs 位置信息）不同，缺乏共同且有区分度的知识主题或业务对象类别，不足以建立合理父主题。",
+        "description": "涵盖西亚地区考古遗址与地点位置查询的宽泛集合，边界不清晰，无法形成统一的知识主题。",
+        "label": "西亚考古与地点查询",
+        "decision": "separate"
+      }
+    },
+    {
+      "id": "leaf_merge.MERGE_PROMPT:real_diwaniya",
+      "prompt": "leaf_merge.MERGE_PROMPT",
+      "name": "real_diwaniya",
+      "input": {
+        "left": {
+          "task_id": "candidate_20261105_195042_057d470e_1773",
+          "label": "科威特 diwaniya 社会角色描述",
+          "description": "询问如何描述 diwaniya 在科威特社会中所扮演的角色，即对该社会文化现象的角色进行说明或概括。",
+          "object": "diwaniya在科威特社会中的角色",
+          "action": "描述",
+          "topic_context": {
+            "source": "current_cluster",
+            "path": [
+              {
+                "node_id": "merge:2926",
+                "label": "diwaniya 文化社会现象",
+                "is_leaf": false
+              },
+              {
+                "node_id": "topic:1773",
+                "label": "科威特 diwaniya 社会角色描述",
+                "is_leaf": true
+              }
+            ]
+          },
+          "members": [
+            {
+              "text": "How can the role of the diwaniya in Kuwaiti society be described"
+            }
+          ]
+        },
+        "right": {
+          "task_id": "candidate_20261104_222248_4b638fba_1247",
+          "label": "diwaniya主要目的询问",
+          "description": "询问diwaniya这一事物或活动的主要目的，所问属性为其核心用途或宗旨。",
+          "object": "diwaniya的主要目的",
+          "action": "询问",
+          "topic_context": {
+            "source": "current_cluster",
+            "path": [
+              {
+                "node_id": "merge:2926",
+                "label": "diwaniya 文化社会现象",
+                "is_leaf": false
+              },
+              {
+                "node_id": "topic:1247",
+                "label": "diwaniya主要目的询问",
+                "is_leaf": true
+              }
+            ]
+          },
+          "members": [
+            {
+              "text": "what is the main purpose of the diwaniya?"
+            }
+          ]
+        },
+        "conflict_texts": []
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "同一句拆出社会角色和主要目的：判断近义重复还是相关叶子",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r21:i0",
+          "r21:i1"
+        ],
+        "origins": [
+          {
+            "intent_id": "r21:i0",
+            "row_id": 21,
+            "raw_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?",
+            "text": "How can the role of the diwaniya in Kuwaiti society be described",
+            "previous_cluster_id": 761,
+            "cluster_id": 1773,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2926",
+                  "label": "diwaniya 文化社会现象",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1773",
+                  "label": "科威特 diwaniya 社会角色描述",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r21:i1",
+            "row_id": 21,
+            "raw_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?",
+            "text": "what is the main purpose of the diwaniya?",
+            "previous_cluster_id": 1247,
+            "cluster_id": 1247,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2926",
+                  "label": "diwaniya 文化社会现象",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1247",
+                  "label": "diwaniya主要目的询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "leaf_merge.MERGE_PROMPT:real_religions",
+      "prompt": "leaf_merge.MERGE_PROMPT",
+      "name": "real_religions",
+      "input": {
+        "left": {
+          "task_id": "candidate_20261104_222248_4b638fba_609",
+          "label": "阿联酋国家属性查询",
+          "description": "查询阿拉伯联合酋长国的具体国家属性事实，包括政治首都、与格林尼治标准时间的时差、官方语言、统治者身份、官方宗教和国庆月份等属性。",
+          "object": "阿拉伯联合酋长国的国家属性",
+          "action": "查询事实信息",
+          "topic_context": {
+            "source": "current_cluster",
+            "path": [
+              {
+                "node_id": "merge:2401",
+                "label": "国家/群体属性与语言事实",
+                "is_leaf": false
+              },
+              {
+                "node_id": "merge:2617",
+                "label": "国家/群体属性与语言事实",
+                "is_leaf": false
+              },
+              {
+                "node_id": "topic:609",
+                "label": "阿联酋国家属性查询",
+                "is_leaf": true
+              }
+            ]
+          },
+          "members": [
+            {
+              "text": "What is the political capital of the United Arab Emirates?"
+            },
+            {
+              "text": "By approximately how many hours is the UAE ahead of Greenwich Mean Time?"
+            },
+            {
+              "text": "What is the official language of the United Arab Emirates?"
+            },
+            {
+              "text": "Who is the leader who rules the Emirate of Dubai and also serves as the Prime Minister of the United Arab Emirates?"
+            },
+            {
+              "text": "What is the official religion of the United Arab Emirates?"
+            },
+            {
+              "text": "In which month does the United Arab Emirates celebrate its National Day?"
+            }
+          ]
+        },
+        "right": {
+          "task_id": "candidate_20261105_195042_057d470e_1771",
+          "label": "国家官方宗教查询",
+          "description": "查询特定国家的官方宗教或法定宗教归属，包括国家元首任职所要求的宗教身份；国家及职位为实例参数。",
+          "object": "国家官方/法定宗教",
+          "action": "查询",
+          "topic_context": {
+            "source": "current_cluster",
+            "path": [
+              {
+                "node_id": "topic:1771",
+                "label": "国家官方宗教查询",
+                "is_leaf": true
+              }
+            ]
+          },
+          "members": [
+            {
+              "text": "What is the officially recognized religion among Saudi citizens?"
+            },
+            {
+              "text": "What religion must the President of Lebanon belong to?"
+            },
+            {
+              "text": "What is the official religion in the Sultanate of Oman?"
+            }
+          ]
+        },
+        "conflict_texts": []
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "两个国家官方宗教：判断统一叶子或共用祖先，检查重复类别",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r344:i0",
+          "r1411:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r344:i0",
+            "row_id": 344,
+            "raw_text": "What is the official religion of the United Arab Emirates?",
+            "text": "What is the official religion of the United Arab Emirates?",
+            "previous_cluster_id": 609,
+            "cluster_id": 609,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2401",
+                  "label": "国家/群体属性与语言事实",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2617",
+                  "label": "国家/群体属性与语言事实",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:609",
+                  "label": "阿联酋国家属性查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1411:i0",
+            "row_id": 1411,
+            "raw_text": "What is the official religion in the Sultanate of Oman?",
+            "text": "What is the official religion in the Sultanate of Oman?",
+            "previous_cluster_id": 1446,
+            "cluster_id": 1771,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1771",
+                  "label": "国家官方宗教查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "leaf_merge.VERIFY_PROMPT:real_diwaniya",
+      "prompt": "leaf_merge.VERIFY_PROMPT",
+      "name": "real_diwaniya",
+      "input": {
+        "definition": {
+          "decision": "common_parent",
+          "label": "diwaniya 文化社会现象",
+          "description": "关于 diwaniya 这一文化/社会现象的主题，涵盖其核心目的与在科威特社会中的角色等属性。",
+          "parent_node_id": "merge:2926",
+          "object": "diwaniya在科威特社会中的角色",
+          "action": "描述"
+        },
+        "left": [
+          {
+            "text": "How can the role of the diwaniya in Kuwaiti society be described"
+          }
+        ],
+        "right": [
+          {
+            "text": "what is the main purpose of the diwaniya?"
+          }
+        ],
+        "left_topic_context": {
+          "source": "current_cluster",
+          "path": [
+            {
+              "node_id": "merge:2926",
+              "label": "diwaniya 文化社会现象",
+              "is_leaf": false
+            },
+            {
+              "node_id": "topic:1773",
+              "label": "科威特 diwaniya 社会角色描述",
+              "is_leaf": true
+            }
+          ]
+        },
+        "right_topic_context": {
+          "source": "current_cluster",
+          "path": [
+            {
+              "node_id": "merge:2926",
+              "label": "diwaniya 文化社会现象",
+              "is_leaf": false
+            },
+            {
+              "node_id": "topic:1247",
+              "label": "diwaniya主要目的询问",
+              "is_leaf": true
+            }
+          ]
+        },
+        "selected_ancestor": {
+          "node_id": "merge:2926",
+          "label": "diwaniya 文化社会现象",
+          "description": "关于 diwaniya 这一文化/社会现象的主题，涵盖其核心目的与在科威特社会中的角色等属性。"
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "真实已有定义作为待审假设，不预设验证通过",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r21:i0",
+          "r21:i1"
+        ],
+        "origins": [
+          {
+            "intent_id": "r21:i0",
+            "row_id": 21,
+            "raw_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?",
+            "text": "How can the role of the diwaniya in Kuwaiti society be described",
+            "previous_cluster_id": 761,
+            "cluster_id": 1773,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2926",
+                  "label": "diwaniya 文化社会现象",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1773",
+                  "label": "科威特 diwaniya 社会角色描述",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r21:i1",
+            "row_id": 21,
+            "raw_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?",
+            "text": "what is the main purpose of the diwaniya?",
+            "previous_cluster_id": 1247,
+            "cluster_id": 1247,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2926",
+                  "label": "diwaniya 文化社会现象",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1247",
+                  "label": "diwaniya主要目的询问",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "leaf_merge.VERIFY_PROMPT:real_religions",
+      "prompt": "leaf_merge.VERIFY_PROMPT",
+      "name": "real_religions",
+      "input": {
+        "definition": {
+          "decision": "merge",
+          "label": "阿联酋国家属性查询",
+          "description": "查询阿拉伯联合酋长国的具体国家属性事实，包括政治首都、与格林尼治标准时间的时差、官方语言、统治者身份、官方宗教和国庆月份等属性。",
+          "parent_node_id": null,
+          "object": "阿拉伯联合酋长国的国家属性",
+          "action": "查询事实信息"
+        },
+        "left": [
+          {
+            "text": "What is the political capital of the United Arab Emirates?"
+          },
+          {
+            "text": "By approximately how many hours is the UAE ahead of Greenwich Mean Time?"
+          },
+          {
+            "text": "What is the official language of the United Arab Emirates?"
+          },
+          {
+            "text": "Who is the leader who rules the Emirate of Dubai and also serves as the Prime Minister of the United Arab Emirates?"
+          },
+          {
+            "text": "What is the official religion of the United Arab Emirates?"
+          },
+          {
+            "text": "In which month does the United Arab Emirates celebrate its National Day?"
+          }
+        ],
+        "right": [
+          {
+            "text": "What is the officially recognized religion among Saudi citizens?"
+          },
+          {
+            "text": "What religion must the President of Lebanon belong to?"
+          },
+          {
+            "text": "What is the official religion in the Sultanate of Oman?"
+          }
+        ],
+        "left_topic_context": {
+          "source": "current_cluster",
+          "path": [
+            {
+              "node_id": "merge:2401",
+              "label": "国家/群体属性与语言事实",
+              "is_leaf": false
+            },
+            {
+              "node_id": "merge:2617",
+              "label": "国家/群体属性与语言事实",
+              "is_leaf": false
+            },
+            {
+              "node_id": "topic:609",
+              "label": "阿联酋国家属性查询",
+              "is_leaf": true
+            }
+          ]
+        },
+        "right_topic_context": {
+          "source": "current_cluster",
+          "path": [
+            {
+              "node_id": "topic:1771",
+              "label": "国家官方宗教查询",
+              "is_leaf": true
+            }
+          ]
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "真实已有定义作为待审假设，不预设验证通过",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r344:i0",
+          "r1411:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r344:i0",
+            "row_id": 344,
+            "raw_text": "What is the official religion of the United Arab Emirates?",
+            "text": "What is the official religion of the United Arab Emirates?",
+            "previous_cluster_id": 609,
+            "cluster_id": 609,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2401",
+                  "label": "国家/群体属性与语言事实",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2617",
+                  "label": "国家/群体属性与语言事实",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:609",
+                  "label": "阿联酋国家属性查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          },
+          {
+            "intent_id": "r1411:i0",
+            "row_id": 1411,
+            "raw_text": "What is the official religion in the Sultanate of Oman?",
+            "text": "What is the official religion in the Sultanate of Oman?",
+            "previous_cluster_id": 1446,
+            "cluster_id": 1771,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:1771",
+                  "label": "国家官方宗教查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "parent_regroup.PROPOSE:real_diwaniya",
+      "prompt": "parent_regroup.PROPOSE",
+      "name": "real_diwaniya",
+      "input": {
+        "branch": {
+          "node_id": "topic:1773",
+          "label": "科威特 diwaniya 社会角色描述",
+          "description": "询问如何描述 diwaniya 在科威特社会中所扮演的角色，即对该社会文化现象的角色进行说明或概括。",
+          "children": []
+        },
+        "existing_parents": [
+          {
+            "node_id": "merge:2926",
+            "label": "diwaniya 文化社会现象",
+            "description": "关于 diwaniya 这一文化/社会现象的主题，涵盖其核心目的与在科威特社会中的角色等属性。",
+            "children": [
+              {
+                "node_id": "topic:1247",
+                "label": "diwaniya主要目的询问",
+                "description": "询问diwaniya这一事物或活动的主要目的，所问属性为其核心用途或宗旨。"
+              },
+              {
+                "node_id": "topic:1773",
+                "label": "科威特 diwaniya 社会角色描述",
+                "description": "询问如何描述 diwaniya 在科威特社会中所扮演的角色，即对该社会文化现象的角色进行说明或概括。"
+              }
+            ]
+          },
+          {
+            "node_id": "merge:2936",
+            "label": "Abdul Rahman Al-Iryani 人物相关主题",
+            "description": "关于也门历史人物 Abdul Rahman Al-Iryani 的主题，涵盖其民族斗争期间被捕原因及总统任内宪法立法成就等个人经历与政治活动信息。",
+            "children": [
+              {
+                "node_id": "topic:697",
+                "label": "也门民族斗争期间被捕原因询问",
+                "description": "询问 Abdul Rahman Al-Iryani 在也门民族斗争期间被捕的主要原因。"
+              },
+              {
+                "node_id": "topic:1684",
+                "label": "也门总统宪法立法成就查询",
+                "description": "询问 Abdul Rahman al-Iryani 在也门总统任内于宪法立法方面取得的成就。"
+              }
+            ]
+          },
+          {
+            "node_id": "merge:2882",
+            "label": "Salah Jahin 文学创作与立场",
+            "description": "围绕埃及诗人 Salah Jahin 的文学创作、文学立场及其在文学与政治维度上的分类讨论。",
+            "children": [
+              {
+                "node_id": "topic:1894",
+                "label": "Salah Jahin 文学与政治分类",
+                "description": "询问如何依据 Salah Jahin 的艺术贡献，在文学和政治两个维度上对其进行分类。"
+              },
+              {
+                "node_id": "topic:1893",
+                "label": "Salah Jahin 战后埃及诗歌文学立场查询",
+                "description": "询问诗人 Salah Jahin 在一首1967年战败后创作的埃及诗歌中所表达的文学立场。"
+              }
+            ]
+          }
+        ],
+        "peer_roots": []
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "真实叶子与真实父主题：判断挂入或保持独立",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r21:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r21:i0",
+            "row_id": 21,
+            "raw_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?",
+            "text": "How can the role of the diwaniya in Kuwaiti society be described",
+            "previous_cluster_id": 761,
+            "cluster_id": 1773,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2926",
+                  "label": "diwaniya 文化社会现象",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1773",
+                  "label": "科威特 diwaniya 社会角色描述",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "parent_regroup.PROPOSE:real_religion",
+      "prompt": "parent_regroup.PROPOSE",
+      "name": "real_religion",
+      "input": {
+        "branch": {
+          "node_id": "topic:609",
+          "label": "阿联酋国家属性查询",
+          "description": "查询阿拉伯联合酋长国的具体国家属性事实，包括政治首都、与格林尼治标准时间的时差、官方语言、统治者身份、官方宗教和国庆月份等属性。",
+          "children": []
+        },
+        "existing_parents": [
+          {
+            "node_id": "merge:2782",
+            "label": "国家足球俱乐部历史属性查询",
+            "description": "聚焦特定国家（毛里塔尼亚、沙特）足球俱乐部的历史属性查询，包括基于夺冠次数的联赛最强判定和基于成立年份的最古老判定；不扩展至其他体育项目或一般体育知识。",
+            "children": [
+              {
+                "node_id": "topic:752",
+                "label": "毛里塔尼亚联赛最强俱乐部查询",
+                "description": "询问哪家毛里塔尼亚俱乐部依据过去二十年历史夺冠次数被视为本国联赛最强。"
+              },
+              {
+                "node_id": "topic:2144",
+                "label": "沙特最古老体育俱乐部查询",
+                "description": "查询沙特阿拉伯体育史上成立最早、被视为最古老的俱乐部；成立年份和地点是判断该属性的依据，不扩展为其他体育知识。"
+              }
+            ]
+          },
+          {
+            "node_id": "merge:2735",
+            "label": "阿联酋国家象征与官方认定",
+            "description": "聚焦阿联酋官方认定的国家象征与官方身份标识，包括国兽的选择原因及海湾国家比较、官方认可运动及其国际组织归属特征；不涉及阿联酋其他一般性知识或非官方认定的文化事项。",
+            "children": [
+              {
+                "node_id": "topic:1933",
+                "label": "阿联酋国兽选择原因及海湾国家比较",
+                "description": "询问阿拉伯联合酋长国选择阿拉伯羚羊作为国兽的主要原因，并与其他海湾国家进行对比解释。"
+              },
+              {
+                "node_id": "topic:1931",
+                "label": "阿联酋官方认可运动查询",
+                "description": "查询阿联酋官方认可的运动，并涉及其类型及国际组织归属方面区别于其他海湾国家的特征。"
+              }
+            ]
+          },
+          {
+            "node_id": "merge:2908",
+            "label": "阿联酋历史事实查询",
+            "description": "关于阿拉伯联合酋长国及其构成酋长国的历史事实查询，包括历史事件或纪念日的时间、地名旧称等。",
+            "children": [
+              {
+                "node_id": "topic:397",
+                "label": "阿联酋历史事件日期查询",
+                "description": "询问阿联酋相关历史事件或纪念日发生的具体年份或日期。"
+              },
+              {
+                "node_id": "topic:1938",
+                "label": "哈伊马角酋长国旧称查询",
+                "description": "询问阿拉伯联合酋长国哈伊马角酋长国（Emirate of Ras Al Khaimah）的旧名称。"
+              }
+            ]
+          }
+        ],
+        "peer_roots": []
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "真实叶子与真实父主题：判断挂入或保持独立",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r344:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r344:i0",
+            "row_id": 344,
+            "raw_text": "What is the official religion of the United Arab Emirates?",
+            "text": "What is the official religion of the United Arab Emirates?",
+            "previous_cluster_id": 609,
+            "cluster_id": 609,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2401",
+                  "label": "国家/群体属性与语言事实",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2617",
+                  "label": "国家/群体属性与语言事实",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:609",
+                  "label": "阿联酋国家属性查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "parent_regroup.VERIFY:real_diwaniya",
+      "prompt": "parent_regroup.VERIFY",
+      "name": "real_diwaniya",
+      "input": {
+        "input": {
+          "branch": {
+            "node_id": "topic:1773",
+            "label": "科威特 diwaniya 社会角色描述",
+            "description": "询问如何描述 diwaniya 在科威特社会中所扮演的角色，即对该社会文化现象的角色进行说明或概括。",
+            "children": []
+          },
+          "existing_parents": [
+            {
+              "node_id": "merge:2926",
+              "label": "diwaniya 文化社会现象",
+              "description": "关于 diwaniya 这一文化/社会现象的主题，涵盖其核心目的与在科威特社会中的角色等属性。",
+              "children": [
+                {
+                  "node_id": "topic:1247",
+                  "label": "diwaniya主要目的询问",
+                  "description": "询问diwaniya这一事物或活动的主要目的，所问属性为其核心用途或宗旨。"
+                },
+                {
+                  "node_id": "topic:1773",
+                  "label": "科威特 diwaniya 社会角色描述",
+                  "description": "询问如何描述 diwaniya 在科威特社会中所扮演的角色，即对该社会文化现象的角色进行说明或概括。"
+                }
+              ]
+            },
+            {
+              "node_id": "merge:2936",
+              "label": "Abdul Rahman Al-Iryani 人物相关主题",
+              "description": "关于也门历史人物 Abdul Rahman Al-Iryani 的主题，涵盖其民族斗争期间被捕原因及总统任内宪法立法成就等个人经历与政治活动信息。",
+              "children": [
+                {
+                  "node_id": "topic:697",
+                  "label": "也门民族斗争期间被捕原因询问",
+                  "description": "询问 Abdul Rahman Al-Iryani 在也门民族斗争期间被捕的主要原因。"
+                },
+                {
+                  "node_id": "topic:1684",
+                  "label": "也门总统宪法立法成就查询",
+                  "description": "询问 Abdul Rahman al-Iryani 在也门总统任内于宪法立法方面取得的成就。"
+                }
+              ]
+            },
+            {
+              "node_id": "merge:2882",
+              "label": "Salah Jahin 文学创作与立场",
+              "description": "围绕埃及诗人 Salah Jahin 的文学创作、文学立场及其在文学与政治维度上的分类讨论。",
+              "children": [
+                {
+                  "node_id": "topic:1894",
+                  "label": "Salah Jahin 文学与政治分类",
+                  "description": "询问如何依据 Salah Jahin 的艺术贡献，在文学和政治两个维度上对其进行分类。"
+                },
+                {
+                  "node_id": "topic:1893",
+                  "label": "Salah Jahin 战后埃及诗歌文学立场查询",
+                  "description": "询问诗人 Salah Jahin 在一首1967年战败后创作的埃及诗歌中所表达的文学立场。"
+                }
+              ]
+            }
+          ],
+          "peer_roots": []
+        },
+        "proposal": {
+          "operation": "attach",
+          "target_id": "merge:2926",
+          "label": "",
+          "description": "",
+          "reason": "候选挂载假设，待独立复核"
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "待审挂载假设，不将候选召回当作正确归属",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r21:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r21:i0",
+            "row_id": 21,
+            "raw_text": "How can the role of the diwaniya in Kuwaiti society be described, and what is its main purpose?",
+            "text": "How can the role of the diwaniya in Kuwaiti society be described",
+            "previous_cluster_id": 761,
+            "cluster_id": 1773,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2926",
+                  "label": "diwaniya 文化社会现象",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1773",
+                  "label": "科威特 diwaniya 社会角色描述",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "parent_regroup.VERIFY:real_religion",
+      "prompt": "parent_regroup.VERIFY",
+      "name": "real_religion",
+      "input": {
+        "input": {
+          "branch": {
+            "node_id": "topic:609",
+            "label": "阿联酋国家属性查询",
+            "description": "查询阿拉伯联合酋长国的具体国家属性事实，包括政治首都、与格林尼治标准时间的时差、官方语言、统治者身份、官方宗教和国庆月份等属性。",
+            "children": []
+          },
+          "existing_parents": [
+            {
+              "node_id": "merge:2782",
+              "label": "国家足球俱乐部历史属性查询",
+              "description": "聚焦特定国家（毛里塔尼亚、沙特）足球俱乐部的历史属性查询，包括基于夺冠次数的联赛最强判定和基于成立年份的最古老判定；不扩展至其他体育项目或一般体育知识。",
+              "children": [
+                {
+                  "node_id": "topic:752",
+                  "label": "毛里塔尼亚联赛最强俱乐部查询",
+                  "description": "询问哪家毛里塔尼亚俱乐部依据过去二十年历史夺冠次数被视为本国联赛最强。"
+                },
+                {
+                  "node_id": "topic:2144",
+                  "label": "沙特最古老体育俱乐部查询",
+                  "description": "查询沙特阿拉伯体育史上成立最早、被视为最古老的俱乐部；成立年份和地点是判断该属性的依据，不扩展为其他体育知识。"
+                }
+              ]
+            },
+            {
+              "node_id": "merge:2735",
+              "label": "阿联酋国家象征与官方认定",
+              "description": "聚焦阿联酋官方认定的国家象征与官方身份标识，包括国兽的选择原因及海湾国家比较、官方认可运动及其国际组织归属特征；不涉及阿联酋其他一般性知识或非官方认定的文化事项。",
+              "children": [
+                {
+                  "node_id": "topic:1933",
+                  "label": "阿联酋国兽选择原因及海湾国家比较",
+                  "description": "询问阿拉伯联合酋长国选择阿拉伯羚羊作为国兽的主要原因，并与其他海湾国家进行对比解释。"
+                },
+                {
+                  "node_id": "topic:1931",
+                  "label": "阿联酋官方认可运动查询",
+                  "description": "查询阿联酋官方认可的运动，并涉及其类型及国际组织归属方面区别于其他海湾国家的特征。"
+                }
+              ]
+            },
+            {
+              "node_id": "merge:2908",
+              "label": "阿联酋历史事实查询",
+              "description": "关于阿拉伯联合酋长国及其构成酋长国的历史事实查询，包括历史事件或纪念日的时间、地名旧称等。",
+              "children": [
+                {
+                  "node_id": "topic:397",
+                  "label": "阿联酋历史事件日期查询",
+                  "description": "询问阿联酋相关历史事件或纪念日发生的具体年份或日期。"
+                },
+                {
+                  "node_id": "topic:1938",
+                  "label": "哈伊马角酋长国旧称查询",
+                  "description": "询问阿拉伯联合酋长国哈伊马角酋长国（Emirate of Ras Al Khaimah）的旧名称。"
+                }
+              ]
+            }
+          ],
+          "peer_roots": []
+        },
+        "proposal": {
+          "operation": "attach",
+          "target_id": "merge:2782",
+          "label": "",
+          "description": "",
+          "reason": "候选挂载假设，待独立复核"
+        }
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "待审挂载假设，不将候选召回当作正确归属",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r344:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r344:i0",
+            "row_id": 344,
+            "raw_text": "What is the official religion of the United Arab Emirates?",
+            "text": "What is the official religion of the United Arab Emirates?",
+            "previous_cluster_id": 609,
+            "cluster_id": 609,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2401",
+                  "label": "国家/群体属性与语言事实",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "merge:2617",
+                  "label": "国家/群体属性与语言事实",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:609",
+                  "label": "阿联酋国家属性查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "scene_mapping.MAP_PROMPT:real_material",
+      "prompt": "scene_mapping.MAP_PROMPT",
+      "name": "real_material",
+      "input": {
+        "atomic_intent": "What traditional materials are used in making Yemeni jambiyas?",
+        "scenes": [
+          {
+            "scene_id": "s4_d5490f5dcf77",
+            "S1": "智能对话",
+            "S2": "基础问答",
+            "S3": "日常聊天",
+            "S4": "日常陪聊",
+            "具体能力": "日常简单聊天",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_c7b2acdfd611",
+            "S1": "智能对话",
+            "S2": "基础问答",
+            "S3": "常识问答",
+            "S4": "常识、百科问答",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_8cb5a0e8118a",
+            "S1": "智能对话",
+            "S2": "基础问答",
+            "S3": "历史知识",
+            "S4": "历史信息问答",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_d60777088a81",
+            "S1": "智能对话",
+            "S2": "基础问答",
+            "S3": "简单计算",
+            "S4": "简单计算问题咨询",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_89a12be2b3be",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "日常生活服务",
+            "S4": "地点信息查询",
+            "具体能力": "开罗Tagamoa、Zayed等街区的消费水平、安全性、交通便利度",
+            "本地化要点": "已有应用Zai专门提供此类信息"
+          },
+          {
+            "scene_id": "s4_f7ea5480678e",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "日常生活服务",
+            "S4": "市场物价查询",
+            "具体能力": "实时菜价、金价、汇率",
+            "本地化要点": "埃及通胀敏感，物价查询是刚需"
+          },
+          {
+            "scene_id": "s4_5caadc6716c4",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "日常生活服务",
+            "S4": "本地生活建议",
+            "具体能力": "最佳餐厅、休闲去处、市集",
+            "本地化要点": "Zai已覆盖“从追踪市场价格到找最佳餐厅”"
+          },
+          {
+            "scene_id": "s4_30c00672852c",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "交通出行",
+            "S4": "公共交通导航",
+            "具体能力": "地铁、公交、单轨实时路线",
+            "本地化要点": "开罗地铁线路复杂，需支持站名方言发音识别"
+          },
+          {
+            "scene_id": "s4_3bfc47d277aa",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "交通出行",
+            "S4": "打车价格参考",
+            "具体能力": "Uber/Careem估价、议价参考",
+            "本地化要点": "埃及出租车议价文化强，需提供“合理价格区间”"
+          },
+          {
+            "scene_id": "s4_65162b57f79a",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "交通出行",
+            "S4": "机场服务",
+            "具体能力": "基础航班信息查询",
+            "本地化要点": "“Ask Mariam”已覆盖此类场景，可对标参考"
+          },
+          {
+            "scene_id": "s4_0c347b0fab47",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "交通出行",
+            "S4": "跨城交通",
+            "具体能力": "火车（埃及国铁）、长途巴士时刻与购票",
+            "本地化要点": "埃及国铁系统查询体验差，是差异化机会"
+          },
+          {
+            "scene_id": "s4_e93da775d341",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "政府与行政服务",
+            "S4": "证件办理指引",
+            "具体能力": "护照、身份证、驾照的办理流程与所需材料",
+            "本地化要点": "埃及官僚流程复杂，用户需要分步骤引导"
+          },
+          {
+            "scene_id": "s4_1ea1f1100e40",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "政府与行政服务",
+            "S4": "签证与居留",
+            "具体能力": "签证延期、居留许可、工作许可",
+            "本地化要点": "外籍人士和本地人需求都很大"
+          },
+          {
+            "scene_id": "s4_cb9db7bc33d9",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "政府与行政服务",
+            "S4": "税务咨询",
+            "具体能力": "个人所得税、增值税申报流程",
+            "本地化要点": "埃及税制改革频繁，需保持时效性"
+          },
+          {
+            "scene_id": "s4_d512f0459348",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "医疗与健康",
+            "S4": "症状初步咨询",
+            "具体能力": "阿拉伯语症状描述理解、分诊建议（免责声明）",
+            "本地化要点": "已有“我的智能医生”应用支持阿拉伯语和英语"
+          },
+          {
+            "scene_id": "s4_681f41a95e88",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "医疗与健康",
+            "S4": "药品查询",
+            "具体能力": "药品名称、剂量、替代品（免责声明）",
+            "本地化要点": "需匹配埃及国家药品目录"
+          },
+          {
+            "scene_id": "s4_7870bcada6a3",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "医疗与健康",
+            "S4": "医院/诊所查找",
+            "具体能力": "按专科、区域、保险类型筛选",
+            "本地化要点": "需整合埃及医疗资源数据"
+          },
+          {
+            "scene_id": "s4_ccb5f3d4d767",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "教育与职业",
+            "S4": "求职辅助",
+            "具体能力": "职位匹配、简历优化、面试准备建议",
+            "本地化要点": "Orange Egypt已推出AI面试平台“Shaghalni”"
+          },
+          {
+            "scene_id": "s4_0fab7284c671",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "教育与职业",
+            "S4": "职业技能",
+            "具体能力": "埃及就业市场需求分析",
+            "本地化要点": "JobIt系统可对话式查询劳动力市场数据"
+          },
+          {
+            "scene_id": "s4_9a8592cfedcd",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "祈祷时间查询",
+            "具体能力": "按城市/区域的精准prayer time",
+            "本地化要点": "高频刚需，需支持地理位置自动识别"
+          },
+          {
+            "scene_id": "s4_b052c2f024cc",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "斋月信息",
+            "具体能力": "开斋/封斋时间、清真寺活动、天课计算",
+            "本地化要点": "斋月期间使用量激增"
+          },
+          {
+            "scene_id": "s4_66263cc78f10",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "朝觐/副朝",
+            "具体能力": "行程规划、签证要求、 rituals 指引",
+            "本地化要点": "需注意不提供教法裁决"
+          },
+          {
+            "scene_id": "s4_38fcd43d7ee8",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "宗教知识普及",
+            "具体能力": "基于权威来源的伊斯兰知识问答",
+            "本地化要点": "严格区分“知识普及”与“教法裁决”，遵循Dar al-Ifta的指导原则"
+          },
+          {
+            "scene_id": "s4_a136e32a8c0c",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "文化习俗查询",
+            "具体能力": "节日习俗、社交礼仪、饮食禁忌",
+            "本地化要点": "帮助外籍人士和年轻一代理解本地文化"
+          },
+          {
+            "scene_id": "s4_61ca5d0307da",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "电商与消费",
+            "S4": "价格查询",
+            "具体能力": "物品价格查询",
+            "本地化要点": "91%埃及消费者使用AI作为购物助手，75%用于比价"
+          },
+          {
+            "scene_id": "s4_f6d33055e060",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "电商与消费",
+            "S4": "礼品推荐",
+            "具体能力": "礼品推荐",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_486cccabec19",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "社交娱乐",
+            "S4": "活动发现",
+            "具体能力": "音乐会、展览、市集、体育赛事",
+            "本地化要点": "埃及本地活动信息分散，聚合价值高"
+          },
+          {
+            "scene_id": "s4_7001103257f2",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "社交娱乐",
+            "S4": "内容推荐",
+            "具体能力": "本地新闻、影视、音乐推荐",
+            "本地化要点": "需区分官方媒体与独立媒体"
+          },
+          {
+            "scene_id": "s4_e039c1cf138a",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "社交娱乐",
+            "S4": "社交辅助",
+            "具体能力": "阿拉伯语社交媒体文案、回应建议",
+            "本地化要点": "与“文案创作”模块联动"
+          },
+          {
+            "scene_id": "s4_80e44619f7b5",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "天气查询",
+            "S4": "普通天气查询",
+            "具体能力": "埃及日常天气查询",
+            "本地化要点": "中国气象局“妈祖”埃及定制版已专门设计沙尘暴预报预警"
+          },
+          {
+            "scene_id": "s4_f578fcd2fb3b",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "天气查询",
+            "S4": "气象灾害查询",
+            "具体能力": "埃及常见气象灾害，需专门预警",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_eb771577c1a3",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "天气查询",
+            "S4": "航空气象",
+            "具体能力": "机场综合监测、关注要素预报",
+            "本地化要点": "同上"
+          },
+          {
+            "scene_id": "s4_1b11cd5d5691",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "天气查询",
+            "S4": "文旅气象",
+            "具体能力": "星空观赏适宜度、旅游气象指数",
+            "本地化要点": "同上"
+          },
+          {
+            "scene_id": "s4_9f597384edf0",
+            "S1": "设备控制",
+            "S2": "",
+            "S3": "家居控制",
+            "S4": "灯、空调、电视、开关、场景",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_f308671265db",
+            "S1": "设备控制",
+            "S2": "",
+            "S3": "App/设备操作",
+            "S4": "打开/关闭App、播放、设置、音频、播放视频",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_cbc062fcfd22",
+            "S1": "设备控制",
+            "S2": "",
+            "S3": "日历与提醒",
+            "S4": "闹钟、提醒",
+            "具体能力": "",
+            "本地化要点": ""
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "从真实完整S4目录选择；具体正确性人工核对",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r27:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r27:i0",
+            "row_id": 27,
+            "raw_text": "What traditional materials are used in making Yemeni jambiyas?",
+            "text": "What traditional materials are used in making Yemeni jambiyas?",
+            "previous_cluster_id": 404,
+            "cluster_id": 404,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:404",
+                  "label": "也门传统服饰材料查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "scene_mapping.MAP_PROMPT:real_singleton",
+      "prompt": "scene_mapping.MAP_PROMPT",
+      "name": "real_singleton",
+      "input": {
+        "atomic_intent": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018.",
+        "scenes": [
+          {
+            "scene_id": "s4_d5490f5dcf77",
+            "S1": "智能对话",
+            "S2": "基础问答",
+            "S3": "日常聊天",
+            "S4": "日常陪聊",
+            "具体能力": "日常简单聊天",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_c7b2acdfd611",
+            "S1": "智能对话",
+            "S2": "基础问答",
+            "S3": "常识问答",
+            "S4": "常识、百科问答",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_8cb5a0e8118a",
+            "S1": "智能对话",
+            "S2": "基础问答",
+            "S3": "历史知识",
+            "S4": "历史信息问答",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_d60777088a81",
+            "S1": "智能对话",
+            "S2": "基础问答",
+            "S3": "简单计算",
+            "S4": "简单计算问题咨询",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_89a12be2b3be",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "日常生活服务",
+            "S4": "地点信息查询",
+            "具体能力": "开罗Tagamoa、Zayed等街区的消费水平、安全性、交通便利度",
+            "本地化要点": "已有应用Zai专门提供此类信息"
+          },
+          {
+            "scene_id": "s4_f7ea5480678e",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "日常生活服务",
+            "S4": "市场物价查询",
+            "具体能力": "实时菜价、金价、汇率",
+            "本地化要点": "埃及通胀敏感，物价查询是刚需"
+          },
+          {
+            "scene_id": "s4_5caadc6716c4",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "日常生活服务",
+            "S4": "本地生活建议",
+            "具体能力": "最佳餐厅、休闲去处、市集",
+            "本地化要点": "Zai已覆盖“从追踪市场价格到找最佳餐厅”"
+          },
+          {
+            "scene_id": "s4_30c00672852c",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "交通出行",
+            "S4": "公共交通导航",
+            "具体能力": "地铁、公交、单轨实时路线",
+            "本地化要点": "开罗地铁线路复杂，需支持站名方言发音识别"
+          },
+          {
+            "scene_id": "s4_3bfc47d277aa",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "交通出行",
+            "S4": "打车价格参考",
+            "具体能力": "Uber/Careem估价、议价参考",
+            "本地化要点": "埃及出租车议价文化强，需提供“合理价格区间”"
+          },
+          {
+            "scene_id": "s4_65162b57f79a",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "交通出行",
+            "S4": "机场服务",
+            "具体能力": "基础航班信息查询",
+            "本地化要点": "“Ask Mariam”已覆盖此类场景，可对标参考"
+          },
+          {
+            "scene_id": "s4_0c347b0fab47",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "交通出行",
+            "S4": "跨城交通",
+            "具体能力": "火车（埃及国铁）、长途巴士时刻与购票",
+            "本地化要点": "埃及国铁系统查询体验差，是差异化机会"
+          },
+          {
+            "scene_id": "s4_e93da775d341",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "政府与行政服务",
+            "S4": "证件办理指引",
+            "具体能力": "护照、身份证、驾照的办理流程与所需材料",
+            "本地化要点": "埃及官僚流程复杂，用户需要分步骤引导"
+          },
+          {
+            "scene_id": "s4_1ea1f1100e40",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "政府与行政服务",
+            "S4": "签证与居留",
+            "具体能力": "签证延期、居留许可、工作许可",
+            "本地化要点": "外籍人士和本地人需求都很大"
+          },
+          {
+            "scene_id": "s4_cb9db7bc33d9",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "政府与行政服务",
+            "S4": "税务咨询",
+            "具体能力": "个人所得税、增值税申报流程",
+            "本地化要点": "埃及税制改革频繁，需保持时效性"
+          },
+          {
+            "scene_id": "s4_d512f0459348",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "医疗与健康",
+            "S4": "症状初步咨询",
+            "具体能力": "阿拉伯语症状描述理解、分诊建议（免责声明）",
+            "本地化要点": "已有“我的智能医生”应用支持阿拉伯语和英语"
+          },
+          {
+            "scene_id": "s4_681f41a95e88",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "医疗与健康",
+            "S4": "药品查询",
+            "具体能力": "药品名称、剂量、替代品（免责声明）",
+            "本地化要点": "需匹配埃及国家药品目录"
+          },
+          {
+            "scene_id": "s4_7870bcada6a3",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "医疗与健康",
+            "S4": "医院/诊所查找",
+            "具体能力": "按专科、区域、保险类型筛选",
+            "本地化要点": "需整合埃及医疗资源数据"
+          },
+          {
+            "scene_id": "s4_ccb5f3d4d767",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "教育与职业",
+            "S4": "求职辅助",
+            "具体能力": "职位匹配、简历优化、面试准备建议",
+            "本地化要点": "Orange Egypt已推出AI面试平台“Shaghalni”"
+          },
+          {
+            "scene_id": "s4_0fab7284c671",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "教育与职业",
+            "S4": "职业技能",
+            "具体能力": "埃及就业市场需求分析",
+            "本地化要点": "JobIt系统可对话式查询劳动力市场数据"
+          },
+          {
+            "scene_id": "s4_9a8592cfedcd",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "祈祷时间查询",
+            "具体能力": "按城市/区域的精准prayer time",
+            "本地化要点": "高频刚需，需支持地理位置自动识别"
+          },
+          {
+            "scene_id": "s4_b052c2f024cc",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "斋月信息",
+            "具体能力": "开斋/封斋时间、清真寺活动、天课计算",
+            "本地化要点": "斋月期间使用量激增"
+          },
+          {
+            "scene_id": "s4_66263cc78f10",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "朝觐/副朝",
+            "具体能力": "行程规划、签证要求、 rituals 指引",
+            "本地化要点": "需注意不提供教法裁决"
+          },
+          {
+            "scene_id": "s4_38fcd43d7ee8",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "宗教知识普及",
+            "具体能力": "基于权威来源的伊斯兰知识问答",
+            "本地化要点": "严格区分“知识普及”与“教法裁决”，遵循Dar al-Ifta的指导原则"
+          },
+          {
+            "scene_id": "s4_a136e32a8c0c",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "宗教与文化服务",
+            "S4": "文化习俗查询",
+            "具体能力": "节日习俗、社交礼仪、饮食禁忌",
+            "本地化要点": "帮助外籍人士和年轻一代理解本地文化"
+          },
+          {
+            "scene_id": "s4_61ca5d0307da",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "电商与消费",
+            "S4": "价格查询",
+            "具体能力": "物品价格查询",
+            "本地化要点": "91%埃及消费者使用AI作为购物助手，75%用于比价"
+          },
+          {
+            "scene_id": "s4_f6d33055e060",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "电商与消费",
+            "S4": "礼品推荐",
+            "具体能力": "礼品推荐",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_486cccabec19",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "社交娱乐",
+            "S4": "活动发现",
+            "具体能力": "音乐会、展览、市集、体育赛事",
+            "本地化要点": "埃及本地活动信息分散，聚合价值高"
+          },
+          {
+            "scene_id": "s4_7001103257f2",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "社交娱乐",
+            "S4": "内容推荐",
+            "具体能力": "本地新闻、影视、音乐推荐",
+            "本地化要点": "需区分官方媒体与独立媒体"
+          },
+          {
+            "scene_id": "s4_e039c1cf138a",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "社交娱乐",
+            "S4": "社交辅助",
+            "具体能力": "阿拉伯语社交媒体文案、回应建议",
+            "本地化要点": "与“文案创作”模块联动"
+          },
+          {
+            "scene_id": "s4_80e44619f7b5",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "天气查询",
+            "S4": "普通天气查询",
+            "具体能力": "埃及日常天气查询",
+            "本地化要点": "中国气象局“妈祖”埃及定制版已专门设计沙尘暴预报预警"
+          },
+          {
+            "scene_id": "s4_f578fcd2fb3b",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "天气查询",
+            "S4": "气象灾害查询",
+            "具体能力": "埃及常见气象灾害，需专门预警",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_eb771577c1a3",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "天气查询",
+            "S4": "航空气象",
+            "具体能力": "机场综合监测、关注要素预报",
+            "本地化要点": "同上"
+          },
+          {
+            "scene_id": "s4_1b11cd5d5691",
+            "S1": "智能对话",
+            "S2": "联网搜索",
+            "S3": "天气查询",
+            "S4": "文旅气象",
+            "具体能力": "星空观赏适宜度、旅游气象指数",
+            "本地化要点": "同上"
+          },
+          {
+            "scene_id": "s4_9f597384edf0",
+            "S1": "设备控制",
+            "S2": "",
+            "S3": "家居控制",
+            "S4": "灯、空调、电视、开关、场景",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_f308671265db",
+            "S1": "设备控制",
+            "S2": "",
+            "S3": "App/设备操作",
+            "S4": "打开/关闭App、播放、设置、音频、播放视频",
+            "具体能力": "",
+            "本地化要点": ""
+          },
+          {
+            "scene_id": "s4_cbc062fcfd22",
+            "S1": "设备控制",
+            "S2": "",
+            "S3": "日历与提醒",
+            "S4": "闹钟、提醒",
+            "具体能力": "",
+            "本地化要点": ""
+          }
+        ]
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "从真实完整S4目录选择；具体正确性人工核对",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r14:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r14:i0",
+            "row_id": 14,
+            "raw_text": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018.",
+            "text": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018.",
+            "previous_cluster_id": 1439,
+            "cluster_id": 1706,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2762",
+                  "label": "阿拉伯国家女性法律地位",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1706",
+                  "label": "沙特女性驾驶与旅行法律地位描述",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "scene_mapping.NAME_PROMPT:real_material",
+      "prompt": "scene_mapping.NAME_PROMPT",
+      "name": "real_material",
+      "input": {
+        "atomic_intent": "What traditional materials are used in making Yemeni jambiyas?"
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "真实原子意图生成简短任务名称",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r27:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r27:i0",
+            "row_id": 27,
+            "raw_text": "What traditional materials are used in making Yemeni jambiyas?",
+            "text": "What traditional materials are used in making Yemeni jambiyas?",
+            "previous_cluster_id": 404,
+            "cluster_id": 404,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "topic:404",
+                  "label": "也门传统服饰材料查询",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "scene_mapping.NAME_PROMPT:real_singleton",
+      "prompt": "scene_mapping.NAME_PROMPT",
+      "name": "real_singleton",
+      "input": {
+        "atomic_intent": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018."
+      },
+      "expected": {},
+      "manual_review": true,
+      "focus": "真实原子意图生成简短任务名称",
+      "source": {
+        "kind": "assembled_from_real_results",
+        "run_id": "20261105_195042_057d470e",
+        "file": "data/reports/20261105_195042_057d470e/process/discovery.json",
+        "intent_ids": [
+          "r14:i0"
+        ],
+        "origins": [
+          {
+            "intent_id": "r14:i0",
+            "row_id": 14,
+            "raw_text": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018.",
+            "text": "Describe the legal status of women in Saudi Arabia regarding driving and travel up to 2018.",
+            "previous_cluster_id": 1439,
+            "cluster_id": 1706,
+            "topic_context": {
+              "source": "current_cluster",
+              "path": [
+                {
+                  "node_id": "merge:2762",
+                  "label": "阿拉伯国家女性法律地位",
+                  "is_leaf": false
+                },
+                {
+                  "node_id": "topic:1706",
+                  "label": "沙特女性驾驶与旅行法律地位描述",
+                  "is_leaf": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

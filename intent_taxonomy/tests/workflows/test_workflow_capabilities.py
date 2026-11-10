@@ -126,3 +126,21 @@ def test_upstream_repair_does_not_require_valid_downstream_outputs():
     validate_stage_source(copy.deepcopy(data), 'review')
     with pytest.raises(ValueError):
         validate_stage_source(copy.deepcopy(data), 'domains')
+
+
+def test_disk_cache_survives_memory_clear_and_corruption(tmp_path, monkeypatch):
+    import intent_engine.workflows.workflow_capabilities as module
+    path, workflow = save(tmp_path, snapshot())
+    first=workflow_capabilities(tmp_path,workflow)
+    module._inspect.cache_clear()
+    original=module.validate_stage_source
+    def unexpected(*args):
+        raise AssertionError('disk cache should avoid validation')
+    monkeypatch.setattr(module,'validate_stage_source',unexpected)
+    assert workflow_capabilities(tmp_path,workflow)==first
+    monkeypatch.setattr(module,'validate_stage_source',original)
+    cache=tmp_path.parent/'cache'/'workflow_capabilities'
+    for entry in cache.glob('*.json'):
+        entry.write_text('{')
+    module._inspect.cache_clear()
+    assert workflow_capabilities(tmp_path,workflow)==first
