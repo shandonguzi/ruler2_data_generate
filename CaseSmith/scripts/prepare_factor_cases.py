@@ -34,19 +34,6 @@ PILOT = (
     ("1771_english_oeq", "依赖、转折多意图（多意图考虑）", (0, 1, None, 0, 1)),
     ("1771_english_oeq", "依赖、转折多意图（多意图考虑）", (1, None, 1, None, None)),
 )
-TRANSPORT = (
-    ("r1979:i0", "上下文指代理解", (0, 0, 0, 0)),
-    ("r1980:i0", "上下文指代理解", (1, 1, 1, 0)),
-    ("r1981:i0", "上下文指代理解", (2, 1, 2, 1)),
-    ("r1982:i0", "模糊意图识别", (0, 0, 0)),
-    ("r1722:i0", "模糊意图识别", (2, 1, 1)),
-    ("r1996:i0", "模糊意图识别", (1, 2, 1)),
-    ("r1991:i0", "依赖、转折多意图（多意图考虑）", (0, 0, None, 0, 1)),
-    ("r1984:i0", "依赖、转折多意图（多意图考虑）", (0, 1, None, 1, 1)),
-    ("r1997:i0", "依赖、转折多意图（多意图考虑）", (0, 2, None, 0, 0)),
-    ("r2002:i0", "依赖、转折多意图（多意图考虑）", (1, None, 0, None, None)),
-    ("r1985:i0", "依赖、转折多意图（多意图考虑）", (1, None, 1, None, None)),
-)
 NA = "不适用"
 
 
@@ -118,29 +105,30 @@ def encode(value):
 
 def make_plan(combo, general, special):
     span, context, correction, position, method, obj = combo
-    distance = {"Short": 0, "Medium": 2, "MediumLong": 6, "Long": 11}[span]
-    probe = distance + 1
-    required_turns = probe
+    turn_range = general["上下文跨度"]
+    if (not isinstance(turn_range, list) or len(turn_range) != 2
+            or any(type(bound) is not int for bound in turn_range)
+            or not 1 <= turn_range[0] <= turn_range[1]):
+        raise ValueError(f"无效的上下文跨度区间: {turn_range!r}")
+    minimum_turns = 3 if context == "OtherTask" else 1
     events = []
-    if distance:
+    if span != "Short":
         events.append({"turn": 1, "event": "引入后续要引用的种子主题和信息"})
     if correction != "NA":
         # Keep the correction setup separate from the information used for the
         # context probe, so an immediate correction can still be placed later.
         gap = 1 if position == "Immediate" else 3
-        correction_turn = max(probe, gap + 1)
-        setup = correction_turn - gap
-        required_turns = correction_turn
-        events.append({"turn": setup, "event": "引入稍后修正的独立信息",
+        minimum_turns = max(minimum_turns, gap + 1)
+        events.append({"turns_before_final": gap, "event": "引入稍后修正的独立信息",
                        "object": general["修正对象"]})
-        events.append({"turn": correction_turn, "event": "修正该信息",
+        events.append({"turns_before_final": 0, "event": "修正该信息",
                        "type": general["修正类型"], "method": general["修正方式"],
-                       "object": general["修正对象"], "setup_turn": setup})
+                       "object": general["修正对象"]})
     if context == "OtherTask":
         events.append({"turn": 2, "event": "插入其他任务；与该轮已有事件并存时分开表达"})
-    events.append({"turn": required_turns, "event": "提出种子相关任务", "special_factors": special})
+    events.append({"turns_before_final": 0, "event": "提出种子相关任务", "special_factors": special})
     expected = []
-    if distance:
+    if span != "Short":
         expected.append("使用第 1 轮中与当前任务相关的信息")
     if correction != "NA":
         expected.append("按用户修正更新相关信息，并保留其余有效信息")
@@ -150,8 +138,104 @@ def make_plan(combo, general, special):
         expected.append(f'处理模糊意图时「{special["澄清需求"]}」')
     if "逻辑关系" in special:
         expected.append(f'按「{special["逻辑关系"]}」处理多个意图')
-    return {"required_turns": required_turns,
-            "events": sorted(events, key=lambda e: e["turn"])}, expected
+    return {"turn_range": turn_range, "minimum_turns": minimum_turns, "events": events}, expected
+
+
+def prepare_transport(args, library, labels, version):
+    special = flatten(library["特殊因子"])
+    general_names = list(DIMENSIONS)[:2]
+    baseline = {name: labels[DIMENSIONS[name][0]] for name in general_names}
+    correction = {name: {key: value for key, value in labels[token].items() if key != "NA"}
+                  for name, (token, _) in list(DIMENSIONS.items())[2:]}
+    groups = [("general", "", {}), *[
+        (slug, name, {factor: {chr(65 + i): value for i, value in enumerate(values)
+                             if "不考虑" not in value}
+                     for factor, values in dimensions.items()})
+        for slug, (name, dimensions) in zip(("reference", "vague", "multi"), special.items(),
+                                             strict=True)
+    ], ("correction", "上下文修正", correction)]
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    pict = shutil.which(args.pict)
+    if not args.model_only and pict is None:
+        raise ValueError("找不到 PICT，请先安装，或用 --pict 指定路径")
+    cases = []
+    combinations = []
+    report = ["# 交通场景因子覆盖报告", "",
+              "| 批次 | 用例数 | 合法取值对覆盖 |", "| --- | ---: | ---: |"]
+    for slug, group, extra in groups:
+        dimensions = {**baseline, **extra}
+        columns = ["Span", "Context", *(f"F{i}" for i in range(len(extra)))]
+        rules = ['IF [Span] = "Short" THEN [Context] = "SameTopic";']
+        if slug in ("reference", "correction"):
+            rules.append('[Span] <> "Short";')
+        if slug == "multi":
+            for index, values in enumerate(extra.values()):
+                if index:
+                    values["NA"] = NA
+            rules.append('IF [F0] = "A" THEN [F1] <> "NA" AND [F2] = "NA" '
+                         'AND [F3] <> "NA" AND [F4] <> "NA" ELSE [F1] = "NA" '
+                         'AND [F2] <> "NA" AND [F3] = "NA" AND [F4] = "NA";')
+
+        model = args.output_dir / ("general_factors.pict" if slug == "general" else f"{slug}_factors.pict")
+        model.write_text("\n".join([*(f'{col}: {", ".join(values)}'
+                                     for col, values in zip(columns, dimensions.values())),
+                                    "", *rules, ""]), encoding="utf-8")
+        if args.model_only:
+            continue
+        output = subprocess.check_output([pict, str(model), "/o:2"], encoding="utf-8")
+        reader = csv.reader(io.StringIO(output), delimiter="\t")
+        if next(reader, None) != columns:
+            raise ValueError(f"PICT 输出表头错误: {slug}")
+        combos = [tuple(row) for row in reader if row]
+        valid = set()
+        for row in itertools.product(*dimensions.values()):
+            if row[0] == "Short" and (row[1] == "OtherTask" or slug in ("reference", "correction")):
+                continue
+            if slug == "multi":
+                expected_na = (False, True, False, False) if row[2] == "A" else (True, False, True, True)
+                if tuple(value == "NA" for value in row[3:]) != expected_na:
+                    continue
+            valid.add(row)
+        required, covered = pairs(valid), pairs(combos)
+        if set(combos) - valid or covered != required:
+            raise ValueError(f"PICT 覆盖或兼容性校验失败: {slug}")
+        report.append(f"| {group or '仅通用'} | {len(combos)} | {len(covered)}/{len(required)} |")
+        for index, combo in enumerate(combos, 1):
+            values = {name: options[token]
+                      for (name, options), token in zip(dimensions.items(), combo)}
+            general = {name: values[name] for name in general_names}
+            factors = {name: values[name] for name in extra}
+            correction_values = factors if slug == "correction" else {}
+            plan_combo = (*combo[:2], *combo[2:]) if correction_values else (*combo[:2], "NA", "NA", "NA", "NA")
+            plan, expected = make_plan(plan_combo, {**general, **correction_values}, factors)
+            combo_id = f"{slug}-{index:03d}"
+            combinations.append((combo_id, group or "仅通用", *combo[:2], encode(factors)))
+            cases.append({
+                "combo_id": combo_id,
+                "case_factors": encode({"通用因子": general, "特殊因子": {group: factors} if group else {}}),
+                "dialogue_plan_json": encode(plan),
+                "expected_behavior_json": encode(expected),
+                "factor_library_version": version,
+            })
+
+    if args.model_only:
+        return
+    fields, seeds = read_seeds(args.qa)
+    if len(seeds) < len(cases):
+        raise ValueError(f"需要 {len(cases)} 条不同的种子，输入只有 {len(seeds)} 条")
+    with (args.output_dir / "QA_case_constrained.csv").open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=[*fields, "seed_id", *cases[0]])
+        writer.writeheader()
+        for (seed_id, seed), case in zip(seeds.items(), cases):
+            writer.writerow({**seed, **case, "seed_id": seed_id, "id": f"{seed_id}__{case['combo_id']}"})
+    with (args.output_dir / "general_combinations.tsv").open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
+        writer.writerow(("combo_id", "batch", "Span", "Context", "special_factors"))
+        writer.writerows(combinations)
+    report.extend(["", f"共 {len(cases)} 条用例，从 {len(seeds)} 条种子按输入顺序选取，每条种子使用一次。",
+                   "轮数区间保留到运行时抽样。覆盖统计以各批次的合法取值对为准。"])
+    (args.output_dir / "coverage_report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
+    print("\n".join(report))
 
 
 def main():
@@ -170,6 +254,11 @@ def main():
     data = args.factors.read_bytes()
     library = json.loads(data)
     labels = load_general(library)
+    if args.profile == "transport":
+        if args.avoid_combinations:
+            parser.error("交通分批模型暂不支持 --avoid-combinations")
+        prepare_transport(args, library, labels, "sha256:" + hashlib.sha256(data).hexdigest())
+        return
     valid = {row for row in itertools.product(*labels.values()) if legal(row)}
     previous, excluded = set(), set()
     if args.avoid_combinations:
@@ -211,13 +300,6 @@ def main():
                         for group, dimensions in special_groups.items()
                         for name, values in dimensions.items() for value in values
                         if "不考虑" not in value}
-    if args.profile == "transport":
-        reserved = {seed_id for seed_id, _, _ in TRANSPORT}
-        if reserved - seeds.keys():
-            parser.error(f"交通种子表缺少用例: {', '.join(sorted(reserved - seeds.keys()))}")
-        if len(seeds) < len(combos) or sum(combo[0] != "Short" for combo in combos) < len(TRANSPORT):
-            parser.error("种子或可分配特殊因子的 PICT 组合不足")
-        general_seeds = iter(seed_id for seed_id in seeds if seed_id not in reserved)
     added_fields = ["seed_id", "combo_id", "case_factors", "dialogue_plan_json",
                     "expected_behavior_json", "factor_library_version"]
     if len(set([*fields, *added_fields])) != len(fields) + len(added_fields):
@@ -232,13 +314,7 @@ def main():
         general = {name: labels[key][value]
                    for (name, (key, _)), value in zip(DIMENSIONS.items(), combo)}
         seed_id, group, special = "1524_english_oeq", "", {}
-        if args.profile == "transport":
-            if combo[0] != "Short" and eligible_index < len(TRANSPORT):
-                seed_id, group, choices = TRANSPORT[eligible_index]
-                eligible_index += 1
-            else:
-                seed_id = next(general_seeds)
-        elif combo[0] != "Short":
+        if combo[0] != "Short":
             seed_id, group, choices = PILOT[eligible_index % len(PILOT)]
             eligible_index += 1
         if group:
@@ -256,9 +332,6 @@ def main():
             "dialogue_plan_json": encode(plan), "expected_behavior_json": encode(expected),
             "factor_library_version": version,
         })
-
-    if args.profile == "transport" and special_values != special_universe:
-        raise ValueError(f"交通用例特殊因子取值未全覆盖: {special_universe - special_values}")
 
     with (args.output_dir / "general_combinations.tsv").open(
         "w", encoding="utf-8", newline=""
@@ -283,9 +356,7 @@ def main():
         f"- 无特殊因子的用例有 {len(cases) - sum(special_counts.values())} 条。",
         f"- 因子库版本为 `{version}`。",
         "",
-        (f"从 {len(seeds)} 条交通种子中选取 {len(cases)} 条不同的种子，每个通用组合分配一条。"
-         if args.profile == "transport"
-         else "特殊因子由 Socotra 词源和博物馆票价两条种子承载。"),
+        "特殊因子由 Socotra 词源和博物馆票价两条种子承载。",
         "",
         *[f"- {group}共有 {special_counts[group]} 条。" for group in special_groups],
         "",

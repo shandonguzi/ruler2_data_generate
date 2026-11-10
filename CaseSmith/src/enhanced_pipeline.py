@@ -662,8 +662,7 @@ class EnhancedPersonaGenerationPipeline:
             assignments.append({
                 'query_id': query_data.get('query_id'),
                 'row_index': metadata.get('_row_index'),
-                'row': {col: metadata.get(col, '') for col in
-                        ('id', 'dialect', 'open_question', 'open_answer')},
+                'row': {col: value for col, value in metadata.items() if col != '_row_index'},
                 'source': query_data.get('source', ''),
                 'persona_id': persona.get('persona_id'),
                 'persona_features': persona.get('features', {}),
@@ -711,10 +710,31 @@ class EnhancedPersonaGenerationPipeline:
             if row.get('case_factors') or row.get('dialogue_plan_json'):
                 factors = json.loads(row['case_factors'])
                 plan = json.loads(row['dialogue_plan_json'])
-                turns = plan['required_turns']
                 max_turns = self.interaction_generator.max_turns
                 if not isinstance(factors, dict) or not factors:
                     raise ValueError("case_factors must be a nonempty JSON object")
+                if 'turn_range' in plan:
+                    bounds = plan['turn_range']
+                    minimum = plan.get('minimum_turns', 1)
+                    if (not isinstance(bounds, list) or len(bounds) != 2
+                            or any(type(value) is not int for value in bounds)
+                            or not 1 <= bounds[0] <= bounds[1]
+                            or type(minimum) is not int or minimum < 1):
+                        raise ValueError("Invalid turn_range or minimum_turns")
+                    lower, upper = max(bounds[0], minimum), min(bounds[1], max_turns)
+                    if lower > upper:
+                        raise ValueError(
+                            f"No eligible turn count for {bounds}, minimum_turns={minimum}, "
+                            f"max_turns={max_turns}"
+                        )
+                    turns = assignment.get('required_turns')
+                    if turns is None:
+                        turns = random.randint(lower, upper)
+                        assignment['required_turns'] = turns
+                    elif type(turns) is not int or not lower <= turns <= upper:
+                        raise ValueError("Saved required_turns is outside the eligible range")
+                else:
+                    turns = plan['required_turns']
                 if type(turns) is not int or not 1 <= turns <= max_turns:
                     raise ValueError(f"required_turns must be between 1 and max_turns ({max_turns})")
                 template = (Path(__file__).resolve().parents[1] / 'prompts'
@@ -725,11 +745,10 @@ class EnhancedPersonaGenerationPipeline:
                     raw = raw.partition('\n')[2][:-3].strip()
                 topic = json.loads(raw)
                 if (not isinstance(topic, dict) or not isinstance(topic.get('topic'), str)
-                        or not topic['topic'].strip() or not isinstance(topic.get('keywords'), list)
-                        or not all(isinstance(word, str) for word in topic['keywords'])):
-                    raise ValueError("Expected a topic string and a keywords array")
+                        or not topic['topic'].strip()):
+                    raise ValueError("Expected a nonempty topic string")
                 assignment.update(original_query=query_data['text'], status='styled', error=None,
-                                  planned_case={'topic': topic['topic'], 'keywords': topic['keywords'],
+                                  planned_case={'topic': topic['topic'].strip(),
                                                 'case_factors': factors, 'required_turns': turns})
                 return assignment
 

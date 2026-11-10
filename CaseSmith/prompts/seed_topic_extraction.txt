@@ -1,7 +1,23 @@
-Extract a broad conversation topic and a short list of keywords from the seed question.
-Keep the topic and keywords in the question's language. Do not answer or restate the
-question. Return only a JSON object with a nonempty "topic" string and a
-"keywords" array of strings.
+Extract background context for the opening and middle turns of a conversation.
+The seed question will be asked later. Identify privately what specific fact, list,
+comparison, or decision the seed asks for, then leave that target out of both
+the topic.
+
+- Write a broad topic that supports several distinct questions about the setting.
+  Do not turn the seed question into a noun phrase or paraphrase.
+- Preserve both the setting and the broad subject category. For example, keep
+  the city and "travel modes" when the seed asks about a specific connection
+  between a transit system and other modes. Omit the exact relationship,
+  filters, or requested result that distinguish the seed from other questions
+  in that category.
+- Before returning, check whether someone seeing only the topic could readily
+  reconstruct the specific seed question. If so, broaden the topic.
+- Use the seed question's language. Return only a JSON object with a nonempty
+  "topic" string as its only field.
+
+Example seed: 哪些交通方式被列为开罗BRT的连接方式？
+Good output: {"topic":"开罗的出行方式"}
+Avoid a topic such as “开罗BRT的连接交通方式”, which reveals what the seed asks to list.
 
 Seed question:
 {question}

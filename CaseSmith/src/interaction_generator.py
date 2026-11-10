@@ -237,7 +237,9 @@ class AssistantModel:
                 f"{self.system_prompt}\n\n"
                 f"Conversation History:\n{history_text}\n\n"
                 f"User Query:\n{user_query}\n\n"
-                "Provide a helpful, accurate, and appropriate response based on the conversation context and the user's needs."
+                "Provide a concise, direct, and accurate response based on the conversation context "
+                "and the user's needs. Lead with the answer and include only the details needed to "
+                "address the current question. Avoid repeating context or adding unsolicited examples."
             )
             
             # Generate response with token tracking
@@ -395,13 +397,14 @@ class UserFeedbackModel:
         header, marker, _ = self.template.partition('{user_message_task}')
         if not marker:
             raise ValueError("Planned cases require {user_message_task} in the user feedback template")
-        topic = {key: planned_case[key] for key in ('topic', 'keywords')}
-        task = f"Topic and keywords: {json.dumps(topic, ensure_ascii=False)}\n"
+        task = f"Topic: {planned_case['topic']}\n"
+        if history:
+            task += f"Conversation so far:\n{self._format_conversation_history(history)}\n"
         if seed_question is None:
-            task += "Write one natural user message about this topic to build context."
+            task += ("Write one natural user message about this topic to build context. "
+                     "When there is conversation history, build on it and avoid repeating earlier questions.")
         else:
             task += (
-                f"Conversation so far:\n{self._format_conversation_history(history)}\n"
                 f"Seed question: {seed_question}\n"
                 f"Case factors: {json.dumps(planned_case['case_factors'], ensure_ascii=False)}\n"
                 "Write the final user question. Preserve the seed question's core intent. "
@@ -409,6 +412,7 @@ class UserFeedbackModel:
                 "and ground references and corrections in the actual conversation."
             )
         prompt = (header.replace('{persona}', self._format_persona(persona_features)) + task
+                  + '\nKeep the message concise and conversational.'
                   + '\nReturn only the user message as plain text. Do not include a role label.')
         message = self.llm_client.generate(prompt).strip()
         if not message:
@@ -829,7 +833,7 @@ class InteractionGenerator:
                         feedback_clean = self.user_model.generate_planned_message(
                             persona_features, planned_case,
                             seed_question=original_query if final_turn else None,
-                            history=messages if final_turn else (),
+                            history=messages,
                         )
                     except Exception:
                         self.assistant_model.unlock_model()
