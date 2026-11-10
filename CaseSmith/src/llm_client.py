@@ -144,7 +144,8 @@ class OpenAIClient(LLMClient):
                     max_completion_tokens=max_tokens_param,
                     top_p=params.get('top_p', 0.9),
                     frequency_penalty=params.get('frequency_penalty', 0.0),
-                    presence_penalty=params.get('presence_penalty', 0.0)
+                    presence_penalty=params.get('presence_penalty', 0.0),
+                    extra_body=params.get('extra_body'),
                 )
                 
                 choice = response.choices[0]

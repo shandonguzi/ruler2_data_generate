@@ -390,6 +390,31 @@ class UserFeedbackModel:
             history.append(f"{role}: {msg.content}")
         return '\n'.join(history)
     
+    def generate_planned_message(self, persona_features, planned_case, *,
+                                 seed_question=None, history=()):
+        header, marker, _ = self.template.partition('{user_message_task}')
+        if not marker:
+            raise ValueError("Planned cases require {user_message_task} in the user feedback template")
+        topic = {key: planned_case[key] for key in ('topic', 'keywords')}
+        task = f"Topic and keywords: {json.dumps(topic, ensure_ascii=False)}\n"
+        if seed_question is None:
+            task += "Write one natural user message about this topic to build context."
+        else:
+            task += (
+                f"Conversation so far:\n{self._format_conversation_history(history)}\n"
+                f"Seed question: {seed_question}\n"
+                f"Case factors: {json.dumps(planned_case['case_factors'], ensure_ascii=False)}\n"
+                "Write the final user question. Preserve the seed question's core intent. "
+                "Express applicable factors in the wording, ignore values marked 不适用, "
+                "and ground references and corrections in the actual conversation."
+            )
+        prompt = (header.replace('{persona}', self._format_persona(persona_features)) + task
+                  + '\nReturn only the user message as plain text. Do not include a role label.')
+        message = self.llm_client.generate(prompt).strip()
+        if not message:
+            raise ValueError("Planned user message is empty")
+        return message
+
     def generate_feedback(self, persona_features: Dict[str, str],
                          conversation_history: List[Message],
                          assistant_response: str,
@@ -415,7 +440,8 @@ class UserFeedbackModel:
             history_text = self._format_conversation_history(conversation_history)
 
             # Fill template
-            prompt = self.template.replace('{persona}', persona_text)
+            prompt = self.template.replace('{user_message_task}\n', '')
+            prompt = prompt.replace('{persona}', persona_text)
             prompt = prompt.replace('{conversation_history}', history_text)
             prompt = prompt.replace('{assistant_response}', assistant_response)
             prompt = prompt.replace('{current_turn}', str(current_turn))
@@ -553,7 +579,8 @@ class InteractionGenerator:
                 'model': assistant_config['model'],
                 'inference': {
                     'temperature': assistant_config['temperature'],
-                    'max_completion_tokens': assistant_max_tokens
+                    'max_completion_tokens': assistant_max_tokens,
+                    'extra_body': assistant_config.get('extra_body'),
                 }
             }
             if assistant_config.get('base_url') or config.get('api', {}).get('base_url'):
@@ -574,7 +601,8 @@ class InteractionGenerator:
             'model': user_config['model'],
             'inference': {
                 'temperature': user_config['temperature'],
-                'max_completion_tokens': user_max_tokens
+                'max_completion_tokens': user_max_tokens,
+                'extra_body': user_config.get('extra_body'),
             }
         }
         if user_config.get('base_url') or config.get('api', {}).get('base_url'):
@@ -595,7 +623,8 @@ class InteractionGenerator:
                            initial_query: str, system_prompt: Optional[str] = None,
                            original_query: Optional[str] = None,
                            target_turns: int = 3,
-                           query_id: Optional[str] = None) -> Optional[Interaction]:
+                           query_id: Optional[str] = None,
+                           planned_case: Optional[Dict[str, Any]] = None) -> Optional[Interaction]:
         """
         Generate a complete multi-turn interaction with distractor applied in real-time.
 
@@ -613,6 +642,16 @@ class InteractionGenerator:
         # If original_query not provided, use initial_query as original
         if original_query is None:
             original_query = initial_query
+
+        turn_limit = self.max_turns
+        if planned_case:
+            turn_limit = planned_case['required_turns']
+            if not 1 <= turn_limit <= self.max_turns:
+                raise ValueError("Planned turn count exceeds configured bounds")
+            initial_query = self.user_model.generate_planned_message(
+                persona_features, planned_case,
+                seed_question=original_query if turn_limit == 1 else None,
+            )
 
         # Note: We no longer pass persona system_prompt to assistant to avoid
         # role confusion (e.g., assistant thinking it's a "food planning assistant").
@@ -681,7 +720,7 @@ class InteractionGenerator:
         ))
         
         # Multi-turn dialogue
-        while turn < self.max_turns:
+        while turn < turn_limit:
             # Assistant responds (to the noisy query)
             conversation_so_far = messages[:-1]  # Exclude current query
             assistant_response = self.assistant_model.respond(
@@ -698,6 +737,7 @@ class InteractionGenerator:
                     f"Discarding this interaction.",
                     'WARNING'
                 )
+                self.assistant_model.unlock_model()
                 return None  # Discard this interaction
             
             messages.append(Message(
@@ -712,16 +752,15 @@ class InteractionGenerator:
             ))
             
             turn += 1
+            if planned_case and turn == turn_limit:
+                break
             
             # Check if minimum turns reached
-            if turn < self.min_turns:
+            if not planned_case and turn < self.min_turns:
                 # Force continuation for minimum turns
                 feedback_clean = self.user_model.generate_feedback(
-                    persona_features,
-                    messages,
-                    assistant_response,
-                    current_turn=turn,
-                    target_turns=target_turns
+                    persona_features, messages, assistant_response,
+                    current_turn=turn, target_turns=target_turns,
                 )
                 if feedback_clean:
                     # Apply distractor to follow-up feedback
@@ -784,15 +823,23 @@ class InteractionGenerator:
                     # No more feedback, end conversation
                     break
             else:
-                # User decides whether to continue
-                feedback_clean = self.user_model.generate_feedback(
-                    persona_features,
-                    messages,
-                    assistant_response,
-                    current_turn=turn,
-                    target_turns=target_turns
-                )
-                
+                if planned_case:
+                    final_turn = turn + 1 == turn_limit
+                    try:
+                        feedback_clean = self.user_model.generate_planned_message(
+                            persona_features, planned_case,
+                            seed_question=original_query if final_turn else None,
+                            history=messages if final_turn else (),
+                        )
+                    except Exception:
+                        self.assistant_model.unlock_model()
+                        raise
+                else:
+                    feedback_clean = self.user_model.generate_feedback(
+                        persona_features, messages, assistant_response,
+                        current_turn=turn, target_turns=target_turns,
+                    )
+
                 if feedback_clean is None:
                     # No feedback, conversation ends
                     break
@@ -881,7 +928,8 @@ class InteractionGenerator:
                 'query_id': query_id,
                 'system_prompt_used': system_prompt is not None,
                 'total_messages': len(messages),
-                'conversation_ended': turn < self.max_turns,
+                'conversation_ended': turn < turn_limit,
+                **({'planned_case': planned_case} if planned_case else {}),
                 'distractor_applied': self.distractor is not None and self.distractor.enabled,
                 'distractor_type': 'semantic' if isinstance(self.distractor, SemanticDistractorModel) else 'legacy' if self.distractor else None,
                 'noisy_versions': noisy_versions_data if noisy_versions_data else None,
@@ -912,7 +960,8 @@ class InteractionGenerator:
             system_prompt=task.get('system_prompt'),
             original_query=task['original_query'],
             target_turns=task['target_turns'],
-            query_id=task.get('query_id')
+            query_id=task.get('query_id'),
+            planned_case=task.get('planned_case'),
         )
     
     def _generate_with_retry(self, task: Dict[str, Any], max_retries: int = 3, 
@@ -1021,6 +1070,7 @@ class InteractionGenerator:
                     'system_prompt': system_prompt,
                     'original_query': original_query,
                     'target_turns': target_turns,
+                    'planned_case': query_data.get('planned_case'),
                     'query_id': query_id,
                     'persona_index': persona_order[persona_id],
                     'query_index': persona_query_counts[persona_id],

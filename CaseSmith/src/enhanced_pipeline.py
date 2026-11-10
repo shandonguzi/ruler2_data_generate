@@ -708,6 +708,31 @@ class EnhancedPersonaGenerationPipeline:
         }
         assignment['attempts'] = assignment.get('attempts', 0) + 1
         try:
+            if row.get('case_factors') or row.get('dialogue_plan_json'):
+                factors = json.loads(row['case_factors'])
+                plan = json.loads(row['dialogue_plan_json'])
+                turns = plan['required_turns']
+                max_turns = self.interaction_generator.max_turns
+                if not isinstance(factors, dict) or not factors:
+                    raise ValueError("case_factors must be a nonempty JSON object")
+                if type(turns) is not int or not 1 <= turns <= max_turns:
+                    raise ValueError(f"required_turns must be between 1 and max_turns ({max_turns})")
+                template = (Path(__file__).resolve().parents[1] / 'prompts'
+                            / 'seed_topic_extraction.txt').read_text(encoding='utf-8')
+                raw = self.llm_client.generate(template.replace('{question}', query_data['text']))
+                raw = raw.strip()
+                if raw.startswith('```') and raw.endswith('```'):
+                    raw = raw.partition('\n')[2][:-3].strip()
+                topic = json.loads(raw)
+                if (not isinstance(topic, dict) or not isinstance(topic.get('topic'), str)
+                        or not topic['topic'].strip() or not isinstance(topic.get('keywords'), list)
+                        or not all(isinstance(word, str) for word in topic['keywords'])):
+                    raise ValueError("Expected a topic string and a keywords array")
+                assignment.update(original_query=query_data['text'], status='styled', error=None,
+                                  planned_case={'topic': topic['topic'], 'keywords': topic['keywords'],
+                                                'case_factors': factors, 'required_turns': turns})
+                return assignment
+
             result = self.query_generator.generate_for_query(
                 query_data, assignment.get('persona_features') or {}
             )
@@ -780,6 +805,7 @@ class EnhancedPersonaGenerationPipeline:
                 'inferred_scenario': assignment.get('inferred_scenario', 'casual'),
                 'target_length': assignment.get('target_length'),
                 'target_turns': assignment.get('target_turns') or 3,
+                'planned_case': assignment.get('planned_case'),
                 'prompt_type': assignment.get('prompt_type'),
                 'source_dataset': assignment.get('source', ''),
                 'metadata': {
@@ -959,13 +985,14 @@ class EnhancedPersonaGenerationPipeline:
                 pending_style = [
                     a for a in assignments
                     if a.get('status') == 'pending'
-                    or (not a.get('adapted_query') and a.get('status') != 'done')
+                    or (not (a.get('adapted_query') or a.get('planned_case'))
+                        and a.get('status') != 'done')
                 ]
                 for batch in self._iter_batches(pending_style, batch_size):
                     self._run_style_transfer(batch)
                     self._save_assignments(state)
                 results['num_styled'] = sum(
-                    1 for a in assignments if a.get('adapted_query')
+                    1 for a in assignments if a.get('adapted_query') or a.get('planned_case')
                 )
                 print_colored(
                     f"[Stage 2] Style transfer complete: "

@@ -2,6 +2,7 @@ You are simulating a user with the following characteristics:
 
 {persona}
 
+{user_message_task}
 Conversation so far:
 {conversation_history}
 

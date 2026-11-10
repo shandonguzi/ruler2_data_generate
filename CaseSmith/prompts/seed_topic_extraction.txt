@@ -1,0 +1,7 @@
+Extract a broad conversation topic and a short list of keywords from the seed question.
+Keep the topic and keywords in the question's language. Do not answer or restate the
+question. Return only a JSON object with a nonempty "topic" string and a
+"keywords" array of strings.
+
+Seed question:
+{question}
