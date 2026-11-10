@@ -7,10 +7,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT / "input/seed_case/atomic_s4_case_transport_20261110_zh.csv"
-QA_COLUMNS = ("id", "dialect", "open_question", "open_answer")
+QA_COLUMNS = ("id", "dialect", "open_question", "open_answer", "language")
 
 
-def convert(source: Path, target: Path, dialect: str) -> int:
+def convert(source: Path, target: Path, dialect: str, language: str = "") -> int:
     if source.resolve() == target.resolve():
         raise ValueError("Input and output must be different files")
 
@@ -29,7 +29,7 @@ def convert(source: Path, target: Path, dialect: str) -> int:
             if intent_id in seen_ids:
                 raise ValueError(f"Duplicate intent_id at line {reader.line_num}: {intent_id}")
             seen_ids.add(intent_id)
-            cases.append((intent_id, dialect, question, ""))
+            cases.append((intent_id, dialect, question, "", language))
 
     if not cases:
         raise ValueError("Input CSV contains no seed cases")
@@ -46,10 +46,11 @@ def main() -> None:
     parser.add_argument("--input", type=Path, default=DEFAULT_SOURCE)
     parser.add_argument("--output", type=Path, help="Defaults to CaseSmith/output/<input_stem>_qa.csv")
     parser.add_argument("--dialect", default="zh")
+    parser.add_argument("--language", help="Output language, defaults to the dialect label")
     args = parser.parse_args()
     target = args.output or ROOT / "output" / f"{args.input.stem}_qa.csv"
     try:
-        count = convert(args.input, target, args.dialect)
+        count = convert(args.input, target, args.dialect, args.language or args.dialect)
     except (OSError, ValueError, csv.Error) as error:
         parser.error(str(error))
     print(f"Converted {count} seed cases to {target}")

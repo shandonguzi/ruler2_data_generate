@@ -219,7 +219,8 @@ class AssistantModel:
         
         return '\n'.join(history)
     
-    def respond(self, user_query: str, conversation_history: List[Message]) -> str:
+    def respond(self, user_query: str, conversation_history: List[Message], *,
+                language: str = "", seed_question: Optional[str] = None) -> str:
         """
         Generate assistant response to user query.
         
@@ -238,6 +239,9 @@ class AssistantModel:
                 system_prompt=self.system_prompt,
                 conversation_history=history_text,
                 user_query=user_query,
+                seed_context=f"\n\nOriginal seed question (reference only):\n{seed_question}"
+                if seed_question else "",
+                language_instruction=f"\nReply in {language}, even if the history uses another language." if language else "",
             )
             
             # Generate response with token tracking
@@ -391,11 +395,13 @@ class UserFeedbackModel:
         return '\n'.join(history)
     
     def generate_planned_message(self, persona_features, planned_case, *,
-                                 seed_question=None, history=()):
+                                 seed_question=None, history=(), language=""):
         header, marker, _ = self.template.partition('{user_message_task}')
         if not marker:
             raise ValueError("Planned cases require {user_message_task} in the user feedback template")
         task = f"Topic: {planned_case['topic']}\n"
+        if language:
+            task += f"Write the user message in {language}, even if the history uses another language.\n"
         if history:
             task += f"Conversation so far:\n{self._format_conversation_history(history)}\n"
         if seed_question is None:
@@ -421,7 +427,7 @@ class UserFeedbackModel:
                          conversation_history: List[Message],
                          assistant_response: str,
                          current_turn: int = 1,
-                         target_turns: int = 3) -> Optional[str]:
+                         target_turns: int = 3, language: str = "") -> Optional[str]:
         """
         Generate user feedback if needed.
 
@@ -448,6 +454,8 @@ class UserFeedbackModel:
             prompt = prompt.replace('{assistant_response}', assistant_response)
             prompt = prompt.replace('{current_turn}', str(current_turn))
             prompt = prompt.replace('{target_turns}', str(target_turns))
+            if language:
+                prompt += f'\nWrite the feedback field in {language}.'
             
             # Generate feedback with token tracking
             response, input_tokens, output_tokens = self.llm_client.generate_with_tokens(prompt)
@@ -626,7 +634,8 @@ class InteractionGenerator:
                            original_query: Optional[str] = None,
                            target_turns: int = 3,
                            query_id: Optional[str] = None,
-                           planned_case: Optional[Dict[str, Any]] = None) -> Optional[Interaction]:
+                           planned_case: Optional[Dict[str, Any]] = None,
+                           language: str = "") -> Optional[Interaction]:
         """
         Generate a complete multi-turn interaction with distractor applied in real-time.
 
@@ -653,6 +662,7 @@ class InteractionGenerator:
             initial_query = self.user_model.generate_planned_message(
                 persona_features, planned_case,
                 seed_question=original_query if turn_limit == 1 else None,
+                language=language,
             )
 
         # Note: We no longer pass persona system_prompt to assistant to avoid
@@ -727,7 +737,9 @@ class InteractionGenerator:
             conversation_so_far = messages[:-1]  # Exclude current query
             assistant_response = self.assistant_model.respond(
                 current_query,
-                conversation_so_far
+                conversation_so_far,
+                language=language,
+                seed_question=original_query if planned_case and turn + 1 == turn_limit else None,
             )
             
             # Check if assistant response is empty
@@ -762,7 +774,7 @@ class InteractionGenerator:
                 # Force continuation for minimum turns
                 feedback_clean = self.user_model.generate_feedback(
                     persona_features, messages, assistant_response,
-                    current_turn=turn, target_turns=target_turns,
+                    current_turn=turn, target_turns=target_turns, language=language,
                 )
                 if feedback_clean:
                     # Apply distractor to follow-up feedback
@@ -832,6 +844,7 @@ class InteractionGenerator:
                             persona_features, planned_case,
                             seed_question=original_query if final_turn else None,
                             history=messages,
+                            language=language,
                         )
                     except Exception:
                         self.assistant_model.unlock_model()
@@ -839,7 +852,7 @@ class InteractionGenerator:
                 else:
                     feedback_clean = self.user_model.generate_feedback(
                         persona_features, messages, assistant_response,
-                        current_turn=turn, target_turns=target_turns,
+                        current_turn=turn, target_turns=target_turns, language=language,
                     )
 
                 if feedback_clean is None:
@@ -964,6 +977,7 @@ class InteractionGenerator:
             target_turns=task['target_turns'],
             query_id=task.get('query_id'),
             planned_case=task.get('planned_case'),
+            language=task.get('language', ''),
         )
     
     def _generate_with_retry(self, task: Dict[str, Any], max_retries: int = 3, 
@@ -1073,6 +1087,7 @@ class InteractionGenerator:
                     'original_query': original_query,
                     'target_turns': target_turns,
                     'planned_case': query_data.get('planned_case'),
+                    'language': query_data.get('language', ''),
                     'query_id': query_id,
                     'persona_index': persona_order[persona_id],
                     'query_index': persona_query_counts[persona_id],

@@ -23,7 +23,7 @@ from .persona_bank import PersonaBank
 from .sampling import PersonaSampler
 from .persona_spec import PersonaSpec, PersonaSpecStorage, generate_persona_id
 from .llm_client import create_llm_client, LLMFormulator
-from .query_generator import UserQueryGenerator
+from .query_generator import UserQueryGenerator, resolve_case_language
 from .query_storage import QueryStorage
 from .interaction_generator import InteractionGenerator, InteractionStorage
 from .distractor import DistractorModel, SemanticDistractorModel, create_distractor_model
@@ -825,6 +825,7 @@ class EnhancedPersonaGenerationPipeline:
                 'target_length': assignment.get('target_length'),
                 'target_turns': assignment.get('target_turns') or 3,
                 'planned_case': assignment.get('planned_case'),
+                'language': resolve_case_language(assignment.get('row') or {}),
                 'prompt_type': assignment.get('prompt_type'),
                 'source_dataset': assignment.get('source', ''),
                 'metadata': {

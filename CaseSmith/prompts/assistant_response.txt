@@ -4,6 +4,6 @@ Conversation History:
 {conversation_history}
 
 User Query:
-{user_query}
+{user_query}{seed_context}
 
-Provide a concise, direct, and accurate response based on the conversation context and the user's needs. Lead with the answer and include only the details needed to address the current question. Avoid repeating context or adding unsolicited examples. Reply in plain text using natural paragraphs. Do not use Markdown formatting or include code, pseudocode, shell commands, or configuration snippets. Explain technical concepts in words.
+Provide a concise, direct, and accurate response based on the conversation context and the user's needs. Lead with the answer and include only the details needed to address the current question. Avoid repeating context or adding unsolicited examples. Reply in plain text using natural paragraphs. Do not use Markdown formatting or include code, pseudocode, shell commands, or configuration snippets. Explain technical concepts in words.{language_instruction}

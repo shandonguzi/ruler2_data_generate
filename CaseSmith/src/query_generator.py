@@ -31,6 +31,15 @@ except ImportError:
 LENGTH_CATEGORIES = ['very_short', 'short', 'medium', 'long', 'very_long']
 
 
+def resolve_case_language(metadata: Dict[str, Any]) -> str:
+    """Use the explicit language, or a recognized legacy dialect label."""
+    language = (metadata.get("language") or "").strip()
+    dialect = (metadata.get("dialect") or "").strip()
+    aliases = {"zh": "Chinese", "zh-cn": "Simplified Chinese", "en": "English",
+               "english": "English", "ar": "Arabic", "arabic": "Arabic"}
+    return aliases.get(language.lower(), language) if language else aliases.get(dialect.lower(), "")
+
+
 def sample_length_category(mean: float = 1.5, std: float = 1.0) -> str:
     """
     Sample a length category from a normal distribution.
@@ -567,7 +576,7 @@ class QueryStyleTransfer:
 
     def transfer(self, query: str, persona_features: Dict[str, str],
                 force: bool = False, target_length: Optional[str] = None,
-                target_turns: int = 3) -> Tuple[str, bool, str, str, str, int, str]:
+                target_turns: int = 3, language: str = "") -> Tuple[str, bool, str, str, str, int, str]:
         """
         Apply style transfer to a query based on persona.
 
@@ -608,6 +617,8 @@ class QueryStyleTransfer:
             prompt = prompt.replace('{query}', query)
             prompt = prompt.replace('{target_length}', target_length)
             prompt = prompt.replace('{target_turns}', str(target_turns))
+            if language:
+                prompt += f'\nWrite the rewritten user question in {language}.'
 
             # Generate style-transferred query with domain/scenario and track tokens
             response, input_tokens, output_tokens = self.llm_client.generate_with_tokens(prompt)
@@ -740,7 +751,8 @@ class UserQueryGenerator:
                 persona_features,
                 force=True,  # Always apply style transfer to get domain/scenario
                 target_length=target_length,
-                target_turns=target_turns
+                target_turns=target_turns,
+                language=resolve_case_language(query_data.get('metadata', {})),
             )
         else:
             adapted_query = original_query
