@@ -818,6 +818,7 @@ class EnhancedPersonaGenerationPipeline:
             query_data = {
                 'query_id': assignment.get('query_id'),
                 'original_query': original_query,
+                'open_answer': (assignment.get('row') or {}).get('open_answer', ''),
                 'adapted_query': assignment.get('adapted_query') or original_query,
                 'was_style_transferred': assignment.get('was_style_transferred', False),
                 'inferred_domain': assignment.get('inferred_domain', 'general'),

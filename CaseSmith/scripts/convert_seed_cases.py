@@ -29,7 +29,7 @@ def convert(source: Path, target: Path, dialect: str, language: str = "") -> int
             if intent_id in seen_ids:
                 raise ValueError(f"Duplicate intent_id at line {reader.line_num}: {intent_id}")
             seen_ids.add(intent_id)
-            cases.append((intent_id, dialect, question, "", language))
+            cases.append((intent_id, dialect, question, row.get("open_answer") or "", language))
 
     if not cases:
         raise ValueError("Input CSV contains no seed cases")

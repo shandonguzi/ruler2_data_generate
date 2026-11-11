@@ -220,7 +220,8 @@ class AssistantModel:
         return '\n'.join(history)
     
     def respond(self, user_query: str, conversation_history: List[Message], *,
-                language: str = "", seed_question: Optional[str] = None) -> str:
+                language: str = "", seed_question: Optional[str] = None,
+                seed_answer: Optional[str] = None) -> str:
         """
         Generate assistant response to user query.
         
@@ -241,6 +242,10 @@ class AssistantModel:
                 user_query=user_query,
                 seed_context=f"\n\nOriginal seed question (reference only):\n{seed_question}"
                 if seed_question else "",
+                seed_answer_context=f"\n\nReference answer to the original seed question:\n{seed_answer}\n"
+                "Use this answer as reference when answering the actual user question, "
+                "taking the conversation and any updated user constraints into account."
+                if seed_answer else "",
                 language_instruction=f"\nReply in {language}, even if the history uses another language." if language else "",
             )
             
@@ -417,6 +422,9 @@ class UserFeedbackModel:
             )
         prompt = (header.replace('{persona}', self._format_persona(persona_features)) + task
                   + '\nKeep the message concise and conversational.'
+                  + '\nUse the conversation history to formulate the next question. '
+                  'Omit prefatory acknowledgments and evaluations of the previous answer, '
+                  'such as “understood,” “that makes sense,” or “your suggestion is helpful.”'
                   + '\nReturn only the user message as plain text. Do not include a role label.')
         message = self.llm_client.generate(prompt).strip()
         if not message:
@@ -635,7 +643,7 @@ class InteractionGenerator:
                            target_turns: int = 3,
                            query_id: Optional[str] = None,
                            planned_case: Optional[Dict[str, Any]] = None,
-                           language: str = "") -> Optional[Interaction]:
+                           language: str = "", open_answer: str = "") -> Optional[Interaction]:
         """
         Generate a complete multi-turn interaction with distractor applied in real-time.
 
@@ -740,6 +748,7 @@ class InteractionGenerator:
                 conversation_so_far,
                 language=language,
                 seed_question=original_query if planned_case and turn + 1 == turn_limit else None,
+                seed_answer=open_answer if planned_case and turn + 1 == turn_limit else None,
             )
             
             # Check if assistant response is empty
@@ -978,6 +987,7 @@ class InteractionGenerator:
             query_id=task.get('query_id'),
             planned_case=task.get('planned_case'),
             language=task.get('language', ''),
+            open_answer=task.get('open_answer', ''),
         )
     
     def _generate_with_retry(self, task: Dict[str, Any], max_retries: int = 3, 
@@ -1085,6 +1095,7 @@ class InteractionGenerator:
                     'adapted_query': adapted_query,
                     'system_prompt': system_prompt,
                     'original_query': original_query,
+                    'open_answer': query_data.get('open_answer', ''),
                     'target_turns': target_turns,
                     'planned_case': query_data.get('planned_case'),
                     'language': query_data.get('language', ''),
