@@ -1,6 +1,6 @@
-# Excel 五维评分
+# 单轮 QA 五维评分
 
-读取 Excel 中的原 query、原 answer、新 query，由模型逐行给五维分数和理由，再由程序计算 CRITIC 总分和通过／拒绝结果，写入新的 Excel。
+面向单轮 QA 的问句改写质检：读取 Excel 中的原 query、原 answer、新 query，由模型逐行给五维分数和理由，再由程序计算 CRITIC 总分和通过／拒绝结果，写入新的 Excel。
 
 1. 准备 `.xlsx` 文件，第一行为列名。例如：
 
@@ -26,19 +26,19 @@
    sheet_name: ""
    ```
 
-   `api_url` 使用完整的 Chat Completions 地址。`api_key` 留空时读取环境变量 `OPENAI_API_KEY`。相对路径以配置文件所在目录为起点；上述输入路径即 `src/input.xlsx`。`sheet_name` 留空处理第一个工作表，也可填写具体表名。输入和输出必须是不同的 `.xlsx` 文件。
+   `api_url` 使用完整的 Chat Completions 地址。`api_key` 留空时读取环境变量 `OPENAI_API_KEY`。相对路径以配置文件所在目录为起点；上述输入路径即 `rubric/single_turn/input.xlsx`。`sheet_name` 留空处理第一个工作表，也可填写具体表名。输入和输出必须是不同的 `.xlsx` 文件。
 
 3. 在项目根目录运行（Python 3.11）：
 
    ```powershell
-   python -m pip install -r src/requirements.txt
-   python src/evaluate.py run
+   python -m pip install -r rubric/single_turn/requirements.txt
+   python -m rubric.single_turn.evaluate run
    ```
 
-   也可以省略 `run`。若要先检查列名并生成未评分的 Excel，可运行 `python src/evaluate.py preview`，此命令不调用模型，写入单独的 `<输出文件名不含扩展名>_预览.xlsx`。`--config` 可指定其他配置文件；`--input`、`--output`、`--model`、`--api-url` 可临时覆盖配置，例如：
+   也可以省略 `run`。若要先检查列名并生成未评分的 Excel，可运行 `python -m rubric.single_turn.evaluate preview`，此命令不调用模型，写入单独的 `<输出文件名不含扩展名>_预览.xlsx`。`--config` 可指定其他配置文件；`--input`、`--output`、`--model`、`--api-url` 可临时覆盖配置，例如：
 
    ```powershell
-   python src/evaluate.py run --input "D:\数据\待评分.xlsx" --output "D:\数据\已评分.xlsx"
+   python -m rubric.single_turn.evaluate run --input "D:\数据\待评分.xlsx" --output "D:\数据\已评分.xlsx"
    ```
 
 输出在原有列的右侧追加八列：**语言自然分、表述清晰分、内部逻辑分、原意忠实分、原答案匹配分、CRITIC总分、评测结果、评分说明**。若原表已有同名列，新列使用 `（2）` 等后缀，原列保留。
@@ -50,3 +50,15 @@
 续跑记录保存在输出文件旁的 `<输出文件名不含扩展名>_records/`，包含 `manifest.json`、`model_scores.jsonl` 和 `attempts.jsonl`。输入数据、列映射、模型或评分规则变化时，请换一个输出文件名，以免混用记录。配置中的密钥不会写入评分结果或记录文件。
 
 当前流程只需要三个输入列，无需预评分、good/bad 标签或审核状态，结果直接输出 Excel。此前的 HTML 报告可继续查看。
+
+也支持直接执行 `python rubric/single_turn/evaluate.py run`。配置默认读取本目录的 `config.yaml`，默认输入及输出分别位于本目录的 `input.xlsx` 和 `output/评分结果.xlsx`。
+
+本目录集中保存原五维评分代码（evaluate.py、critic.py、excel_io.py）、HTML 报告（report.py）、配置示例、CSV 转 TXT 工具及离线测试。评分标准、CRITIC 权重和阈值保持原定义。
+
+运行单轮测试：
+
+```bash
+python -m pytest -q rubric/single_turn
+```
+
+多轮上下文语料的四维质检与自动修复见 [mtqc](../mtqc/README.md)。

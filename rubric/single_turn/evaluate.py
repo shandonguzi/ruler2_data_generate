@@ -1,4 +1,4 @@
-"""Excel 问句改写评分：读取三个文本列，在原表右侧追加五维分数和结论。"""
+"""单轮 QA 问句改写评分：读取三个文本列，在原表右侧追加五维分数和结论。"""
 
 from __future__ import annotations
 
@@ -16,13 +16,17 @@ from urllib.request import Request, urlopen
 
 import yaml
 
-from critic import FROZEN_WEIGHTS, THRESHOLD, score_and_decide
-from excel_io import DEFAULT_COLUMNS, read_input_sheet, write_scored_excel
+if __package__:
+    from .critic import FROZEN_WEIGHTS, THRESHOLD, score_and_decide
+    from .excel_io import DEFAULT_COLUMNS, read_input_sheet, write_scored_excel
+else:
+    from critic import FROZEN_WEIGHTS, THRESHOLD, score_and_decide
+    from excel_io import DEFAULT_COLUMNS, read_input_sheet, write_scored_excel
 
 
-ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_INPUT = ROOT / "src" / "input.xlsx"
-DEFAULT_OUTPUT = ROOT / "src" / "output" / "评分结果.xlsx"
+ROOT = Path(__file__).resolve().parent
+DEFAULT_INPUT = ROOT / "input.xlsx"
+DEFAULT_OUTPUT = ROOT / "output" / "评分结果.xlsx"
 DEFAULT_API_URL = "https://api.openai.com/v1/chat/completions"
 DEFAULT_CONFIG = Path(__file__).with_name("config.yaml")
 RUBRIC_VERSION = "v0.1"

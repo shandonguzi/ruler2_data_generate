@@ -10,7 +10,10 @@ from typing import Any
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill
 
-from critic import score_and_decide
+if __package__:
+    from .critic import score_and_decide
+else:
+    from critic import score_and_decide
 
 
 DEFAULT_COLUMNS = {

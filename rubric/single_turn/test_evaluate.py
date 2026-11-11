@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import tempfile
 import unittest
 from argparse import Namespace
@@ -16,14 +15,12 @@ import yaml
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from critic import FROZEN_WEIGHTS, THRESHOLD, score_and_decide  # noqa: E402
-from evaluate import (  # noqa: E402
+from rubric.single_turn.critic import FROZEN_WEIGHTS, THRESHOLD, score_and_decide
+from rubric.single_turn.evaluate import (
     DIMENSIONS, load_config, parse_model_content, response_format_for_model,
     resolve_settings, run, user_payload,
 )
-from excel_io import DEFAULT_COLUMNS, read_input_sheet, write_scored_excel  # noqa: E402
+from rubric.single_turn.excel_io import DEFAULT_COLUMNS, read_input_sheet, write_scored_excel
 
 
 SCORE_HEADERS = ["语言自然分", "表述清晰分", "内部逻辑分", "原意忠实分", "原答案匹配分"]
@@ -144,7 +141,7 @@ class ExcelInputTests(unittest.TestCase):
 class ExcelOutputTests(unittest.TestCase):
     def test_original_workbook_survives_appending_scores(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
-            base = Path(folder)
+            base = Path(folder).resolve()
             source, output = base / "input.xlsx", base / "result.xlsx"
             make_input(source, complex_sheet=True)
             original_bytes = source.read_bytes()
@@ -190,7 +187,7 @@ class ExcelOutputTests(unittest.TestCase):
 
     def test_unscored_and_failed_rows_are_not_quality_rejections(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
-            base = Path(folder)
+            base = Path(folder).resolve()
             source, output = base / "input.xlsx", base / "result.xlsx"
             make_input(source)
             rows, sheet_name = read_input_sheet(source, DEFAULT_COLUMNS)
@@ -245,7 +242,7 @@ class ScoringContractTests(unittest.TestCase):
 class ConfigTests(unittest.TestCase):
     def test_relative_paths_mapping_and_cli_overrides(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
-            base = Path(folder)
+            base = Path(folder).resolve()
             config = make_config(base / "config.yaml", columns=CUSTOM_COLUMNS, sheet_name="指定工作表")
             settings = resolve_settings(args_for(config))
             self.assertEqual(settings.input, base / "input.xlsx")
@@ -276,7 +273,7 @@ class ConfigTests(unittest.TestCase):
 class EndToEndTests(unittest.TestCase):
     def test_three_columns_to_excel_without_reference_scores_and_resume(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
-            base = Path(folder)
+            base = Path(folder).resolve()
             source = base / "input.xlsx"
             make_input(source, complex_sheet=True)
             original_bytes = source.read_bytes()
@@ -286,7 +283,7 @@ class EndToEndTests(unittest.TestCase):
             def fake_api(_url, _key, _model, row):
                 return api_response(scores_by_query[row["q1"]])
 
-            with patch("evaluate.post_completion", side_effect=fake_api) as mock_api:
+            with patch("rubric.single_turn.evaluate.post_completion", side_effect=fake_api) as mock_api:
                 run(args_for(config))
             self.assertEqual(mock_api.call_count, 3)
             self.assertEqual(source.read_bytes(), original_bytes)
@@ -298,7 +295,7 @@ class EndToEndTests(unittest.TestCase):
             self.assertIsNone(sheet.cell(3, 14).value)
             self.assertEqual(sheet["F2"].value, "=1+2")
             book.close()
-            with patch("evaluate.post_completion") as mock_api:
+            with patch("rubric.single_turn.evaluate.post_completion") as mock_api:
                 run(args_for(config))
             mock_api.assert_not_called()
             records = output.parent / (output.stem + "_records")
@@ -308,7 +305,7 @@ class EndToEndTests(unittest.TestCase):
 
     def test_preview_and_same_path_preflight_do_not_call_api(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
-            base = Path(folder)
+            base = Path(folder).resolve()
             source = base / "input.xlsx"
             make_input(source)
             config = make_config(base / "config.yaml", api_key="", model="")
@@ -320,7 +317,7 @@ class EndToEndTests(unittest.TestCase):
             completed.save(output)
             completed.close()
             completed_bytes = output.read_bytes()
-            with patch("evaluate.post_completion") as mock_api:
+            with patch("rubric.single_turn.evaluate.post_completion") as mock_api:
                 run(args_for(config, command="preview"))
             mock_api.assert_not_called()
             self.assertEqual(output.read_bytes(), completed_bytes)
@@ -329,7 +326,7 @@ class EndToEndTests(unittest.TestCase):
             self.assertEqual(book.active["J2"].value, "未评分")
             book.close()
             original_bytes = source.read_bytes()
-            with patch("evaluate.post_completion") as mock_api:
+            with patch("rubric.single_turn.evaluate.post_completion") as mock_api:
                 with self.assertRaises(ValueError):
                     run(args_for(config, output=source))
             mock_api.assert_not_called()
@@ -337,7 +334,7 @@ class EndToEndTests(unittest.TestCase):
 
     def test_changed_column_mapping_cannot_reuse_previous_scores(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
-            base = Path(folder)
+            base = Path(folder).resolve()
             source = base / "input.xlsx"
             make_input(source)
             book = load_workbook(source)
@@ -346,17 +343,17 @@ class EndToEndTests(unittest.TestCase):
             book.save(source)
             book.close()
             config = make_config(base / "config.yaml")
-            with patch("evaluate.post_completion", return_value=api_response([3] * 5)):
+            with patch("rubric.single_turn.evaluate.post_completion", return_value=api_response([3] * 5)):
                 run(args_for(config))
             make_config(config, columns={**DEFAULT_COLUMNS, "original_query": "另一个原query"})
-            with patch("evaluate.post_completion") as mock_api:
+            with patch("rubric.single_turn.evaluate.post_completion") as mock_api:
                 with self.assertRaises(ValueError):
                     run(args_for(config))
             mock_api.assert_not_called()
 
     def test_failed_run_saves_partial_excel_and_resume_retries_only_unfinished(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
-            base = Path(folder)
+            base = Path(folder).resolve()
             source = base / "input.xlsx"
             make_input(source)
             book = load_workbook(source)
@@ -371,14 +368,14 @@ class EndToEndTests(unittest.TestCase):
                     return api_response([3] * 5)
                 raise ValueError("模拟接口失败")
 
-            with patch("evaluate.post_completion", side_effect=failing_api), patch("evaluate.time.sleep"):
+            with patch("rubric.single_turn.evaluate.post_completion", side_effect=failing_api), patch("rubric.single_turn.evaluate.time.sleep"):
                 with self.assertRaises(ValueError):
                     run(args_for(config))
             output = base / "output" / "评分结果.xlsx"
             book = load_workbook(output)
             self.assertEqual([book.active.cell(row, 10).value for row in (2, 3, 4)], ["通过", "评分失败", "未评分"])
             book.close()
-            with patch("evaluate.post_completion", return_value=api_response([3] * 5)) as mock_api:
+            with patch("rubric.single_turn.evaluate.post_completion", return_value=api_response([3] * 5)) as mock_api:
                 run(args_for(config))
             self.assertEqual(mock_api.call_count, 2)
             book = load_workbook(output)

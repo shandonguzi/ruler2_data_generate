@@ -1,0 +1,35 @@
+pipeline: multi_turn_qa_qc
+rubric_version: mtqc-v1.1
+input:
+  format: jsonl
+  path: examples/cases.jsonl
+output: output                  # 总输出目录；run 每次自动创建独立时间戳文件夹
+llm:
+  api_url: https://example.com/v1/chat/completions # 也支持以 /v1 结尾的 Base URL
+  api_key: your-api-key
+  timeout_seconds: 120
+  max_attempts: 3
+  concurrency: 4
+  temperature: 0                  # 不接受 temperature 的模型可设 null
+  response_format: auto           # auto: deepseek-* 用 json_object，其他用 json_schema
+  retry_backoff_seconds: 2
+  requests_per_second: 0          # 0 不设速率限制；并发限制仍然生效
+  request_parameters: {}          # 可配置 max_tokens/max_completion_tokens 等
+judges:
+  factor_compliance: {model: your-model, prompt: prompts/factor_compliance.txt, version: v1}
+  final_qa_validation: {model: your-model, prompt: prompts/final_qa_validation.txt, version: v1}
+  dialogue_coherence: {model: your-model, prompt: prompts/dialogue_coherence.txt, version: v1}
+  persona_naturalness: {model: your-model, prompt: prompts/persona_naturalness.txt, version: v1}
+evaluation:
+  fail_fast: false
+repair:
+  enabled: true
+  max_rounds: 3
+  model: your-repair-model
+  prompt: prompts/dialogue_repair.txt
+  version: v1
+decision:
+  require_factor_score: 3
+  require_final_qa_score: 3
+  min_coherence_score: 3
+  min_persona_score: 3

@@ -1,4 +1,4 @@
-"""第三任务五维评测的独立 HTML 报告。"""
+"""单轮 QA 五维评测的独立 HTML 报告。"""
 
 from __future__ import annotations
 
@@ -255,7 +255,7 @@ def render_report(report: dict) -> str:
     status = report.get("status")
     if status not in {"ready", "pending"}:
         raise ValueError("report.status 必须是 ready 或 pending")
-    title = report.get("title") or "第三任务：五维与 CRITIC 判定评测报告"
+    title = report.get("title") or "单轮 QA：五维与 CRITIC 判定评测报告"
     dataset_label = report.get("dataset_label") or "已审核样本"
     state_label = f"{dataset_label}评测结果" if status == "ready" else "待审核预览"
     contents = _ready(report) if status == "ready" else _pending(report)

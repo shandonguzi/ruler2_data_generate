@@ -7,7 +7,7 @@ import sys
 
 def main() -> None:
     if len(sys.argv) != 2:
-        raise SystemExit("用法：python src/csv_to_txt.py <文件.csv>")
+        raise SystemExit("用法：python -m rubric.single_turn.csv_to_txt <文件.csv>")
     source = Path(sys.argv[1])
     if not source.is_file() or source.suffix.lower() != ".csv":
         raise SystemExit("请输入存在的 CSV 文件路径")
