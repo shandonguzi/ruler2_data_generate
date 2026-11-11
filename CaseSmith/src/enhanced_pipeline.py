@@ -504,7 +504,12 @@ class EnhancedPersonaGenerationPipeline:
                 "Run --stage all (or query/interaction) first."
             )
         with open(state_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            state = json.load(f)
+        for assignment in state.get('assignments', []):
+            assignment['persona_features'] = self.sampler.filter_persona(
+                assignment.get('persona_features') or {}
+            )
+        return state
 
     def _recover_completed_from_storage(self, state: Dict[str, Any]) -> int:
         """
@@ -590,6 +595,8 @@ class EnhancedPersonaGenerationPipeline:
         existing: List[Dict[str, Any]] = []
         if hasattr(self, 'storage'):
             existing = [p.to_dict() for p in self.storage.load_all()]
+            for persona in existing:
+                persona['features'] = self.sampler.filter_persona(persona.get('features') or {})
 
         if len(existing) > pool_size:
             # Random subset; with a random run seed this differs between runs.
@@ -913,6 +920,15 @@ class EnhancedPersonaGenerationPipeline:
                            stage: str) -> Dict[str, Any]:
         """Run the training-data export and/or final CSV export."""
         interactions = self._load_completed_interactions(assignments)
+        for assignment in assignments:
+            interaction = interactions.get(assignment.get('query_id'))
+            if interaction is not None:
+                row = assignment.get('row') or {}
+                metadata = interaction.setdefault('metadata', {})
+                if 'open_answer' in row:
+                    metadata['open_answer'] = row['open_answer']
+                if row.get('case_factors'):
+                    metadata.setdefault('planned_case', {})['case_factors'] = json.loads(row['case_factors'])
         results: Dict[str, Any] = {'interactions_loaded': len(interactions)}
 
         if stage in ('all', 'training') and self.stages.get('training_data_export', True):

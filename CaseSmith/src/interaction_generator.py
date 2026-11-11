@@ -367,6 +367,10 @@ class UserFeedbackModel:
         self.template_path = template_path
         self.feedback_probability = feedback_probability
         self.template = self._load_template()
+        prompts_dir = Path(__file__).resolve().parents[1] / 'prompts'
+        self.message_template = (prompts_dir / 'user_message.txt').read_text(encoding='utf-8')
+        self.topic_task_template = (prompts_dir / 'user_topic_task.txt').read_text(encoding='utf-8')
+        self.final_task_template = (prompts_dir / 'user_final_task.txt').read_text(encoding='utf-8')
         
         # Get model info for token tracking
         self.model_name = getattr(llm_client, 'model', 'unknown')
@@ -401,31 +405,19 @@ class UserFeedbackModel:
     
     def generate_planned_message(self, persona_features, planned_case, *,
                                  seed_question=None, history=(), language=""):
-        header, marker, _ = self.template.partition('{user_message_task}')
-        if not marker:
-            raise ValueError("Planned cases require {user_message_task} in the user feedback template")
-        task = f"Topic: {planned_case['topic']}\n"
-        if language:
-            task += f"Write the user message in {language}, even if the history uses another language.\n"
-        if history:
-            task += f"Conversation so far:\n{self._format_conversation_history(history)}\n"
-        if seed_question is None:
-            task += ("Write one natural user message about this topic to build context. "
-                     "When there is conversation history, build on it and avoid repeating earlier questions.")
-        else:
-            task += (
-                f"Seed question: {seed_question}\n"
-                f"Case factors: {json.dumps(planned_case['case_factors'], ensure_ascii=False)}\n"
-                "Write the final user question. Preserve the seed question's core intent. "
-                "Express applicable factors in the wording, ignore values marked 不适用, "
-                "and ground references and corrections in the actual conversation."
+        task = self.topic_task_template
+        if seed_question is not None:
+            task = self.final_task_template.format(
+                seed_question=seed_question,
+                case_factors=json.dumps(planned_case['case_factors'], ensure_ascii=False),
             )
-        prompt = (header.replace('{persona}', self._format_persona(persona_features)) + task
-                  + '\nKeep the message concise and conversational.'
-                  + '\nUse the conversation history to formulate the next question. '
-                  'Omit prefatory acknowledgments and evaluations of the previous answer, '
-                  'such as “understood,” “that makes sense,” or “your suggestion is helpful.”'
-                  + '\nReturn only the user message as plain text. Do not include a role label.')
+        prompt = self.message_template.format(
+            persona=self._format_persona(persona_features),
+            topic=planned_case['topic'],
+            language=language,
+            conversation_history=self._format_conversation_history(history),
+            user_message_task=task.strip(),
+        )
         message = self.llm_client.generate(prompt).strip()
         if not message:
             raise ValueError("Planned user message is empty")
@@ -950,6 +942,7 @@ class InteractionGenerator:
             metadata={
                 'created_at': datetime.now().isoformat(),
                 'query_id': query_id,
+                'open_answer': open_answer,
                 'system_prompt_used': system_prompt is not None,
                 'total_messages': len(messages),
                 'conversation_ended': turn < turn_limit,

@@ -1,0 +1,1 @@
+Write one natural user message about this topic to build context. When there is conversation history, build on it and avoid repeating earlier questions.

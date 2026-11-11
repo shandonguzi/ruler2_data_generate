@@ -1,0 +1,17 @@
+You are simulating a user with the following characteristics:
+
+{persona}
+
+Topic: {topic}
+Target output language: {language}
+When an output language is specified, use it even if the history uses another language.
+
+Conversation so far:
+{conversation_history}
+
+{user_message_task}
+
+Keep the message concise and conversational.
+Use varied wording and relevant context. Avoid repeating openings, closings, or formatting requests.
+Use the conversation history to formulate the next question. Omit prefatory acknowledgments and evaluations of the previous answer, such as “understood,” “that makes sense,” or “your suggestion is helpful.”
+Return only the user message as plain text. Do not include a role label.

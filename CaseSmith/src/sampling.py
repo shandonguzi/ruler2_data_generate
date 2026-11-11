@@ -6,6 +6,7 @@ by selecting subsets of user features.
 """
 
 import random
+import copy
 import itertools
 import yaml
 from typing import Dict, List, Any, Optional, Set, Tuple
@@ -466,6 +467,18 @@ class PersonaSampler:
         self.config = self._load_config(config_path)
         if overrides:
             self._apply_overrides(overrides)
+        self.disabled_dimensions = set(self.config.get('disabled_dimensions', []))
+        unknown = self.disabled_dimensions - set(persona_bank.get_all_dimension_names())
+        if unknown:
+            raise ValueError(f"Unknown disabled dimensions: {sorted(unknown)}")
+        self.persona_bank = copy.copy(persona_bank)
+        self.persona_bank.dimensions = [
+            dim for dim in persona_bank.dimensions if dim['name'] not in self.disabled_dimensions
+        ]
+        self.persona_bank.values = {
+            name: values for name, values in persona_bank.values.items()
+            if name not in self.disabled_dimensions
+        }
         self.strategy = self._create_strategy()
         self.generated_personas: List[Dict[str, str]] = []
 
@@ -506,6 +519,12 @@ class PersonaSampler:
         self.required_dimensions = set(
             self.config.get('required_dimensions', [])
         )
+        if self.required_dimensions & self.disabled_dimensions:
+            raise ValueError("Required dimensions cannot also be disabled")
+
+    def filter_persona(self, features: Dict[str, str]) -> Dict[str, str]:
+        return {name: value for name, value in features.items()
+                if name not in self.disabled_dimensions}
 
     def _apply_overrides(self, overrides: Dict[str, Any]) -> None:
         strategy = overrides.get("strategy")

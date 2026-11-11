@@ -4,6 +4,12 @@
 # Sampling strategy (only "random" is actively used)
 strategy: "random"
 
+disabled_dimensions:
+  - format_pref_primary
+  - deliverable_type
+  - code_preference
+  - multi_intent_rate
+
 # Random sampling parameters
 random_sampling:
   # Probability that each feature dimension is included (0.0 to 1.0)

@@ -14,6 +14,7 @@ distractor did not fire), and ``answer`` is the assistant reply for that turn.
 from __future__ import annotations
 
 import csv
+import json
 import logging
 import os
 from pathlib import Path
@@ -23,7 +24,7 @@ ORIGINAL_COLUMNS = ['id', 'dialect', 'open_question', 'open_answer']
 
 NEW_COLUMNS = [
     'persona_id', 'turn', 'improved_query', 'noisy_query', 'answer',
-    'domain', 'scenario', 'query_id', 'source',
+    'domain', 'scenario', 'query_id', 'source', 'case_factors',
 ]
 
 OUTPUT_COLUMNS = ORIGINAL_COLUMNS + NEW_COLUMNS
@@ -82,6 +83,13 @@ class CSVExporter:
         """Pair every user message with its assistant reply."""
         row = assignment.get('row') or {}
         base = {col: row.get(col, '') for col in ORIGINAL_COLUMNS}
+        metadata = interaction.get('metadata') or {}
+        if not base['open_answer']:
+            base['open_answer'] = metadata.get('open_answer', '')
+        factors = row.get('case_factors') or (metadata.get('planned_case') or {}).get('case_factors', {})
+        base['case_factors'] = factors if isinstance(factors, str) else json.dumps(
+            factors, ensure_ascii=False
+        )
         persona_id = assignment.get('persona_id') or interaction.get('persona_id', '')
         query_id = base.get('id', '') or assignment.get('query_id', '')
         source = assignment.get('source', '')

@@ -1,0 +1,3 @@
+Seed question: {seed_question}
+Case factors: {case_factors}
+Write the final user question. Preserve the seed question's core intent. Express applicable factors in the wording, ignore values marked 不适用, and ground references and corrections in the actual conversation.

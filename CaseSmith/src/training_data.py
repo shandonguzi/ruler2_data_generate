@@ -30,6 +30,8 @@ class TrainingSample:
     noisy_trajectories: List[Dict[str, Any]] = None
 
     metadata: Dict[str, Any] = None
+    open_answer: str = ""
+    case_factors: Dict[str, Any] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -41,7 +43,9 @@ class TrainingSample:
             'initial_query': self.initial_query,
             'prompt_trajectory': self.prompt_trajectory,
             'full_conversation': self.full_conversation,
-            'num_turns': self.num_turns
+            'num_turns': self.num_turns,
+            'open_answer': self.open_answer,
+            'case_factors': self.case_factors or {},
         }
         
         if self.noisy_initial_queries:
@@ -141,7 +145,9 @@ class TrainingDataCollector:
             num_turns=interaction.get('num_turns', 0),
             noisy_initial_queries=noisy_initial,
             noisy_trajectories=noisy_followups,
-            metadata=interaction.get('metadata', {})
+            metadata=interaction.get('metadata', {}),
+            open_answer=(interaction.get('metadata') or {}).get('open_answer', ''),
+            case_factors=((interaction.get('metadata') or {}).get('planned_case') or {}).get('case_factors', {}),
         )
         
         return sample
