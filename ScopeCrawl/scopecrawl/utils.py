@@ -249,6 +249,25 @@ def dedupe_results(
     return tasks
 
 
+def interleave_by_query(tasks: list[UrlTask], max_urls: int) -> list[UrlTask]:
+    """按首次命中的关键词轮转取数，避免靠前的关键词吃满配额。"""
+    if len(tasks) <= max_urls:
+        return tasks
+    buckets: dict[int, list[UrlTask]] = {}
+    for task in tasks:
+        buckets.setdefault(task.first_query_index, []).append(task)
+    queues = [buckets[key] for key in sorted(buckets)]
+    picked: list[UrlTask] = []
+    for offset in range(max(len(queue) for queue in queues)):
+        for queue in queues:
+            if offset >= len(queue):
+                continue
+            picked.append(queue[offset])
+            if len(picked) >= max_urls:
+                return picked
+    return picked
+
+
 def make_doc_id(normalized_url: str, salt: int = 0) -> str:
     value = normalized_url if salt == 0 else f"{normalized_url}#{salt}"
     return hashlib.sha1(value.encode("utf-8")).hexdigest()[:16]

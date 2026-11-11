@@ -49,6 +49,7 @@ from .utils import (
     dedupe_results,
     domain_matches,
     index_url_reason,
+    interleave_by_query,
     normalize_url,
     url_host,
 )
@@ -376,10 +377,11 @@ class Pipeline:
             logger.info("[历史] 命中 %d 个已收 URL，跳过", summary.history_skipped)
 
         if dedupe.max_urls is not None:
-            tasks = kept[: dedupe.max_urls]
+            # 按关键词轮转取数，避免靠前的关键词占满配额导致后续关键词无 URL 进入。
+            tasks = interleave_by_query(kept, dedupe.max_urls)
             if summary.history_skipped:
                 logger.info(
-                    "[历史] 由后续结果补位，进入队列 %d 个（上限 %d）",
+                    "[历史] 由后续结果补位，按关键词轮转后进入队列 %d 个（上限 %d）",
                     len(tasks),
                     dedupe.max_urls,
                 )

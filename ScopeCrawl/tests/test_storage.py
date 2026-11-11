@@ -88,7 +88,7 @@ def test_writer_creates_flat_run_dir(tmp_path):
     assert writer.run_dir == tmp_path / writer.run_id
     assert writer.run_dir.exists()
     assert not (writer.run_dir / "markdown").exists()
-    assert writer.run_id.startswith("20")
+    assert writer.run_id.startswith("天气查询-气象灾害查询-埃及-zh-20")
 
 
 def test_write_body_and_metadata(tmp_path):

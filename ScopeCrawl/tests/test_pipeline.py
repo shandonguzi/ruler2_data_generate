@@ -276,12 +276,44 @@ def test_pipeline_records_screened_urls_but_not_truncated(tmp_path):
     assert summary.prefiltered_urls == 1
     assert summary.quality_dropped == 1
     history = UrlHistory(tmp_path / HISTORY_FILENAME)
-    # 被 URL 粗筛、质量闸门丢弃的 URL 仍记录；被 max_urls 截断的 URL 留给下次。
+    # 被 URL 粗筛、质量闸门丢弃的 URL 仍记录；按关键词轮转被 max_urls 截断的 URL 留给下次。
     assert history.contains("m.cn.nytimes.com")
     assert history.contains("example.com/short")
-    assert history.contains("example.com/a")
-    assert not history.contains("example.com/cut1")
+    assert history.contains("example.com/cut1")
+    assert not history.contains("example.com/a")
     assert not history.contains("example.com/cut2")
+
+
+def test_pipeline_interleaves_queries_under_max_urls(tmp_path):
+    groups = {
+        "关键词一": [f"https://example.com/a{i}" for i in range(3)],
+        "关键词二": [f"https://example.com/b{i}" for i in range(3)],
+        "关键词三": [f"https://example.com/c{i}" for i in range(3)],
+    }
+    provider = FakeProvider(
+        {query: make_search_response(query, urls) for query, urls in groups.items()}
+    )
+    extractor = FakeExtractor(
+        {url: MARKDOWN_OK for urls in groups.values() for url in urls}
+    )
+    settings = make_settings(
+        search={"dedupe": {"max_urls": 3}},
+        diversity={"max_per_query": None, "max_per_domain": None},
+    )
+
+    summary, code = _run(
+        tmp_path,
+        settings=settings,
+        llm_client=RouterLLM(keywords=list(groups)),
+        provider=provider,
+        extractor=extractor,
+    )
+
+    assert code == 0
+    assert summary.processed_urls == 3
+    # 每个关键词各保留 1 条，靠后的关键词不会被前面吃满配额
+    first = [groups["关键词一"][0], groups["关键词二"][0], groups["关键词三"][0]]
+    assert extractor.calls == [first]
 
 
 def test_pipeline_prefilter_drops_portal_homepages(tmp_path):

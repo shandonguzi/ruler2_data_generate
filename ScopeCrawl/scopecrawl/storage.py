@@ -93,7 +93,13 @@ class RunWriter:
     def _create_run_dir(self) -> tuple[str, Path]:
         now = self._clock()
         self._generated_at = now.isoformat()
-        base = now.strftime("%Y%m%d-%H%M%S")
+        prefix = "-".join(
+            part
+            for part in (self.run.s3, self.run.s4, self.run.location, self.run.language)
+            if part
+        )
+        stamp = now.strftime("%Y%m%d-%H%M%S")
+        base = f"{_sanitize_filename(prefix, fallback='run')}-{stamp}"
         for suffix in range(1, 101):
             run_id = base if suffix == 1 else f"{base}-{suffix}"
             run_dir = self.output_root / run_id

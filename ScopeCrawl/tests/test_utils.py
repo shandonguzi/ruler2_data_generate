@@ -4,10 +4,11 @@ from datetime import UTC, datetime
 
 import pytest
 
-from scopecrawl.models import SearchResult
+from scopecrawl.models import SearchResult, UrlTask
 from scopecrawl.utils import (
     dedupe_results,
     index_url_reason,
+    interleave_by_query,
     is_index_url,
     make_doc_id,
     normalize_url,
@@ -69,6 +70,20 @@ def test_dedupe_results_merges_queries_and_keeps_order():
 def test_dedupe_results_respects_max_urls():
     items = [(0, "q", SearchResult(url=f"https://a.com/{i}", rank=i + 1)) for i in range(5)]
     assert len(dedupe_results(items, max_urls=2)) == 2
+
+
+def test_interleave_by_query_rotates_across_queries():
+    tasks = [
+        UrlTask(url="https://a.com/0", normalized_url="a.com/0", first_query_index=0),
+        UrlTask(url="https://a.com/1", normalized_url="a.com/1", first_query_index=0),
+        UrlTask(url="https://b.com/0", normalized_url="b.com/0", first_query_index=1),
+    ]
+    assert [task.normalized_url for task in interleave_by_query(tasks, 2)] == [
+        "a.com/0",
+        "b.com/0",
+    ]
+    # 未触达上限时保持原顺序
+    assert interleave_by_query(tasks, 10) == tasks
 
 
 def test_doc_id_is_stable_and_salted():
