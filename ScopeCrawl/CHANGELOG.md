@@ -1,0 +1,109 @@
+# 变更日志
+
+## 2026-11-11
+
+- 调整：`.gitignore` 补齐密钥（`.env.*`，保留 `.env.example`）、构建产物、覆盖率与日志等忽略规则，`data/`、`.history.json` 等生成数据不上传
+- 调整：控制台汇总不再逐条打印失败项，只保留运行完成与各阶段丢弃统计；失败详情仍写入运行日志
+- 调整：URL 历史表 `.history.json` 从 `data/` 移至项目根目录，`data/` 只保留每次运行的产物；`.gitignore` 同步忽略
+- 调整：`Pipeline` 新增 `history_path` 参数，默认使用 `DEFAULT_HISTORY_PATH`
+- 调整：Markdown 产物不再写 YAML front matter，文件内容只保留清洗后的正文
+- 新增：每次 run 在输出目录生成 `metadata.json`，记录 S3/S4、地点、语言、时间范围，以及每篇文档的文件名、URL、匹配查询、各维度评分与评估结论
+- 调整：`build_front_matter` 改名 `build_metadata`，元数据与 Markdown 分离落盘
+- 重构：评估环节伞概念由 `relevance` 统一改为 `review`，相关性与内容丰富度/质量保留各自维度命名
+- 调整：`prompts/relevance.md` 改名 `prompts/review.md`，`review_relevance` 改名 `review_content`，`DEFAULT_RELEVANCE_PROMPT` 改名 `DEFAULT_REVIEW_PROMPT`
+- 调整：`RelevanceSettings` 改名 `ReviewSettings`，`RelevanceThresholds` 改名 `ScoreThresholds`；`config.yaml` 的 `relevance:` 段改名 `review:`，错误提示同步更新
+- 调整：`FailureStage` 的 `relevance` 改为 `review`，错误类型 `relevance_error` 改为 `review_error`，阶段日志改为「内容复核」
+- 调整：复核禁用、正文为空、调用失败与 prompt 读取失败等日志和原因文案同步改为「内容复核」
+- 调整：front matter 中复核元数据键 `relevance_model` / `relevance_reviewed_at` 改为 `review_model` / `review_reviewed_at`；`relevance_score` / `relevance_level` / `relevance_flags` / `relevance_reason` 等维度字段保持不变
+- 调整：进入预筛队列的 URL 在去重、历史过滤与 `max_urls` 截断后立即写入 `data/.history.json`；被粗筛、域名预筛、质量闸门、评估丢弃或提取失败的 URL 下次不再重复召回
+- 调整：移除写盘成功后再更新历史表的逻辑，简化 `_write_all` 返回值
+- 调整：README 同步历史表语义，并修正“按场景区分”的错误描述
+- 调整：`check_quality` 不再把 `nav_ratio` 作为独立丢弃条件，正文达到字数/段落/链接阈值即保留；`nav_ratio` 仅用于诊断日志，移除不再产生的 `nav_heavy` 汇总标签
+- 新增：清洗尾部页脚规则，识别版权、ICP 备案、电话、邮箱、GMT、免责声明等块
+- 新增：清洗尾部 UI 噪声（举报/收藏/评论/登录后等）与短菜单列表
+- 新增：清洗维基分类链接、信息框表格、尾部导航区（网站地图/快速链接等）与空标题
+- 新增：页脚、分类、信息框、导航框、UI/短菜单与 `nav_ratio` 不丢弃的测试
+- 重构：pipeline 将去重/历史、URL 粗筛、域名预筛收敛为同一 `_prepare_urls` URL 预筛阶段，`run()` 不再暴露三个子步骤
+- 调整：`_domain_prefilter` 不再返回调用方未使用的 `DomainFilter`
+- 新增：跨运行 URL 历史表 `data/.history.json`，全场景共享，只记录成功写盘的文档
+- 调整：搜索去重后按规范化 URL 精确匹配历史表，命中条目跳过，并由队列后续结果补位后再按 `search.dedupe.max_urls` 截断
+- 新增：`main.py --restart` 清空整张 URL 历史表
+- 新增：`scopecrawl/history.py`，原子写入并合并并发新增的条目
+- 新增：运行汇总输出历史跳过数量，`RunSummary` 增加 `history_skipped`
+- 调整：URL 历史表直接保存 URL 数组，移除 `version` 与首次收录时间字段
+- 新增：历史表读写与合并、命中跳过、补位、`--restart` 清空的测试
+- 调整：`CLAUDE.md` 精简为单条规范「代码保持简洁、高效」，移除项目介绍与实现细节
+- 新增：`CLAUDE.md` 要求修改代码时同步维护 `CHANGELOG.md`，在当天日期下分条记录
+- 调整：`README.md` 收敛为项目介绍与部署使用说明，移除逐阶段流程、详细配置项与内部实现说明
+- 调整：`CHANGELOG.md` 改为按日期分条记录，每条只描述一项改动
+- 新增：确定性 URL 粗筛，按 URL 结构识别首页、索引页、栏目页、频道页、分区页、搜索页与分页，在提取前丢弃
+- 调整：URL 粗筛不调用 LLM，解析失败或无法判断时保留；`/wiki/`、`/item/`、`/p/` 等文章路径与 WordPress `?p=123` 不受影响
+- 新增：同质化限流，单 query 最多 5 篇、单域名最多 4 篇，组内按相关性、内容质量、内容丰富程度、权威度降序保留，结果恢复原队列顺序
+- 调整：`search` 段新增 `prefilter.enabled`，`config.yaml` 新增顶层 `diversity.max_per_query/max_per_domain`，值为 `null` 时关闭对应配额
+- 调整：pipeline 在去重后、域名预筛前插入 `[粗筛]` 阶段，在评估后、写盘前插入 `[多样性]` 阶段
+- 调整：粗筛与多样性丢弃单独统计，不计入 `failures`
+- 新增：汇总输出粗筛丢弃明细与多样性丢弃明细，`RunSummary` 增加 `prefiltered_urls`、`prefilter_reasons`、`diversity_dropped`、`diversity_reasons`
+- 新增：首页/栏目/搜索页识别、文章路径保留、WordPress `?p=` 例外、域名/query 配额、按分数排序、`None` 分数视为最低与 pipeline 集成的测试
+- 重构：文档评估统一为 `DocumentEvaluation(relevance, content_richness, content_quality, authority, decision, drop_reasons)` 四维平级模型
+- 重构：`Document` 改为 `extracted + evaluation`，`AuthorityResult` 内嵌域名与页面明细，front matter 与日志从同一评估对象展开
+- 新增：`prompts/relevance.md` 增加内容丰富程度与内容质量两个独立 rubric，与相关性在同一次 LLM 调用中输出
+- 调整：内容丰富程度与内容质量 level 由代码按 score 重算，不采信模型自报；字段缺失写 `null`
+- 新增：`should_drop` 返回 `(bool, reasons)`，原因码包括 `structural`、`no_content`、`relevance_none`、`relevance_low`、`relevance_unevaluated`、`content_both_low`、`authority_low`
+- 调整：`relevance.drop_low` 默认改为 `true`，新增 `drop_unevaluated=true`
+- 调整：内容维度新增 `richness_low=0.4`、`quality_low=0.4`、`drop_when_both_low=false`，第一轮只评分标记
+- 新增：front matter 增加 `content_richness_score/level`、`content_quality_score/level`、`content_reason`、`evaluation_decision`、`evaluation_drop_reasons`，原有键名与顺序保持不变
+- 调整：相关性 JSON 解析失败日志补充正文长度与响应前 200 字符，正文仍不截断
+- 新增：四维解析、内容维度缺失、`content_both_low`、`drop_unevaluated`、`no_content`、丢弃原因码与 front matter 新字段的测试
+- 调整：关键词生成从「最多 3 条短词」改为「场景画像 + 方面矩阵」，先判断问题类型、所需文档形态与地点/时效相关性，再生成 12–16 条真实用户搜索词
+- 调整：地点只在场景与地点强相关时进入 query，不再对 `日常聊天`、`礼品推荐` 等无地点场景强行加地点前缀
+- 调整：`prompts/keywords.md` 增加礼品推荐、日常聊天、气象灾害示例，并把泛词（`中国 时政`、`中国 礼品推荐`）列为反例
+- 调整：推荐类场景同时生成清单、测评、经验型查询，减少纯商品页与分类页
+- 调整：关键词输出支持 `{"scene": {...}, "queries": [...]}` 对象，同时兼容纯数组
+- 调整：`keywords.max_queries` 3→16、`search.defaults.max_results` 10→20、`search.tavily.search_depth` basic→advanced、`search.dedupe.max_urls` null→180
+- 新增：`search.country_from_location` 将中国、埃及、沙特、阿联酋、美国等国家名确定性映射为 ISO 国家码
+- 新增：`search.COUNTRY_MAP` 增加 `CN→china`
+- 调整：pipeline 在未显式配置 `search.defaults.country` 时按地点推断，并输出 `[搜索] country=...` 日志
+- 新增：`keywords._parse_payload` 同时解析 `queries` 与可选 `scene`，场景画像输出到 `[关键词] 场景画像` 日志
+- 调整：关键词重新生成的提示语不再强制「地点 + 方面」，改为「场景 + 一个具体方面」，同时接受对象与数组输出
+- 新增：CN 国家映射、地点名归一化（含 `australia` 不误判为 US）、场景对象解析、`礼品推荐` 不被误判为照抄 S3/S4、pipeline 自动附带国家提示的测试
+
+## 2026-11-10
+
+- 重构：正文获取从「httpx 自建抓取 + Trafilatura 提取」改为「Tavily `/search` 召回 + `/extract` 批量提取」
+- 调整：实测自建抓取对中文站点成功率仅 20–30%，百度百科/知乎/气象局被 robots 禁止，TripAdvisor 稳定 403，CCTV/Vietjet 返回 JS 空壳；Tavily Extract 能取回这些页面 10k–94k 字符正文
+- 新增：`scopecrawl/content.py`
+- 移除：`scopecrawl/fetch.py` 与 `trafilatura` 依赖
+- 新增：`TavilyExtractor.extract_batch`，单批不超过 20 个 URL，`format=markdown`，`extract_depth` 映射
+- 新增：批内 URL 去重、乱序结果按输入回填、`final_url` 回退
+- 新增：400 解析 `detail.failed_results` 不拆批，401/403 鉴权 fatal，432/433 额度 fatal，429 按 `Retry-After` 与 5xx/超时指数退避
+- 新增：正文清洗去头尾导航、图片、纯链接与重复块，保留标题、列表、表格、代码块与正文内联链接
+- 新增：质量闸门按 `plain_chars`、实质段落数、链接文本占比、导航字符占比过滤，失败单独计入 `quality_dropped`
+- 调整：`extract` 配置改为 `provider/format/depth/batch_size/concurrency/rate_limit_qps/timeout_seconds/max_retries/min_chars/min_paragraphs/max_link_text_ratio/max_nav_line_ratio/skip_domains`
+- 移除：`fetch` 段、`include_raw_content`、`SearchResult.content`
+- 调整：`max_fetch_urls` 改名 `max_urls`
+- 调整：相关性复核 prompt 增加 `matched_queries`，S3/S4 只作范围背景
+- 新增：`content_type`（article/listing/widget/other），listing/widget 代码层限制到 0.3 并打 `aggregator_page`
+- 调整：默认 `drop_none=true`、`drop_low=false`、`drop_structural=true`
+- 调整：权威度页面评分对 Tavily Extract 来源改用 `published_at`、`content_length`、`citations` 固定分母重归一化，新增 `metadata_limited`
+- 调整：日志阶段 `[抓取]` 改为 `[提取]`，新增 `[质量]` 丢弃日志，汇总增加质量丢弃篇数与原因明细
+- 移除：`is_safe_url`、`DomainRateLimiter`、`strip_tags`、`clean_markdown` 等仅服务自建抓取的代码
+- 调整：`main.py` 第三方日志降噪去掉 `trafilatura`/`charset_normalizer`
+- 修复：`tests/test_main.py` 的缺失模型用例改为注入空 `.env`，只验证配置错误退出路径
+- 调整：文档收敛为 `README.md`、`CLAUDE.md`、`CHANGELOG.md` 三份，删除 `docs/` 下的设计文档
+- 修复：关键词生成会把 S3/S4 场景标签直接拼进查询，`prompts/keywords.md` 改为明确 S3/S4 只划定范围
+- 新增：程序侧检测关键词照抄场景标签（S3 与 S4 同时出现，或抽象 S4 原样出现）时要求模型重新生成一次，仍不合格则保留首轮并输出 `WARNING`
+- 新增：按 `[关键词]`、`[搜索]`、`[去重]`、`[域名预筛]`、`[提取]`、`[评估]`、`[写入]` 输出阶段开始、进度与结束日志
+- 新增：LLM 调用重试时输出 `WARNING`（第几次、等待秒数、失败原因）
+- 调整：`main.py` 日志级别由 `WARNING` 改为 `INFO`，格式为 `HH:MM:SS LEVEL message`，第三方库的 INFO 日志压到 `WARNING`
+- 调整：输出目录由 `data/runs/{run_id}/markdown/` 扁平化为 `data/{run_id}/`
+- 调整：`run_id` 改为本地时间戳 `YYYYMMDD-HHMMSS`，同一秒内重复运行追加 `-2`、`-3`
+- 调整：Markdown 文件由 `{doc_id}.md` 改为页面标题命名，非法字符替换为 `_`，按 UTF-8 截断到 180 字节
+- 调整：同目录重名依次追加 `(1)`、`(2)`，标题为空回退 `doc_id`；同一 URL 重复写入复用同一文件
+- 新增：完成首期实现，串联配置、关键词、搜索、抓取、评估、存储与入口 9 个阶段
+- 新增：Tavily 搜索请求固定携带 `language` 与 `filter_by_language=true`，跨关键词 URL 规范化去重，域名白名单/黑名单预筛
+- 新增：httpx 抓取、编码回退、robots、按域限速、重定向与响应大小上限，Trafilatura 提取正文与元数据
+- 新增：LLM 相关性复核（正文不截断）与规则版页面/综合权威度评估，front matter 输出完整评分字段
+- 新增：125 个测试，全部 mock 网络与 LLM，`pytest -q` 与 `ruff check .` 通过
+- 调整：LLM 模型名、API Key、base_url 与 Tavily Key 只从项目根目录 `.env` 读取，不读进程环境变量
+- 调整：`.env` 或必填项缺失时打印配置错误并以退出码 1 结束
+- 调整：LLM 请求不传 `temperature`、不限制 `max_tokens`，关键词生成与相关性复核共用同一个 `LLMClient`

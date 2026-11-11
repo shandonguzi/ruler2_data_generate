@@ -1,0 +1,29 @@
+whitelist:
+  - domain: "*.gov.eg"
+    reason: 埃及政府机构
+  - domain: "*.edu.eg"
+    reason: 埃及高校
+  - domain: ema.gov.eg
+    reason: 埃及气象局
+  - domain: wmo.int
+    reason: 世界气象组织
+  - domain: who.int
+    reason: 世界卫生组织
+  - domain: reuters.com
+    reason: 国际通讯社
+  - domain: apnews.com
+    reason: 国际通讯社
+  - domain: bbc.com
+    reason: 国际主流媒体
+  - domain: aljazeera.com
+    reason: 国际主流媒体
+  - domain: ahram.org.eg
+    reason: 埃及主流媒体
+  - domain: youm7.com
+    reason: 埃及主流媒体
+  - domain: almasryalyoum.com
+    reason: 埃及主流媒体
+  - domain: egyptindependent.com
+    reason: 埃及主流媒体
+
+blacklist: []
