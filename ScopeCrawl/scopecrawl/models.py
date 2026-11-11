@@ -40,6 +40,7 @@ RunInput = RunConfig
 class KeywordsSettings(Model):
     max_queries: int = Field(15, ge=1, le=100)
     prompt_version: str = "v1"
+    scenarios_path: str = "config/scenarios.json"
 
 
 class SearchDefaults(Model):
@@ -94,6 +95,7 @@ class ExtractSettings(Model):
     min_paragraphs: int = Field(3, ge=0)
     max_link_text_ratio: float = Field(0.4, ge=0, le=1)
     max_nav_line_ratio: float = Field(0.5, ge=0, le=1)
+    max_garbled_ratio: float = Field(0.35, ge=0, le=1)
     skip_domains: list[str] = Field(
         default_factory=lambda: [
             "youtube.com",

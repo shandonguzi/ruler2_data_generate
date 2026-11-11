@@ -406,6 +406,25 @@ def test_quality_gate_ignores_nav_ratio_when_content_is_good():
     assert check_quality(_clean(), settings) is None
 
 
+def test_quality_gate_drops_garbled_mojibake():
+    settings = make_settings().extract
+    # GBK 页面被上游按 UTF-8 误解码后，会残留大量西里尔/亚美尼亚字符
+    garbled = "ѯ" * 300
+    assert check_quality(_clean(markdown=garbled), settings)[0] == "garbled_content"
+
+
+def test_quality_gate_keeps_normal_multilingual_content():
+    settings = make_settings().extract
+    for text in (
+        "正常的正文内容，包含中文标点。" * 30,
+        "Normal English text with “curly quotes” and café. " * 30,
+        "مرحبا بالعالم، هذا نص عربي عادي. " * 30,
+    ):
+        assert check_quality(_clean(markdown=text), settings) is None
+    # 非 ASCII 字符太少时不判定，避免误杀英文短文本
+    assert check_quality(_clean(markdown="ѯ" * 50), settings) is None
+
+
 def test_plain_length_ignores_markdown_and_urls():
     markdown = "# 标题\n\n[链接文字](https://example.com/very/long/url)\n\n正文"
     assert plain_length(markdown) == visible_length("标题链接文字正文")

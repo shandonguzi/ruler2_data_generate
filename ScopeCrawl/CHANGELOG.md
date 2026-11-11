@@ -2,6 +2,14 @@
 
 ## 2026-11-11
 
+- 新增：`config/scenarios.json`，由「场景覆盖.xlsx / 评测场景」表转换而来（S1→S2→S3→S4 嵌套，每个 S4 记录 `coverage_points`），共 33 个场景
+- 新增：`scopecrawl/scenarios.py`，按 S3/S4 精确查找必须覆盖要点；文件缺失、格式非法或场景未收录时告警并按无要点继续
+- 新增：关键词生成将 `coverage_points` 注入 `prompts/keywords.md`，作为关键词必须覆盖的下限，允许额外扩展；场景表路径由 `config.yaml` 的 `keywords.scenarios_path` 指定
+- 新增：场景表加载、查找、提示词注入与场景表缺失回退的测试
+
+- 新增：质量闸门增加编码乱码检测，非 ASCII 字符中异常文种占比超过 `extract.max_garbled_ratio`（默认 0.35）时以 `garbled_content` 丢弃，避免上游对 GBK 页面误解码产生的乱文入盘
+- 新增：乱码检测不误伤中文、英文、阿拉伯文正常正文与短文本的测试
+
 - 调整：`search.dedupe.max_urls` 截断改为按首次命中的关键词轮转取数，避免靠前的关键词占满配额导致后续关键词无 URL 进入筛选；未触达上限时仍保持原队列顺序
 - 新增：`interleave_by_query` 的轮转截断单测与 pipeline 端到端测试，同步更新历史表截断用例
 - 调整：运行目录名由纯时间戳改为 `{S3}-{S4}-{地点}-{语言}-{时间}`，地点为空时省略该段，重名时仍追加序号

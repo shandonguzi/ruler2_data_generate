@@ -43,6 +43,7 @@ from .models import (
     Settings,
     UrlTask,
 )
+from .scenarios import find_coverage_points, load_scenarios
 from .search import SearchError, SearchProvider, country_from_location, create_search_provider
 from .storage import RunWriter
 from .utils import (
@@ -70,6 +71,7 @@ QUALITY_LABELS = {
     "short_content": "短正文",
     "few_paragraphs": "段落不足",
     "link_heavy": "链接过多",
+    "garbled_content": "编码乱码",
 }
 
 DROP_REASON_LABELS = {
@@ -134,6 +136,7 @@ class Pipeline:
         writer_factory: Callable[..., RunWriter] = RunWriter,
         prompt_paths: dict[str, Path] | None = None,
         project_root: Path | None = None,
+        scenarios_path: str | Path | None = None,
         history_path: str | Path | None = None,
     ) -> None:
         self.settings = settings
@@ -142,6 +145,10 @@ class Pipeline:
         self.project_root = project_root or PROJECT_ROOT
         self.history_path = Path(history_path) if history_path is not None else DEFAULT_HISTORY_PATH
         self.prompt_paths = prompt_paths or {}
+        scenarios_file = Path(scenarios_path or settings.keywords.scenarios_path)
+        self.scenarios = load_scenarios(
+            scenarios_file if scenarios_file.is_absolute() else self.project_root / scenarios_file
+        )
         self.llm = llm_client or LLMClient(
             settings.llm,
             model=settings.llm_model,
@@ -175,6 +182,20 @@ class Pipeline:
         )
         logger.info("输出目录：%s", writer.run_dir)
 
+        coverage_points = find_coverage_points(self.scenarios, run_config.s3, run_config.s4)
+        if coverage_points is None:
+            logger.warning(
+                "场景未在场景表中收录，按无必须覆盖要点继续：s3=%s，s4=%s",
+                run_config.s3,
+                run_config.s4,
+            )
+        elif coverage_points:
+            logger.info(
+                "[关键词] 必须覆盖要点 %d 条：%s",
+                len(coverage_points),
+                " | ".join(coverage_points),
+            )
+
         logger.info("[关键词] 正在调用 LLM 生成搜索关键词…")
         try:
             summary.keywords = generate_keywords(
@@ -182,6 +203,7 @@ class Pipeline:
                 self.llm,
                 self.settings.keywords,
                 prompt_path=self.prompt_paths.get("keywords"),
+                coverage_points=coverage_points or [],
             )
         except KeywordError as exc:
             logger.error("关键词生成失败：%s", exc)

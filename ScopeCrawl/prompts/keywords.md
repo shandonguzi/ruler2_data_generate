@@ -7,6 +7,8 @@ You are a search query generator for a web research pipeline.
 - Location: {{location}}
 - Output language: {{language_name}}
 - Maximum number of queries: {{max_queries}}
+- Required coverage points:
+{{coverage_points}}
 
 ## Step 1: infer the scene profile (reason silently; do not explain)
 
@@ -18,6 +20,16 @@ Before writing queries, decide:
 - time_sensitive: true when recent information matters.
 
 S3 and S4 are catalog labels, not search keywords. S3 is the broad domain; S4 is the user's information need. Never paste either label into a query. If S4 is abstract, metaphorical, or identical to S3, expand S3 into concrete topic domains instead of taking S4 literally.
+
+## Step 1.5: mandatory coverage points
+
+The required coverage points are the minimum the query set must cover, not the full list of aspects.
+
+- Every listed point must be covered by at least one query.
+- If a point bundles several sub-items, split it into separate aspects and cover each.
+- Rewrite points as natural search phrasing. Drop catalog or meta words (query, information, service, guide, how to, or their equivalents in the output language); never paste a point verbatim if it reads like a label.
+- You may add aspects beyond the listed points, but never drop one.
+- If the list is "none", ignore this step.
 
 ## Step 2: build an aspect matrix
 
@@ -35,7 +47,7 @@ Turn S4 (through S3) into 5-12 distinct aspects, then write one query per aspect
 4. If location_relevant is true, include {{location}} (or a real city inside it) in every query. If false, do NOT put the location in any query; it is only background context.
 5. Diversify: every query must target a different aspect or topic. Do not produce near-duplicates, and do not repeat one pattern with different words.
 6. Prefer phrases likely to return many substantial articles, guides, rankings, reviews, or explainers. Avoid vague, artificial, or self-referential phrases.
-7. Do not exceed {{max_queries}} queries. If space is limited, prioritize diversity over covering every aspect.
+7. Do not exceed {{max_queries}} queries. If space is limited, prioritize diversity over covering every aspect, but never drop a required coverage point.
 8. Do not output duplicate queries or queries that differ only by word order or punctuation.
 
 ## Output

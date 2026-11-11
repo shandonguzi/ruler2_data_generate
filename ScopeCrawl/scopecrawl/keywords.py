@@ -30,9 +30,10 @@ _META_HINTS = ("查询", "信息", "服务", "指南", "方法", "怎么用")
 _REGENERATE_MESSAGE = (
     "Those queries copy the S3/S4 catalog labels, use meta words, or fail to "
     "diversify. Regenerate them as short, natural searches: one concrete aspect or "
-    "topic of the scenario per query. Do not include the S3/S4 text or words like "
-    "query/information/service/guide/how to. Output only a JSON object with a "
-    "'queries' array, or a JSON array of strings."
+    "topic of the scenario per query, while still covering every required coverage "
+    "point. Do not include the S3/S4 text or words like query/information/service/"
+    "guide/how to. Output only a JSON object with a 'queries' array, or a JSON array "
+    "of strings."
 )
 
 
@@ -46,6 +47,7 @@ def generate_keywords(
     settings: KeywordsSettings,
     *,
     prompt_path: str | Path | None = None,
+    coverage_points: list[str] | None = None,
 ) -> list[str]:
     if not run.s3.strip() or not run.s4.strip():
         raise KeywordError("s3/s4 不能为空")
@@ -60,6 +62,7 @@ def generate_keywords(
                 "location": run.location or "none",
                 "language_name": LANGUAGE_NAMES[run.language],
                 "max_queries": settings.max_queries,
+                "coverage_points": _format_coverage_points(coverage_points),
             },
         )
     except KeyError as exc:
@@ -242,6 +245,11 @@ def _copies_catalog_labels(queries: list[str], run: RunInput) -> bool:
         if s4_looks_meta and s4 in key:
             return True
     return False
+
+
+def _format_coverage_points(points: list[str] | None) -> str:
+    items = [point.strip() for point in points or [] if point.strip()]
+    return "\n".join(f"  - {item}" for item in items) if items else "  none"
 
 
 def _read_prompt(path: Path) -> str:

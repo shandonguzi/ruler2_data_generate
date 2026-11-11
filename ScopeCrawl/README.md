@@ -76,6 +76,7 @@ data/{run_id}/metadata.json
 ## 配置
 
 - `config.yaml`：本次运行输入，以及搜索、提取、评估、限流参数。
+- `config/scenarios.json`：场景表（S1 → S2 → S3 → S4 嵌套），记录每个 S4 的 `coverage_points`。关键词生成时按 `run.s3` / `run.s4` 精确查找并注入提示词，作为关键词必须覆盖的下限；场景未收录时告警并按无要点继续。路径由 `keywords.scenarios_path` 指定。
 - `authority.yaml`：域名白名单 / 黑名单，支持 `*.gov.eg` 通配。
 - `prompts/`：关键词生成与内容评估提示词。
 

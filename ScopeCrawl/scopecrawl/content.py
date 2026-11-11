@@ -491,12 +491,57 @@ def plain_length(text: str) -> int:
     return visible_length(value)
 
 
+# 视为正常正文的字符区间：中文、日韩、阿拉伯/希伯来文、通用标点与 emoji。
+_READABLE_RANGES = (
+    (0x00A0, 0x00A0),
+    (0x00A9, 0x00A9),
+    (0x00AE, 0x00AE),
+    (0x00B0, 0x00B0),
+    (0x00B7, 0x00B7),
+    (0x00C0, 0x024F),  # 拉丁扩展：正常西文重音字母
+    (0x0590, 0x06FF),  # 希伯来、阿拉伯
+    (0x0750, 0x077F),
+    (0x2000, 0x206F),  # 通用标点
+    (0x20A0, 0x20CF),  # 货币符号
+    (0x2100, 0x214F),  # 字母式符号
+    (0x2190, 0x21FF),  # 箭头
+    (0x3000, 0x303F),  # CJK 标点
+    (0x3040, 0x30FF),  # 假名
+    (0x3400, 0x4DBF),  # CJK 扩展 A
+    (0x4E00, 0x9FFF),  # CJK
+    (0xAC00, 0xD7AF),  # 谚文
+    (0xFB50, 0xFDFF),
+    (0xFE70, 0xFEFF),
+    (0xFF00, 0xFFEF),  # 全角
+    (0x1F000, 0x1FAFF),  # emoji
+)
+_GARBLED_MIN_NON_ASCII = 200
+
+
+def _garbled_ratio(text: str) -> float:
+    """非 ASCII 字符中落在预期文种之外的比例；样本太小时返回 0。"""
+    non_ascii = bad = 0
+    for char in text:
+        code = ord(char)
+        if code < 0x80 or char.isspace():
+            continue
+        non_ascii += 1
+        if not any(low <= code <= high for low, high in _READABLE_RANGES):
+            bad += 1
+    if non_ascii < _GARBLED_MIN_NON_ASCII:
+        return 0.0
+    return bad / non_ascii
+
+
 def check_quality(clean: CleanResult, settings: ExtractSettings) -> tuple[str, str] | None:
     """返回 (error_type, message)；None 表示通过。
 
     ``nav_ratio`` 只作为诊断指标，不作为独立丢弃条件：原始页面导航多，
     不代表清洗后的正文不可用。
     """
+    garbled = _garbled_ratio(clean.markdown)
+    if garbled > settings.max_garbled_ratio:
+        return "garbled_content", f"疑似编码乱码（异常字符占比 {garbled:.0%}）"
     if clean.plain_chars < settings.min_chars:
         return "short_content", f"正文过短（{clean.plain_chars} < {settings.min_chars}）"
     if clean.substantive_blocks < settings.min_paragraphs:

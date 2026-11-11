@@ -69,6 +69,28 @@ def test_generate_keywords_uses_none_for_missing_location(tmp_path):
     assert client.calls[0][0][0]["content"] == "LOC=none"
 
 
+def test_generate_keywords_injects_coverage_points(tmp_path):
+    prompt = tmp_path / "keywords.md"
+    prompt.write_text("COVER:\n{{coverage_points}}", encoding="utf-8")
+    client = FakeLLM(['["a"]'])
+    generate_keywords(
+        RUN,
+        client,
+        KeywordsSettings(),
+        prompt_path=prompt,
+        coverage_points=["实时菜价", "实时汇率"],
+    )
+    assert client.calls[0][0][0]["content"] == "COVER:\n  - 实时菜价\n  - 实时汇率"
+
+
+def test_generate_keywords_uses_none_for_missing_coverage_points(tmp_path):
+    prompt = tmp_path / "keywords.md"
+    prompt.write_text("COVER:\n{{coverage_points}}", encoding="utf-8")
+    client = FakeLLM(['["a"]'])
+    generate_keywords(RUN, client, KeywordsSettings(), prompt_path=prompt)
+    assert client.calls[0][0][0]["content"] == "COVER:\n  none"
+
+
 def test_generate_keywords_retries_once(tmp_path):
     prompt = tmp_path / "keywords.md"
     prompt.write_text("generate", encoding="utf-8")

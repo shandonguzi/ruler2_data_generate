@@ -190,7 +190,7 @@ def _validate_settings(settings: Settings) -> None:
         raise ConfigError("extract.min_chars 必须大于 0")
     if settings.extract.min_paragraphs < 0:
         raise ConfigError("extract.min_paragraphs 不能为负数")
-    for name in ("max_link_text_ratio", "max_nav_line_ratio"):
+    for name in ("max_link_text_ratio", "max_nav_line_ratio", "max_garbled_ratio"):
         value = getattr(settings.extract, name)
         if not 0 <= value <= 1:
             raise ConfigError(f"extract.{name} 必须在 0–1 之间")

@@ -29,6 +29,16 @@ def test_load_settings_defaults_and_overrides(tmp_path):
     assert settings.run.location is None
 
 
+def test_keywords_scenarios_path_default_and_override(tmp_path):
+    settings = load_settings(_write(tmp_path, yaml_config()), env={}, require_secrets=False)
+    assert settings.keywords.scenarios_path == "config/scenarios.json"
+
+    data = yaml_config()
+    data["keywords"]["scenarios_path"] = "custom/scenes.json"
+    settings = load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+    assert settings.keywords.scenarios_path == "custom/scenes.json"
+
+
 def test_load_settings_requires_secrets(tmp_path):
     path = _write(tmp_path, yaml_config())
     with pytest.raises(ConfigError, match="LLM 模型名"):

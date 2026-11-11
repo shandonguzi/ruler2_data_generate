@@ -415,3 +415,36 @@ def test_pipeline_all_extract_http_failures_returns_1(tmp_path):
     history = UrlHistory(tmp_path / HISTORY_FILENAME)
     for name in "abc":
         assert history.contains(f"example.com/{name}")
+
+
+def test_pipeline_injects_coverage_points_into_keyword_prompt(tmp_path):
+    scenarios = tmp_path / "scenarios.json"
+    scenarios.write_text(
+        json.dumps(
+            {
+                "智能对话": {
+                    "联网搜索": {
+                        "天气查询": [
+                            {
+                                "s4": "气象灾害查询",
+                                "coverage_points": ["埃及常见气象灾害", "沙尘暴预警"],
+                            }
+                        ]
+                    }
+                }
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    llm = RouterLLM()
+    _run(tmp_path, llm_client=llm, scenarios_path=scenarios)
+    keyword_prompt = llm.calls[0][0][0]["content"]
+    assert "- 埃及常见气象灾害" in keyword_prompt
+    assert "- 沙尘暴预警" in keyword_prompt
+
+
+def test_pipeline_missing_scenarios_file_still_generates_keywords(tmp_path):
+    summary, code = _run(tmp_path, scenarios_path=tmp_path / "missing.json")
+    assert code == 0
+    assert summary.keywords == ["关键词一", "关键词二"]
