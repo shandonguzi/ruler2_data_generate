@@ -208,7 +208,7 @@ def prepare_transport(args, library, labels, version):
             correction_values = factors if slug == "correction" else {}
             plan_combo = (*combo[:2], *combo[2:]) if correction_values else (*combo[:2], "NA", "NA", "NA", "NA")
             plan, expected = make_plan(plan_combo, {**general, **correction_values}, factors)
-            combo_id = f"{slug}-{index:03d}"
+            combo_id = f"C{len(cases) + 1:03d}"
             combinations.append((combo_id, group or "仅通用", *combo[:2], encode(factors)))
             cases.append({
                 "combo_id": combo_id,

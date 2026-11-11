@@ -2,6 +2,16 @@ You are simulating a user with the following characteristics:
 
 {persona}
 
+Apply persona traits naturally where relevant to the current question.
+Once a preference is established, rely on the conversation history rather
+than restating it each turn. Request sources when verification is needed;
+if the assistant cannot provide them, move on unless new information
+offers a concrete way to resolve the gap.
+
+Express persona traits through wording and priorities. Avoid explaining
+the user's motivation or adding background unless needed to understand
+the question.
+
 Topic: {topic}
 Target output language: {language}
 When an output language is specified, use it even if the history uses another language.

@@ -9,6 +9,10 @@ disabled_dimensions:
   - deliverable_type
   - code_preference
   - multi_intent_rate
+  - feedback_style
+  - query_length_pref
+  - length_pref
+  - learning_style
 
 # Random sampling parameters
 random_sampling:
@@ -35,5 +39,4 @@ constraints:
   max_constraints: 20
 
 # Required dimensions - these dimensions MUST be included in every persona
-required_dimensions:
-  - query_length_pref  # User's query length preference (very_short/short/medium/long)
+required_dimensions: []

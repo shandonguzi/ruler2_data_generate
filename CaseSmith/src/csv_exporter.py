@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional
 ORIGINAL_COLUMNS = ['id', 'dialect', 'open_question', 'open_answer']
 
 NEW_COLUMNS = [
-    'persona_id', 'turn', 'improved_query', 'noisy_query', 'answer',
+    'persona_id', 'persona_features', 'turn', 'improved_query', 'noisy_query', 'answer',
     'domain', 'scenario', 'query_id', 'source', 'case_factors',
 ]
 
@@ -94,6 +94,7 @@ class CSVExporter:
         query_id = base.get('id', '') or assignment.get('query_id', '')
         source = assignment.get('source', '')
         persona_features = interaction.get('persona_features') or {}
+        base['persona_features'] = json.dumps(persona_features, ensure_ascii=False)
         domain = assignment.get('inferred_domain') or persona_features.get('domain', '')
         scenario = assignment.get('inferred_scenario') or persona_features.get('scenario', '')
 
