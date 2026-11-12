@@ -219,7 +219,8 @@ def _clean_keywords(items: list[str]) -> list[str]:
 
 def _log_scene(scene: dict) -> None:
     logger.info(
-        "[关键词] 场景画像：location_relevant=%s time_sensitive=%s question_types=%s doc_forms=%s",
+        "[关键词生成] 场景画像："
+        "location_relevant=%s time_sensitive=%s question_types=%s doc_forms=%s",
         scene.get("location_relevant"),
         scene.get("time_sensitive"),
         scene.get("question_types"),

@@ -485,6 +485,15 @@ def test_diversity_disabled_with_none():
     assert not reasons
 
 
+def test_diversity_disabled_with_flag():
+    docs = [_document(f"https://a.com/{index}") for index in range(3)]
+    kept, reasons = apply_diversity(
+        docs, DiversitySettings(enabled=False, max_per_query=1, max_per_domain=1)
+    )
+    assert kept == docs
+    assert not reasons
+
+
 def test_diversity_treats_none_scores_as_lowest():
     docs = [
         _document("https://a.com/1", relevance=None),

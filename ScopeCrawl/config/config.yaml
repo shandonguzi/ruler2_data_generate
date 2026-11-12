@@ -80,6 +80,7 @@ review:
     drop_when_both_low: false
 
 diversity:
+  enabled: true
   max_per_query: 5
   max_per_domain: 4
 

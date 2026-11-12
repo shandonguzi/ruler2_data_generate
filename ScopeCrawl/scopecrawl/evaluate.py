@@ -456,7 +456,10 @@ def apply_diversity(
     settings: DiversitySettings,
 ) -> tuple[list[Document], Counter[str]]:
     """按单 query / 单域名配额做全局同质化限流；返回结果保持原队列顺序。"""
-    if settings.max_per_query is None and settings.max_per_domain is None:
+    if (
+        not settings.enabled
+        or (settings.max_per_query is None and settings.max_per_domain is None)
+    ):
         return documents, Counter()
 
     ranked = sorted(

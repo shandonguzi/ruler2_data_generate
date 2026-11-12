@@ -13,12 +13,12 @@ import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 
-from .config import PROJECT_ROOT
+from .config import CONFIG_DIR
 
 logger = logging.getLogger(__name__)
 
 HISTORY_FILENAME = ".history.json"
-DEFAULT_HISTORY_PATH = PROJECT_ROOT / HISTORY_FILENAME
+DEFAULT_HISTORY_PATH = CONFIG_DIR / HISTORY_FILENAME
 
 
 class UrlHistory:

@@ -109,24 +109,28 @@ def test_pipeline_location_sets_country_hint(tmp_path):
 
 
 def test_pipeline_logs_stage_progress(tmp_path, caplog):
-    with caplog.at_level(logging.INFO, logger="scopecrawl.pipeline"):
+    with caplog.at_level(logging.INFO, logger="scopecrawl"):
         summary, code = _run(tmp_path)
     assert code == 0
     messages = [record.getMessage() for record in caplog.records]
     for stage in (
-        "[关键词]",
-        "[搜索]",
-        "[去重]",
-        "[粗筛]",
-        "[域名预筛]",
-        "[提取]",
-        "[评估]",
-        "[多样性]",
-        "[写入]",
+        "[关键词生成]",
+        "[检索]",
+        "[URL 筛选]",
+        "[URL 筛选] 粗筛",
+        "[URL 筛选] 域名预筛",
+        "[提取清洗]",
+        "[评估筛选]",
+        "[评估筛选] 多样性",
+        "[生成文档]",
     ):
         assert any(stage in message for message in messages), stage
-    assert any("[提取] 完成 1/3" in message for message in messages)
-    assert any("[评估] 完成 2/2" in message for message in messages)
+    assert any("[提取清洗] 完成 1/3" in message for message in messages)
+    assert any("[评估筛选] 完成 2/2" in message for message in messages)
+    for stage in ("关键词生成", "检索", "URL 筛选", "提取清洗", "评估筛选", "生成文档"):
+        assert any(
+            f"================ {stage} ================" in message for message in messages
+        ), stage
 
 
 def test_pipeline_keyword_failure_returns_1(tmp_path):

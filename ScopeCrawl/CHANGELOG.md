@@ -2,6 +2,13 @@
 
 ## 2026-11-12
 
+- 新增：`diversity.enabled` 开关（默认 `true`），设为 `false` 时跳过多样性限流，`max_per_query` / `max_per_domain` 不再生效；`config/config.yaml` 补充该字段，配置解析与限流函数补充对应测试
+- 新增：每个阶段开始时打印分隔日志行（如 `================ 评估筛选 ================`），便于在运行日志中区分阶段；阶段进度测试补充分隔行断言
+- 重构：流水线按 6 个阶段拆分，`scopecrawl/stages/` 下每个阶段独立实现（关键词生成、检索候选网页、筛选候选 URL、提取并清洗正文、评估并筛选文档、生成文档），`Pipeline` 只负责串联；`RunSummary`、标签映射与控制台汇总移至 `summary.py`
+- 调整：阶段 1 定名「关键词生成」、阶段 6 定名「生成文档」，同步重命名模块 `keyword_generation.py` / `document_generation.py`、类 `KeywordGenerationStage` / `DocumentGenerationStage`、日志前缀与 README
+- 调整：日志前缀统一为 6 个阶段名，粗筛、域名预筛、质量、多样性等子步骤保留在阶段前缀之后；阶段进度测试同步更新
+- 文档：README 新增「处理流程」章节，说明各阶段输入输出、致命错误边界与代码结构
+- 调整：`.history.json` 移入 `config/` 目录（`config/.history.json`），`DEFAULT_HISTORY_PATH` 同步改为 `CONFIG_DIR / HISTORY_FILENAME`，README 更新
 - 调整：所有配置集中到 `config/` 目录，`config.yaml` → `config/config.yaml`、`authority.yaml` → `config/authority.yaml`、`.env` / `.env.example` → `config/.env` / `config/.env.example`
 - 调整：`config.py` 默认路径改为 `config/` 下的相对路径，仍支持显式传入自定义路径；`authority.config_path` 默认值同步为 `config/authority.yaml`
 - 调整：`.gitignore` 的密钥忽略规则改为 `config/.env*`，保留 `config/.env.example`；README 与命令行帮助同步更新

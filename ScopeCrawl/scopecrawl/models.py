@@ -125,6 +125,7 @@ class ContentSettings(Model):
 
 
 class DiversitySettings(Model):
+    enabled: bool = True
     max_per_query: int | None = Field(5, ge=1)
     max_per_domain: int | None = Field(4, ge=1)
 

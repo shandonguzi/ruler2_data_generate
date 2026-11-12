@@ -244,9 +244,10 @@ def test_load_settings_rejects_bad_content_thresholds(tmp_path):
 def test_load_settings_accepts_prefilter_and_diversity(tmp_path):
     data = yaml_config()
     data["search"]["prefilter"] = {"enabled": False}
-    data["diversity"] = {"max_per_query": 3, "max_per_domain": None}
+    data["diversity"] = {"enabled": False, "max_per_query": 3, "max_per_domain": None}
     settings = load_settings(_write(tmp_path, data), env={}, require_secrets=False)
     assert settings.search.prefilter.enabled is False
+    assert settings.diversity.enabled is False
     assert settings.diversity.max_per_query == 3
     assert settings.diversity.max_per_domain is None
 
