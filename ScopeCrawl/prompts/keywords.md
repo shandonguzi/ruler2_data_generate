@@ -43,12 +43,11 @@ Turn S4 (through S3) into 5-12 distinct aspects, then write one query per aspect
 
 1. Write only in {{language_name}}. Do not mix languages.
 2. Use 2-8 words, phrased the way a real person searches. Long-tail combinations are good.
-3. Never output the S3 or S4 text, and never use catalog or meta words such as "查询", "信息", "服务", "指南", "方法", "怎么用" (or their equivalents in the output language, e.g. "query", "information", "service", "how to", "guide").
-4. If location_relevant is true, include {{location}} (or a real city inside it) in every query. If false, do NOT put the location in any query; it is only background context.
-5. Diversify: every query must target a different aspect or topic. Do not produce near-duplicates, and do not repeat one pattern with different words.
-6. Prefer phrases likely to return many substantial articles, guides, rankings, reviews, or explainers. Avoid vague, artificial, or self-referential phrases.
-7. Do not exceed {{max_queries}} queries. If space is limited, prioritize diversity over covering every aspect, but never drop a required coverage point.
-8. Do not output duplicate queries or queries that differ only by word order or punctuation.
+3. If location_relevant is true, include {{location}} (or a real city inside it) in every query. If false, do NOT put the location in any query; it is only background context.
+4. Diversify: every query must target a different aspect or topic. Do not produce near-duplicates, and do not repeat one pattern with different words.
+5. Prefer phrases likely to return many substantial articles, guides, rankings, reviews, or explainers. Avoid vague, artificial, or self-referential phrases.
+6. Do not exceed {{max_queries}} queries. If space is limited, prioritize diversity over covering every aspect, but never drop a required coverage point.
+7. Do not output duplicate queries or queries that differ only by word order or punctuation.
 
 ## Output
 
@@ -85,3 +84,11 @@ Output:
 S3: 日常生活服务, S4: 地点信息查询, Location: 中国 (location_relevant=true)
 Output:
 ["成都 武侯区 位置", "重庆 交通状况", "北京 朝阳区 周边设施", "上海 浦东 停车", "广州 天河 营业时间"]
+
+S3: 电商与消费, S4: 礼品推荐, Location: 中国 (location_relevant=false, language=English)
+Output:
+["what to get mom for mother's day", "birthday gift under 100 yuan", "practical gifts for grandparents", "company party favors", "valentine's day gift for him", "housewarming gift ideas"]
+
+S3: 天气查询, S4: 气象灾害查询, Location: 埃及 (location_relevant=true, language=Modern Standard Arabic)
+Output:
+["تحذيرات العواصف الرملية في مصر", "درجات الحرارة في القاهرة طوال العام", "الفيضانات والأمطار الغزيرة في مصر", "موجات الحر في الإسكندرية", "منسوب مياه النيل في أسوان"]
