@@ -1,0 +1,109 @@
+run:
+  s3: 天气查询
+  s4: 气象灾害查询
+  location: 埃及
+  language: zh
+  time_range: null
+
+keywords:
+  max_queries: 16
+  prompt_version: v1
+  # 场景表：按 run.s3 / run.s4 查找必须覆盖要点，相对路径相对项目根目录
+  scenarios_path: config/scenarios.json
+
+search:
+  provider: tavily
+  prefilter:
+    enabled: true
+  defaults:
+    max_results: 20
+    country: null
+  dedupe:
+    enabled: true
+    merge_www: false
+    strip_tracking_params: true
+    max_urls: 180
+  tavily:
+    search_depth: advanced
+    topic: general
+    include_published_date: true
+    filter_by_published_date: false
+    include_answer: false
+    include_images: false
+    auto_parameters: false
+    exact_match: false
+    safe_search: true
+    timeout_seconds: 30
+    max_retries: 3
+    rate_limit_qps: 1
+
+extract:
+  provider: tavily
+  format: markdown
+  depth: basic
+  batch_size: 20
+  concurrency: 2
+  rate_limit_qps: 2
+  timeout_seconds: 60
+  max_retries: 3
+  min_chars: 800
+  min_paragraphs: 3
+  max_link_text_ratio: 0.4
+  # 仅诊断：导航占比超过该值时记录 debug 日志，不再单独丢弃文档
+  max_nav_line_ratio: 0.5
+  # 非 ASCII 字符中异常文种占比超过该值时，判为编码乱码并丢弃
+  max_garbled_ratio: 0.35
+  skip_domains:
+    - youtube.com
+    - youtu.be
+    - bilibili.com
+    - douyin.com
+
+llm:
+  timeout_seconds: 60
+  max_retries: 2
+  concurrency: 4
+
+review:
+  enabled: true
+  thresholds:
+    high: 0.7
+    medium: 0.4
+    low: 0.2
+  drop_low: true
+  drop_none: true
+  drop_structural: true
+  drop_unevaluated: true
+  content:
+    richness_low: 0.4
+    quality_low: 0.4
+    drop_when_both_low: false
+
+diversity:
+  max_per_query: 5
+  max_per_domain: 4
+
+authority:
+  enabled: true
+  config_path: config/authority.yaml
+  domain:
+    tld_scores:
+      gov: 0.9
+      edu: 0.9
+      int: 0.9
+    unknown_domain_score: 0.4
+  page:
+    weights:
+      author: 0.25
+      published_at: 0.20
+      content_length: 0.20
+      citations: 0.20
+      structured_data: 0.15
+    max_ad_penalty: 0.20
+  scoring:
+    weights:
+      domain: 0.6
+      page: 0.4
+    high_threshold: 0.7
+    low_threshold: 0.4
+    drop_low: false

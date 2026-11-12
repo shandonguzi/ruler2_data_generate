@@ -16,10 +16,10 @@ ScopeCrawl 根据 S3/S4 场景、地点与语言，检索关联网页，清洗�
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
+cp config/.env.example config/.env
 ```
 
-`.env` 必填项：
+`config/.env` 必填项：
 
 | 键 | 说明 |
 |---|---|
@@ -28,7 +28,7 @@ cp .env.example .env
 | `SCOPECRAWL_LLM_API_KEY` | LLM Key |
 | `SCOPECRAWL_LLM_BASE_URL` | 可选，留空使用 OpenAI 官方地址 |
 
-密钥与模型名只从项目根目录 `.env` 读取，不读取进程环境变量。
+密钥与模型名只从 `config/.env` 读取，不读取进程环境变量。
 
 ## 运行
 
@@ -37,7 +37,7 @@ python main.py
 python main.py --s3 "天气查询" --s4 "气象灾害查询" --location "埃及" --language zh
 ```
 
-- 不带参数时使用 `config.yaml` 的 `run` 段。
+- 不带参数时使用 `config/config.yaml` 的 `run` 段。
 - `--s3/--s4/--location/--language` 逐项覆盖 `run` 段。
 - `language` 支持 `zh`、`en`、`ar`、`ar-EG`。
 - `--restart` 清空跨运行 URL 历史表后重新采集。
@@ -75,9 +75,12 @@ data/{run_id}/metadata.json
 
 ## 配置
 
-- `config.yaml`：本次运行输入，以及搜索、提取、评估、限流参数。
+所有配置集中在 `config/` 目录：
+
+- `config/config.yaml`：本次运行输入，以及搜索、提取、评估、限流参数。
+- `config/.env`：密钥与 LLM 模型名，模板见 `config/.env.example`。
 - `config/scenarios.json`：场景表（S1 → S2 → S3 → S4 嵌套），记录每个 S4 的 `coverage_points`。关键词生成时按 `run.s3` / `run.s4` 精确查找并注入提示词，作为关键词必须覆盖的下限；场景未收录时告警并按无要点继续。路径由 `keywords.scenarios_path` 指定。
-- `authority.yaml`：域名白名单 / 黑名单，支持 `*.gov.eg` 通配。
+- `config/authority.yaml`：域名白名单 / 黑名单，支持 `*.gov.eg` 通配。路径由 `authority.config_path` 指定。
 - `prompts/`：关键词生成与内容评估提示词。
 
 ## 测试

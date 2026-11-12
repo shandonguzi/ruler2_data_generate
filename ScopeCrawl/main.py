@@ -14,7 +14,7 @@ from scopecrawl.pipeline import run_pipeline
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="ScopeCrawl: 根据 S3/S4 场景检索网页并生成 Markdown 文档",
-        epilog="未提供的参数使用 config.yaml 中 run 段的对应值。",
+        epilog="未提供的参数使用 config/config.yaml 中 run 段的对应值。",
     )
     parser.add_argument("--s3", help="大范围场景，例如「天气查询」")
     parser.add_argument("--s4", help="小范围场景，S3 的细化，例如「气象灾害查询」")

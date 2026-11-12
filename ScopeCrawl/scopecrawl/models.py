@@ -168,7 +168,7 @@ class AuthorityScoringSettings(Model):
 
 class AuthoritySettings(Model):
     enabled: bool = True
-    config_path: str = "authority.yaml"
+    config_path: str = "config/authority.yaml"
     domain: AuthorityDomainSettings = Field(default_factory=AuthorityDomainSettings)
     page: AuthorityPageSettings = Field(default_factory=AuthorityPageSettings)
     scoring: AuthorityScoringSettings = Field(default_factory=AuthorityScoringSettings)

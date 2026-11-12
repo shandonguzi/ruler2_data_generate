@@ -107,7 +107,8 @@ def test_load_settings_rejects_model_in_yaml(tmp_path):
 
 def test_load_settings_reads_dotenv_file(tmp_path):
     path = _write(tmp_path, yaml_config())
-    (tmp_path / ".env").write_text(
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / ".env").write_text(
         "\n".join(
             [
                 "# comment",
@@ -150,13 +151,14 @@ def test_load_settings_ignores_process_environment(tmp_path, monkeypatch):
 
 
 def test_load_authority_missing_file_returns_empty(tmp_path):
-    lists = load_authority("missing.yaml", project_root=tmp_path)
+    lists = load_authority(project_root=tmp_path)
     assert lists.whitelist == []
     assert lists.blacklist == []
 
 
 def test_load_authority_parses_entries(tmp_path):
-    (tmp_path / "authority.yaml").write_text(
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "authority.yaml").write_text(
         yaml.safe_dump(
             {
                 "whitelist": [{"domain": "*.gov.eg", "reason": "政府"}],
@@ -166,13 +168,14 @@ def test_load_authority_parses_entries(tmp_path):
         ),
         encoding="utf-8",
     )
-    lists = load_authority("authority.yaml", project_root=tmp_path)
+    lists = load_authority(project_root=tmp_path)
     assert lists.whitelist[0].domain == "*.gov.eg"
     assert lists.blacklist[0].reason == "垃圾站"
 
 
 def test_load_authority_rejects_overlap(tmp_path):
-    (tmp_path / "authority.yaml").write_text(
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "authority.yaml").write_text(
         yaml.safe_dump(
             {
                 "whitelist": [{"domain": "reuters.com"}],
@@ -182,7 +185,7 @@ def test_load_authority_rejects_overlap(tmp_path):
         encoding="utf-8",
     )
     with pytest.raises(ConfigError, match="冲突"):
-        load_authority("authority.yaml", project_root=tmp_path)
+        load_authority(project_root=tmp_path)
 
 
 def test_config_data_not_mutated_between_calls():

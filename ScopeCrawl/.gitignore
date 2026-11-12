@@ -13,12 +13,15 @@ dist/
 htmlcov/
 
 # 密钥：只提交模板，不提交本地配置
-.env
-.env.*
-!.env.example
+config/.env
+config/.env.*
+!config/.env.example
 
 # 生成数据与本地运行状态
 data/
 .history.json
 *.log
 .DS_Store
+
+# 父仓库全局忽略 config.yaml，主配置需要入库，此处覆盖
+!config/config.yaml

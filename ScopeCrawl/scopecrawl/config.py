@@ -15,8 +15,10 @@ from .models import AuthorityEntry, AuthorityLists, Settings
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.yaml"
-DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
+CONFIG_DIR = PROJECT_ROOT / "config"
+DEFAULT_CONFIG_PATH = CONFIG_DIR / "config.yaml"
+DEFAULT_ENV_PATH = CONFIG_DIR / ".env"
+DEFAULT_AUTHORITY_PATH = CONFIG_DIR / "authority.yaml"
 
 # 固定键名：只从 .env 文件读取，不读取进程环境变量。
 TAVILY_API_KEY_ENV = "SCOPECRAWL_TAVILY_API_KEY"
@@ -48,15 +50,14 @@ def load_settings(
     root = project_root or PROJECT_ROOT
     env_map = (
         _read_dotenv(
-            _resolve_path(Path(env_path) if env_path else Path(".env"), root),
+            _resolve_default(env_path, DEFAULT_ENV_PATH, root),
             required=require_secrets,
         )
         if env is None
         else dict(env)
     )
 
-    path = Path(config_path) if config_path is not None else DEFAULT_CONFIG_PATH
-    path = _resolve_path(path, root)
+    path = _resolve_default(config_path, DEFAULT_CONFIG_PATH, root)
     data = _read_yaml(path)
     if not isinstance(data, dict):
         raise ConfigError(f"配置文件格式错误，顶层必须是映射：{path}")
@@ -80,7 +81,7 @@ def load_authority(
 ) -> AuthorityLists:
     """读取白名单/黑名单；文件缺失时返回空列表并告警。"""
     root = project_root or PROJECT_ROOT
-    path = _resolve_path(Path(config_path or "authority.yaml"), root)
+    path = _resolve_default(config_path, DEFAULT_AUTHORITY_PATH, root)
     if not path.exists():
         logger.warning("权威度配置文件不存在，使用空白名单：%s", path)
         return AuthorityLists()
@@ -143,6 +144,12 @@ def _patterns_overlap(left: str, right: str) -> bool:
 
 def _resolve_path(path: Path, root: Path) -> Path:
     return path if path.is_absolute() else root / path
+
+
+def _resolve_default(candidate: str | Path | None, default: Path, root: Path) -> Path:
+    """未显式提供路径时，使用相对于项目根目录的默认路径（如 config/.env）。"""
+    path = Path(candidate) if candidate is not None else default.relative_to(PROJECT_ROOT)
+    return _resolve_path(path, root)
 
 
 def _read_yaml(path: Path) -> Any:

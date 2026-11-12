@@ -1,5 +1,12 @@
 # 变更日志
 
+## 2026-11-12
+
+- 调整：所有配置集中到 `config/` 目录，`config.yaml` → `config/config.yaml`、`authority.yaml` → `config/authority.yaml`、`.env` / `.env.example` → `config/.env` / `config/.env.example`
+- 调整：`config.py` 默认路径改为 `config/` 下的相对路径，仍支持显式传入自定义路径；`authority.config_path` 默认值同步为 `config/authority.yaml`
+- 调整：`.gitignore` 的密钥忽略规则改为 `config/.env*`，保留 `config/.env.example`；README 与命令行帮助同步更新
+- 修复：父仓库 `.gitignore` 的全局 `config.yaml` 规则导致主配置从未被 git 跟踪，子项目以 `!config/config.yaml` 覆盖，主配置恢复入库
+
 ## 2026-11-11
 
 - 新增：`config/scenarios.json`，由「场景覆盖.xlsx / 评测场景」表转换而来（S1→S2→S3→S4 嵌套，每个 S4 记录 `coverage_points`），共 33 个场景

@@ -58,7 +58,7 @@ BASE_CONFIG = {
     },
     "llm": {},
     "review": {"enabled": True},
-    "authority": {"enabled": True, "config_path": "authority.yaml"},
+    "authority": {"enabled": True, "config_path": "config/authority.yaml"},
 }
 
 
