@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import logging
 
+import pytest
+
 from scopecrawl.evaluate import DomainFilter
 from scopecrawl.history import HISTORY_FILENAME, UrlHistory
 from scopecrawl.models import ExtractedContent
@@ -393,6 +395,44 @@ def test_pipeline_domain_prefilter_runs_before_url_prefilter(tmp_path):
     assert summary.processed_urls == 1
     history = UrlHistory(tmp_path / HISTORY_FILENAME)
     assert history.contains("spam.example")
+
+
+@pytest.mark.parametrize("authority_enabled", [True, False])
+def test_pipeline_skips_unfetchable_domains_before_truncation(
+    tmp_path, authority_enabled
+):
+    authority = tmp_path / "authority.yaml"
+    authority.write_text(
+        "unfetchable:\n  - domain: youtube.com\n    reason: 视频页\n", encoding="utf-8"
+    )
+    provider = FakeProvider(
+        {
+            "关键词一": make_search_response(
+                "关键词一",
+                ["https://www.youtube.com/watch?v=1", "https://example.com/a"],
+            ),
+            "关键词二": make_search_response("关键词二", []),
+        }
+    )
+    extractor = FakeExtractor({"https://example.com/a": MARKDOWN_OK})
+    settings = make_settings(
+        authority={"enabled": authority_enabled, "config_path": str(authority)},
+        search={"dedupe": {"max_urls": 1}},
+        diversity={"max_per_query": None, "max_per_domain": None},
+    )
+
+    summary, code = _run(
+        tmp_path, settings=settings, provider=provider, extractor=extractor
+    )
+
+    assert code == 0
+    # 视频站先被跳过，配额留给可提取的 URL；该过滤不受 authority.enabled 影响。
+    assert summary.unfetchable_skipped == 1
+    assert summary.processed_urls == 1
+    assert summary.documents == 1
+    assert extractor.calls == [["https://example.com/a"]]
+    history = UrlHistory(tmp_path / HISTORY_FILENAME)
+    assert history.contains("www.youtube.com/watch?v=1")
 
 
 def test_pipeline_interleaves_queries_under_max_urls(tmp_path):

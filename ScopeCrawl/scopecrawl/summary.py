@@ -47,6 +47,7 @@ class RunSummary:
     processed_urls: int = 0
     documents: int = 0
     rejected_domains: int = 0
+    unfetchable_skipped: int = 0
     prefilter_reasons: Counter = field(default_factory=Counter)
     history_skipped: int = 0
     diversity_reasons: Counter = field(default_factory=Counter)
@@ -104,11 +105,13 @@ class UrlFilterStats:
     history_skipped: int = 0
     prefilter_reasons: Counter = field(default_factory=Counter)
     rejected_domains: int = 0
+    unfetchable_skipped: int = 0
 
     def merge_into(self, summary: RunSummary) -> None:
         summary.history_skipped = self.history_skipped
         summary.prefilter_reasons.update(self.prefilter_reasons)
         summary.rejected_domains = self.rejected_domains
+        summary.unfetchable_skipped = self.unfetchable_skipped
 
 
 @dataclass
@@ -162,6 +165,7 @@ def print_summary(summary: RunSummary) -> None:
         print(f"历史跳过 {summary.history_skipped} 个已收 URL。")
     if (
         summary.rejected_domains
+        or summary.unfetchable_skipped
         or summary.prefiltered_urls
         or summary.dropped_documents
         or summary.diversity_dropped
@@ -169,6 +173,7 @@ def print_summary(summary: RunSummary) -> None:
     ):
         print(
             f"域名拒绝 {summary.rejected_domains} 个，"
+            f"无法提取跳过 {summary.unfetchable_skipped} 个，"
             f"粗筛丢弃 {summary.prefiltered_urls} 个，"
             f"质量丢弃 {summary.quality_dropped} 篇，"
             f"评估丢弃 {summary.dropped_documents} 篇，"

@@ -54,11 +54,6 @@ extract:
   max_nav_line_ratio: 0.5
   # 非 ASCII 字符中异常文种占比超过该值时，判为编码乱码并丢弃
   max_garbled_ratio: 0.35
-  skip_domains:
-    - youtube.com
-    - youtu.be
-    - bilibili.com
-    - douyin.com
 
 llm:
   timeout_seconds: 60
@@ -81,7 +76,7 @@ review:
     drop_when_both_low: false
 
 diversity:
-  enabled: true
+  enabled: false
   max_per_query: 5
   max_per_domain: 4
 

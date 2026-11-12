@@ -8,11 +8,18 @@ from pathlib import Path
 from ..config import load_authority
 from ..evaluate import DomainFilter
 from ..history import UrlHistory
-from ..models import DomainAssessment, SearchResponse, Settings, UrlTask
+from ..models import (
+    AuthorityLists,
+    DomainAssessment,
+    SearchResponse,
+    Settings,
+    UrlTask,
+)
 from ..summary import PREFILTER_LABELS, UrlFilterStats, format_counts
 from ..utils import (
     build_url_task,
     dedupe_results,
+    domain_matches,
     index_url_reason,
     interleave_by_query,
     log_stage,
@@ -23,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 class UrlFilterStage:
-    """对搜索结果做去重、历史过滤、域名预筛、粗筛与配额截断，得到待采集 URL。"""
+    """对搜索结果做去重、历史过滤、无法提取域名过滤、域名预筛、粗筛与配额截断。"""
 
     def __init__(
         self,
@@ -50,7 +57,13 @@ class UrlFilterStage:
         )
 
         rejected: list[UrlTask] = []
-        candidates, assessments = self._domain_prefilter(candidates, stats, rejected)
+        lists = load_authority(
+            self.settings.authority.config_path, project_root=self.project_root
+        )
+        candidates = self._skip_unfetchable(candidates, lists, stats, rejected)
+        candidates, assessments = self._domain_prefilter(
+            candidates, lists, stats, rejected
+        )
         if self.settings.search.prefilter.enabled:
             candidates = self._url_prefilter(candidates, stats, rejected)
 
@@ -147,9 +160,47 @@ class UrlFilterStage:
         )
         return kept
 
+    def _skip_unfetchable(
+        self,
+        tasks: list[UrlTask],
+        lists: AuthorityLists,
+        stats: UrlFilterStats,
+        rejected: list[UrlTask],
+    ) -> list[UrlTask]:
+        """跳过提取器拿不到正文的域名；在粗筛与配额截断前执行，避免占用名额。"""
+        if not lists.unfetchable:
+            return tasks
+        kept: list[UrlTask] = []
+        for task in tasks:
+            host = url_host(task.url)
+            entry = next(
+                (
+                    item
+                    for item in lists.unfetchable
+                    if domain_matches(host, item.domain)
+                ),
+                None,
+            )
+            if entry is None:
+                kept.append(task)
+                continue
+            stats.unfetchable_skipped += 1
+            rejected.append(task)
+            logger.debug(
+                "[URL 筛选] 跳过无法提取的域名：%s（%s）",
+                task.url,
+                entry.reason or entry.domain,
+            )
+        if stats.unfetchable_skipped:
+            logger.info(
+                "[URL 筛选] 跳过无法提取的域名 %d 个", stats.unfetchable_skipped
+            )
+        return kept
+
     def _domain_prefilter(
         self,
         tasks: list[UrlTask],
+        lists: AuthorityLists,
         stats: UrlFilterStats,
         rejected: list[UrlTask],
     ) -> tuple[list[UrlTask], dict[str, DomainAssessment]]:
@@ -157,9 +208,6 @@ class UrlFilterStage:
             logger.info("[URL 筛选] 域名预筛已禁用，跳过")
             return tasks, {}
 
-        lists = load_authority(
-            self.settings.authority.config_path, project_root=self.project_root
-        )
         domain_filter = DomainFilter(lists, self.settings.authority)
         hosts = [url_host(task.url) for task in tasks]
         logger.info("[URL 筛选] 域名预筛开始：评估 %d 个域名…", len(set(hosts)))

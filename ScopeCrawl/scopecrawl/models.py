@@ -122,14 +122,6 @@ class ExtractSettings(Model):
     max_link_text_ratio: float = Field(0.4, ge=0, le=1)
     max_nav_line_ratio: float = Field(0.5, ge=0, le=1)
     max_garbled_ratio: float = Field(0.35, ge=0, le=1)
-    skip_domains: list[str] = Field(
-        default_factory=lambda: [
-            "youtube.com",
-            "youtu.be",
-            "bilibili.com",
-            "douyin.com",
-        ]
-    )
 
 
 class LLMSettings(Model):
@@ -224,6 +216,7 @@ class AuthorityEntry(Model):
 class AuthorityLists(Model):
     whitelist: list[AuthorityEntry] = Field(default_factory=list)
     blacklist: list[AuthorityEntry] = Field(default_factory=list)
+    unfetchable: list[AuthorityEntry] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

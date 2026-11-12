@@ -154,6 +154,7 @@ def test_load_authority_missing_file_returns_empty(tmp_path):
     lists = load_authority(project_root=tmp_path)
     assert lists.whitelist == []
     assert lists.blacklist == []
+    assert lists.unfetchable == []
 
 
 def test_load_authority_parses_entries(tmp_path):
@@ -171,6 +172,25 @@ def test_load_authority_parses_entries(tmp_path):
     lists = load_authority(project_root=tmp_path)
     assert lists.whitelist[0].domain == "*.gov.eg"
     assert lists.blacklist[0].reason == "垃圾站"
+    assert lists.unfetchable == []
+
+
+def test_load_authority_parses_unfetchable(tmp_path):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "authority.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "unfetchable": [
+                    {"domain": "youtube.com", "reason": "视频页无可提取正文"}
+                ],
+            },
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    lists = load_authority(project_root=tmp_path)
+    assert lists.unfetchable[0].domain == "youtube.com"
+    assert lists.unfetchable[0].reason == "视频页无可提取正文"
 
 
 def test_load_authority_rejects_overlap(tmp_path):

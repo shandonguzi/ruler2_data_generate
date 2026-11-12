@@ -27,3 +27,14 @@ whitelist:
     reason: 埃及主流媒体
 
 blacklist: []
+
+# 提取器无法获取正文的域名：阶段 3 在 URL 粗筛与 max_urls 截断前直接跳过
+unfetchable:
+  - domain: youtube.com
+    reason: 视频页无可提取正文
+  - domain: youtu.be
+    reason: 视频页无可提取正文
+  - domain: bilibili.com
+    reason: 视频页无可提取正文
+  - domain: douyin.com
+    reason: 视频页无可提取正文

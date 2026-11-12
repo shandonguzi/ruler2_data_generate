@@ -2,6 +2,9 @@
 
 ## 2026-11-12
 
+- 调整：`config/config.yaml` 的 `diversity.enabled` 改为 `false`，默认关闭多样性限流；代码中 `DiversitySettings.enabled` 的默认值仍为 `true`，配置省略该字段时仍会启用
+- 新增：`config/authority.yaml` 增加 `unfetchable` 名单（收录原 `extract.skip_domains` 的视频站），阶段 3 在 URL 粗筛与 `max_urls` 截断前跳过无法提取正文的域名，名额留给可提取 URL；该过滤不受 `authority.enabled` 影响
+- 调整：移除 `extract.skip_domains` 配置与阶段 4 的重复检查，避免同一类名单分散在两个配置文件
 - 调整：URL 筛选顺序改为去重 → 历史过滤 → 域名预筛 → URL 粗筛 → 按关键词轮转截断，`max_urls` 名额优先由可通过预筛的 URL 填充；域名预筛前置后，黑名单域名的首页不再计入 `prefilter_reasons`，也避免对整域被拒的 URL 重复做结构判断
 - 调整：历史表改为记录域名/粗筛拒绝的 URL 与最终入队 URL，被 `max_urls` 截断的 URL 仍留给下次；`history.py` docstring 与 README 同步
 - 调整：`prompts/keywords.md` 删除 Query rules 第 3 条（禁止 S3/S4 原文与元词），后续规则顺延编号；S3/S4 标签与元词约束仍由 Step 1、Step 1.5 及 `_copies_catalog_labels` 重写机制保留

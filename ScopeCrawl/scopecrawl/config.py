@@ -79,7 +79,7 @@ def load_authority(
     *,
     project_root: Path | None = None,
 ) -> AuthorityLists:
-    """读取白名单/黑名单；文件缺失时返回空列表并告警。"""
+    """读取白名单、黑名单与无法提取名单；文件缺失时返回空列表并告警。"""
     root = project_root or PROJECT_ROOT
     path = _resolve_default(config_path, DEFAULT_AUTHORITY_PATH, root)
     if not path.exists():
@@ -95,6 +95,7 @@ def load_authority(
             {
                 "whitelist": _normalize_entries(data.get("whitelist")),
                 "blacklist": _normalize_entries(data.get("blacklist")),
+                "unfetchable": _normalize_entries(data.get("unfetchable")),
             }
         )
     except ValidationError as exc:
@@ -111,7 +112,7 @@ def _normalize_entries(entries: Any) -> list[dict[str, str]]:
     if entries is None:
         return []
     if not isinstance(entries, Sequence) or isinstance(entries, str):
-        raise ConfigError("白名单/黑名单必须是列表")
+        raise ConfigError("名单必须是列表")
     normalized: list[dict[str, str]] = []
     for entry in entries:
         if isinstance(entry, str):
@@ -124,7 +125,7 @@ def _normalize_entries(entries: Any) -> list[dict[str, str]]:
                 }
             )
         else:
-            raise ConfigError(f"无效的白名单/黑名单条目：{entry!r}")
+            raise ConfigError(f"无效的名单条目：{entry!r}")
     return normalized
 
 

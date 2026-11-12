@@ -22,7 +22,7 @@ from ..models import (
     UrlTask,
 )
 from ..summary import ExtractStats, StageAborted
-from ..utils import domain_matches, iter_concurrent, log_stage, url_host
+from ..utils import iter_concurrent, log_stage
 
 logger = logging.getLogger(__name__)
 
@@ -44,25 +44,14 @@ class ExtractStage:
     def run(self, candidates: list[Candidate]) -> tuple[list[DocumentSlot], ExtractStats]:
         log_stage("提取清洗")
         stats = ExtractStats()
-        tasks: list[Candidate] = []
-        skipped = 0
-        for task, domain in candidates:
-            host = url_host(task.url)
-            if any(domain_matches(host, rule) for rule in self.settings.extract.skip_domains):
-                skipped += 1
-                logger.debug("[提取清洗] 跳过不支持的域名：%s", task.url)
-                continue
-            tasks.append((task, domain))
-        if skipped:
-            logger.info("[提取清洗] 跳过不支持的域名 %d 个", skipped)
-        if not tasks:
+        if not candidates:
             logger.info("[提取清洗] 结束：没有可提取的 URL")
             return [], stats
 
-        total = len(tasks)
+        total = len(candidates)
         batch_size = self.settings.extract.batch_size
         concurrency = self.settings.extract.concurrency
-        batches = chunk_urls([task.url for task, _ in tasks], batch_size)
+        batches = chunk_urls([task.url for task, _ in candidates], batch_size)
         offsets: list[int] = []
         position = 0
         for batch in batches:
@@ -124,7 +113,7 @@ class ExtractStage:
                 )
             # 该批结果一返回就清洗，与仍在并发执行的其余批次重叠。
             batch_failures, batch_quality = self._process(
-                tasks[offset : offset + len(batch)],
+                candidates[offset : offset + len(batch)],
                 outcomes[offset : offset + len(batch)],
                 offset=offset,
                 total=total,
