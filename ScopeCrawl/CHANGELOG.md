@@ -2,6 +2,8 @@
 
 ## 2026-11-12
 
+- 调整：URL 筛选顺序改为去重 → 历史过滤 → 域名预筛 → URL 粗筛 → 按关键词轮转截断，`max_urls` 名额优先由可通过预筛的 URL 填充；域名预筛前置后，黑名单域名的首页不再计入 `prefilter_reasons`，也避免对整域被拒的 URL 重复做结构判断
+- 调整：历史表改为记录域名/粗筛拒绝的 URL 与最终入队 URL，被 `max_urls` 截断的 URL 仍留给下次；`history.py` docstring 与 README 同步
 - 调整：`prompts/keywords.md` 删除 Query rules 第 3 条（禁止 S3/S4 原文与元词），后续规则顺延编号；S3/S4 标签与元词约束仍由 Step 1、Step 1.5 及 `_copies_catalog_labels` 重写机制保留
 - 新增：`prompts/keywords.md` Good examples 补充英语与标准阿拉伯语示例各一条，并在示例输入中标注 `language`，降低非中文输出被中文示例带偏的可能
 - 优化：域名预筛按主机名缓存 `DomainFilter.assess` 结果，同一域名的多个 URL 只评估一次，开始日志改为输出实际去重后的域名数

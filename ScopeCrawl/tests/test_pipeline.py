@@ -356,12 +356,43 @@ def test_pipeline_records_screened_urls_but_not_truncated(tmp_path):
     assert summary.prefiltered_urls == 1
     assert summary.quality_dropped == 1
     history = UrlHistory(tmp_path / HISTORY_FILENAME)
-    # 被 URL 粗筛、质量闸门丢弃的 URL 仍记录；按关键词轮转被 max_urls 截断的 URL 留给下次。
+    # 被 URL 粗筛、质量闸门丢弃的 URL 仍记录；被 max_urls 截断的 URL 留给下次。
     assert history.contains("m.cn.nytimes.com")
     assert history.contains("example.com/short")
+    assert history.contains("example.com/a")
     assert history.contains("example.com/cut1")
-    assert not history.contains("example.com/a")
     assert not history.contains("example.com/cut2")
+
+
+def test_pipeline_domain_prefilter_runs_before_url_prefilter(tmp_path):
+    authority = tmp_path / "authority.yaml"
+    authority.write_text(
+        "blacklist:\n  - domain: spam.example\n    reason: 测试\n", encoding="utf-8"
+    )
+    provider = FakeProvider(
+        {
+            "关键词一": make_search_response(
+                "关键词一", ["https://spam.example", "https://example.com/a"]
+            ),
+            "关键词二": make_search_response("关键词二", []),
+        }
+    )
+    extractor = FakeExtractor({"https://example.com/a": MARKDOWN_OK})
+    settings = make_settings(
+        authority={"enabled": True, "config_path": str(authority)}
+    )
+
+    summary, code = _run(
+        tmp_path, settings=settings, provider=provider, extractor=extractor
+    )
+
+    assert code == 0
+    # 黑名单域名整体拒绝，不再计入 URL 粗筛的 homepage 原因。
+    assert summary.rejected_domains == 1
+    assert summary.prefiltered_urls == 0
+    assert summary.processed_urls == 1
+    history = UrlHistory(tmp_path / HISTORY_FILENAME)
+    assert history.contains("spam.example")
 
 
 def test_pipeline_interleaves_queries_under_max_urls(tmp_path):
