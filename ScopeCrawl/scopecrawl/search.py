@@ -14,7 +14,7 @@ from typing import Any
 import httpx
 
 from .models import SearchRequest, SearchResponse, SearchResult, SearchSettings
-from .utils import RateLimiter, normalize_url, to_iso, url_host
+from .utils import RateLimiter, normalize_url, response_body, retry_after, to_iso, url_host
 
 logger = logging.getLogger(__name__)
 
@@ -242,17 +242,17 @@ class TavilyProvider(SearchProvider):
                     self.name,
                     status,
                     False,
-                    f"搜索参数错误（language/filter_by_language）：{_body(response)}",
+                    f"搜索参数错误（language/filter_by_language）：{response_body(response)}",
                 )
             if status in (401, 403):
                 raise SearchError(self.name, status, False, "鉴权失败，请检查 API Key")
             if status == 429 or status >= 500:
                 if attempt < cfg.max_retries:
-                    self._sleep(_retry_after(response, default=2**attempt))
+                    self._sleep(retry_after(response, default=2**attempt))
                     attempt += 1
                     continue
-                raise SearchError(self.name, status, True, f"服务端错误：{_body(response)}")
-            raise SearchError(self.name, status, False, f"请求失败：{_body(response)}")
+                raise SearchError(self.name, status, True, f"服务端错误：{response_body(response)}")
+            raise SearchError(self.name, status, False, f"请求失败：{response_body(response)}")
 
     def _map_results(self, data: dict[str, Any], max_results: int) -> list[SearchResult]:
         raw_items = data.get("results")
@@ -307,18 +307,3 @@ def create_search_provider(
     raise SearchError(settings.provider, None, False, "不支持的搜索 provider")
 
 
-def _retry_after(response: httpx.Response, *, default: float) -> float:
-    value = response.headers.get("retry-after")
-    if not value:
-        return default
-    try:
-        return min(float(value), 30.0)
-    except ValueError:
-        return default
-
-
-def _body(response: httpx.Response) -> str:
-    try:
-        return response.text[:300]
-    except Exception:  # noqa: BLE001
-        return ""

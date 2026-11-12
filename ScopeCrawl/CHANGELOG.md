@@ -2,6 +2,10 @@
 
 ## 2026-11-12
 
+- 调整：运行元数据由 `metadata.json` 改为 `metadata.jsonl`，首行写入 run 信息（`type=run`），之后每篇文档追加一行（`type=document`），避免每写一篇就全量重写，写入量从 O(n²) 降为 O(n)；同一 `doc_id` 重复写入不再追加重复记录
+- 调整：`RunWriter` 改为追加写，`storage` 文档字符串、阶段 docstring、README 与相关测试同步为 JSONL 读取方式
+- 重构：抽出共享工具 `utils.format_counts`、`utils.strip_json_noise` / `try_json` / `read_prompt`、`utils.retry_after` / `response_body`、`utils.build_url_task`，消除 `summary` 与各阶段、`keywords` 与 `evaluate`、`search` 与 `content`、`url_filter` 与 `dedupe_results` 之间的重复实现
+- 重构：`content.failure_outcomes` 统一失败结果构造，`ExtractStage` 据此合并缺失结果分支；`SearchStage` 合并 `SearchError` 与通用异常两个分支
 - 新增：`diversity.enabled` 开关（默认 `true`），设为 `false` 时跳过多样性限流，`max_per_query` / `max_per_domain` 不再生效；`config/config.yaml` 补充该字段，配置解析与限流函数补充对应测试
 - 新增：每个阶段开始时打印分隔日志行（如 `================ 评估筛选 ================`），便于在运行日志中区分阶段；阶段进度测试补充分隔行断言
 - 重构：流水线按 6 个阶段拆分，`scopecrawl/stages/` 下每个阶段独立实现（关键词生成、检索候选网页、筛选候选 URL、提取并清洗正文、评估并筛选文档、生成文档），`Pipeline` 只负责串联；`RunSummary`、标签映射与控制台汇总移至 `summary.py`

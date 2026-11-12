@@ -78,8 +78,13 @@ def make_document(
     )
 
 
-def read_metadata(run_dir) -> dict:
-    return json.loads((run_dir / METADATA_FILENAME).read_text(encoding="utf-8"))
+def read_metadata(run_dir) -> list[dict]:
+    lines = (run_dir / METADATA_FILENAME).read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
+
+
+def read_documents(run_dir) -> list[dict]:
+    return [record for record in read_metadata(run_dir) if record["type"] == "document"]
 
 
 def test_writer_creates_flat_run_dir(tmp_path):
@@ -103,13 +108,16 @@ def test_write_body_and_metadata(tmp_path):
     assert path.read_text(encoding="utf-8") == "# 正文\n\n这是一段中文内容。\n"
 
     metadata = read_metadata(writer.run_dir)
-    assert metadata["s3"] == "天气查询"
-    assert metadata["s4"] == "气象灾害查询"
-    assert metadata["location"] == "埃及"
-    assert metadata["language"] == "zh"
+    run = metadata[0]
+    assert run["type"] == "run"
+    assert run["s3"] == "天气查询"
+    assert run["s4"] == "气象灾害查询"
+    assert run["location"] == "埃及"
+    assert run["language"] == "zh"
 
-    assert len(metadata["documents"]) == 1
-    record = metadata["documents"][0]
+    documents = read_documents(writer.run_dir)
+    assert len(documents) == 1
+    record = documents[0]
     assert record["file"] == "标题：埃及沙尘暴.md"
     assert record["doc_id"] == "0123456789abcdef"
     assert record["title"] == "标题：埃及沙尘暴"
@@ -150,7 +158,7 @@ def test_doc_id_collision_gets_salt(tmp_path):
     assert first.extracted.doc_id == "sameid0000000000"
     assert second.extracted.doc_id != "sameid0000000000"
     assert len(list(writer.run_dir.glob("*.md"))) == 2
-    assert len(read_metadata(writer.run_dir)["documents"]) == 2
+    assert len(read_documents(writer.run_dir)) == 2
 
 
 def test_duplicate_titles_get_numbered_suffix(tmp_path):
@@ -173,7 +181,7 @@ def test_same_url_rewrites_same_file(tmp_path):
     second = writer.write(make_document())
     assert first == second
     assert len(list(writer.run_dir.glob("*.md"))) == 1
-    assert len(read_metadata(writer.run_dir)["documents"]) == 1
+    assert len(read_documents(writer.run_dir)) == 1
 
 
 def test_empty_title_falls_back_to_doc_id(tmp_path):

@@ -68,6 +68,13 @@ class RunSummary:
     failures: list[Failure] = field(default_factory=list)
 
 
+def format_counts(counts: Counter, labels: dict[str, str]) -> str:
+    """把 Counter 格式化为「标签 数量」的中文明细。"""
+    return "、".join(
+        f"{labels.get(reason, reason)} {count}" for reason, count in counts.most_common()
+    )
+
+
 def print_summary(summary: RunSummary) -> None:
     print(f"运行完成：处理 {summary.processed_urls} 个 URL，生成 {summary.documents} 篇文档。")
     if summary.history_skipped:
@@ -87,26 +94,10 @@ def print_summary(summary: RunSummary) -> None:
             f"多样性丢弃 {summary.diversity_dropped} 篇。"
         )
     if summary.prefilter_reasons:
-        detail = "、".join(
-            f"{PREFILTER_LABELS.get(reason, reason)} {count}"
-            for reason, count in summary.prefilter_reasons.most_common()
-        )
-        print(f"粗筛丢弃明细：{detail}。")
+        print(f"粗筛丢弃明细：{format_counts(summary.prefilter_reasons, PREFILTER_LABELS)}。")
     if summary.quality_reasons:
-        detail = "、".join(
-            f"{QUALITY_LABELS.get(reason, reason)} {count}"
-            for reason, count in summary.quality_reasons.most_common()
-        )
-        print(f"质量丢弃明细：{detail}。")
+        print(f"质量丢弃明细：{format_counts(summary.quality_reasons, QUALITY_LABELS)}。")
     if summary.drop_reasons:
-        detail = "、".join(
-            f"{DROP_REASON_LABELS.get(reason, reason)} {count}"
-            for reason, count in summary.drop_reasons.most_common()
-        )
-        print(f"评估丢弃明细：{detail}。")
+        print(f"评估丢弃明细：{format_counts(summary.drop_reasons, DROP_REASON_LABELS)}。")
     if summary.diversity_reasons:
-        detail = "、".join(
-            f"{DIVERSITY_LABELS.get(reason, reason)} {count}"
-            for reason, count in summary.diversity_reasons.most_common()
-        )
-        print(f"多样性丢弃明细：{detail}。")
+        print(f"多样性丢弃明细：{format_counts(summary.diversity_reasons, DIVERSITY_LABELS)}。")

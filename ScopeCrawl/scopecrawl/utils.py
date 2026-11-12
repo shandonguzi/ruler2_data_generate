@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import threading
 import time
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from urllib.parse import parse_qsl, unquote, urlencode, urlsplit
+
+import httpx
 
 from .models import SearchResult, UrlTask
 
@@ -194,6 +198,31 @@ def url_host(url: str) -> str:
         return ""
 
 
+def build_url_task(
+    query_index: int,
+    query: str,
+    result: SearchResult,
+    *,
+    provider: str = "tavily",
+    merge_www: bool = False,
+    strip_tracking: bool = True,
+) -> UrlTask:
+    """把单条搜索结果转换为候选 URL 任务。"""
+    return UrlTask(
+        url=result.url,
+        normalized_url=normalize_url(
+            result.url, merge_www=merge_www, strip_tracking=strip_tracking
+        ),
+        matched_queries=[query],
+        best_rank=result.rank,
+        first_query_index=query_index,
+        provider=provider,
+        title=result.title,
+        snippet=result.snippet,
+        published_at=result.published_at,
+    )
+
+
 def dedupe_results(
     items: Iterable[tuple[int, str, SearchResult]],
     *,
@@ -210,27 +239,20 @@ def dedupe_results(
     order: list[str] = []
 
     for query_index, query, result in items:
-        normalized = normalize_url(
-            result.url,
+        new_task = build_url_task(
+            query_index,
+            query,
+            result,
+            provider=provider,
             merge_www=merge_www,
             strip_tracking=strip_tracking,
         )
+        normalized = new_task.normalized_url
         if not normalized:
             continue
         task = seen.get(normalized)
         if task is None:
-            task = UrlTask(
-                url=result.url,
-                normalized_url=normalized,
-                matched_queries=[query],
-                best_rank=result.rank,
-                first_query_index=query_index,
-                provider=provider,
-                title=result.title,
-                snippet=result.snippet,
-                published_at=result.published_at,
-            )
-            seen[normalized] = task
+            seen[normalized] = new_task
             order.append(normalized)
             continue
         if query not in task.matched_queries:
@@ -340,6 +362,48 @@ def render_template(template: str, values: Mapping[str, object]) -> str:
         return str(values[key])
 
     return _PLACEHOLDER_RE.sub(replace, template)
+
+
+def strip_json_noise(text: str) -> str:
+    """去掉 BOM 与 Markdown 代码围栏，返回待解析的 JSON 文本。"""
+    value = (text or "").lstrip("﻿").strip()
+    if "```" in value:
+        blocks = re.findall(r"```(?:json)?\s*(.*?)```", value, re.DOTALL | re.IGNORECASE)
+        if blocks:
+            value = blocks[0].strip()
+    return value
+
+
+def try_json(text: str):
+    try:
+        return json.loads(text)
+    except (TypeError, ValueError):
+        return None
+
+
+def read_prompt(path: str | Path, *, label: str, error_cls: type[Exception]) -> str:
+    """读取 prompt 文件；失败时抛出调用方指定的异常类型。"""
+    try:
+        return Path(path).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise error_cls(f"无法读取{label}：{path}：{exc}") from exc
+
+
+def retry_after(response: httpx.Response, *, default: float) -> float:
+    value = response.headers.get("retry-after")
+    if not value:
+        return default
+    try:
+        return min(float(value), 30.0)
+    except ValueError:
+        return default
+
+
+def response_body(response: httpx.Response) -> str:
+    try:
+        return response.text[:300]
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 class RateLimiter:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 import unicodedata
@@ -10,7 +9,7 @@ from pathlib import Path
 
 from .config import PROJECT_ROOT
 from .models import KeywordsSettings, RunInput
-from .utils import render_template
+from .utils import read_prompt, render_template, strip_json_noise, try_json
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +51,11 @@ def generate_keywords(
     if not run.s3.strip() or not run.s4.strip():
         raise KeywordError("s3/s4 不能为空")
 
-    template = _read_prompt(Path(prompt_path) if prompt_path else DEFAULT_PROMPT_PATH)
+    template = read_prompt(
+        Path(prompt_path) if prompt_path else DEFAULT_PROMPT_PATH,
+        label="关键词 prompt",
+        error_cls=KeywordError,
+    )
     try:
         rendered = render_template(
             template,
@@ -144,11 +147,11 @@ def parse_keywords(text: str) -> list[str] | None:
 
 def _parse_payload(text: str) -> tuple[list[str] | None, dict | None]:
     """解析 queries 与可选 scene；缺失的部分返回 None。"""
-    payload = _strip_noise(text)
+    payload = strip_json_noise(text)
     if not payload:
         return None, None
 
-    data = _try_json(payload)
+    data = try_json(payload)
     if isinstance(data, dict):
         return _from_object(data)
     if isinstance(data, list):
@@ -157,14 +160,14 @@ def _parse_payload(text: str) -> tuple[list[str] | None, dict | None]:
     start = payload.find("[")
     end = payload.rfind("]")
     if start != -1 and end > start:
-        data = _try_json(payload[start : end + 1])
+        data = try_json(payload[start : end + 1])
         if isinstance(data, list):
             return _as_string_list(data), None
 
     start = payload.find("{")
     end = payload.rfind("}")
     if start != -1 and end > start:
-        data = _try_json(payload[start : end + 1])
+        data = try_json(payload[start : end + 1])
         if isinstance(data, dict):
             return _from_object(data)
     return None, None
@@ -177,22 +180,6 @@ def _from_object(data: dict) -> tuple[list[str] | None, dict | None]:
         if isinstance(candidate, list):
             return _as_string_list(candidate), scene
     return None, scene
-
-
-def _strip_noise(text: str) -> str:
-    value = (text or "").lstrip("﻿").strip()
-    if "```" in value:
-        blocks = re.findall(r"```(?:json)?\s*(.*?)```", value, re.DOTALL | re.IGNORECASE)
-        if blocks:
-            value = blocks[0].strip()
-    return value
-
-
-def _try_json(text: str):
-    try:
-        return json.loads(text)
-    except (TypeError, ValueError):
-        return None
 
 
 def _as_string_list(value: list) -> list[str] | None:
@@ -251,10 +238,3 @@ def _copies_catalog_labels(queries: list[str], run: RunInput) -> bool:
 def _format_coverage_points(points: list[str] | None) -> str:
     items = [point.strip() for point in points or [] if point.strip()]
     return "\n".join(f"  - {item}" for item in items) if items else "  none"
-
-
-def _read_prompt(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8")
-    except OSError as exc:
-        raise KeywordError(f"无法读取关键词 prompt：{path}：{exc}") from exc

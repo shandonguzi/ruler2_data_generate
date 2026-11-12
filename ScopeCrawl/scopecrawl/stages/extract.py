@@ -12,6 +12,7 @@ from ..content import (
     check_quality,
     chunk_urls,
     clean_content,
+    failure_outcomes,
 )
 from ..models import (
     DomainAssessment,
@@ -104,27 +105,16 @@ class ExtractStage:
                         logger.warning(
                             "[提取清洗] 批次 %d/%d 失败：%s", done, len(batches), exc
                         )
-                    outcomes[offset : offset + len(batch)] = [
-                        ExtractedContent(
-                            url=url,
-                            error_type=exc.error_type,
-                            error=exc.message,
-                            fatal=exc.fatal,
-                        )
-                        for url in batch
-                    ]
+                    outcomes[offset : offset + len(batch)] = failure_outcomes(
+                        batch, exc.error_type, exc.message, fatal=exc.fatal
+                    )
                 except Exception as exc:  # noqa: BLE001 - 单批异常不中断其他批次
                     logger.warning(
                         "[提取清洗] 批次 %d/%d 异常：%s", done, len(batches), exc
                     )
-                    outcomes[offset : offset + len(batch)] = [
-                        ExtractedContent(
-                            url=url,
-                            error_type="extract_error",
-                            error=str(exc),
-                        )
-                        for url in batch
-                    ]
+                    outcomes[offset : offset + len(batch)] = failure_outcomes(
+                        batch, "extract_error", str(exc)
+                    )
                 else:
                     outcomes[offset : offset + len(results)] = results
                     succeeded = sum(1 for item in results if not item.error_type)
@@ -167,16 +157,11 @@ class ExtractStage:
         quality_dropped = 0
         for index, ((task, domain), outcome) in enumerate(zip(tasks, outcomes, strict=False), 1):
             if outcome is None:
-                failures += 1
-                self.summary.failures.append(
-                    Failure(
-                        stage="extract",
-                        url=task.url,
-                        error_type="missing_result",
-                        message="提取结果缺失",
-                    )
+                outcome = ExtractedContent(
+                    url=task.url,
+                    error_type="missing_result",
+                    error="提取结果缺失",
                 )
-                continue
             if outcome.error_type:
                 failures += 1
                 logger.warning(

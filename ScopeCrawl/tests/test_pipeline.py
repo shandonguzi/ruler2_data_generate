@@ -7,6 +7,7 @@ from scopecrawl.history import HISTORY_FILENAME, UrlHistory
 from scopecrawl.models import ExtractedContent
 from scopecrawl.pipeline import Pipeline
 from scopecrawl.search import SearchError
+from scopecrawl.storage import METADATA_FILENAME
 from scopecrawl.utils import normalize_url
 from tests.conftest import (
     MARKDOWN_NAV,
@@ -63,6 +64,11 @@ def _seed_history(tmp_path, urls):
     history.save()
 
 
+def _read_metadata(run_dir):
+    lines = (run_dir / METADATA_FILENAME).read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
+
+
 def test_pipeline_end_to_end_mock(tmp_path, capsys):
     summary, code = _run(tmp_path)
 
@@ -76,17 +82,20 @@ def test_pipeline_end_to_end_mock(tmp_path, capsys):
 
     run_dir = tmp_path / summary.run_id
     files = sorted(path.name for path in run_dir.iterdir())
-    assert files == ["metadata.json", "title 0.md", "title 1.md"]
+    assert files == [METADATA_FILENAME, "title 0.md", "title 1.md"]
 
     content = (run_dir / "title 0.md").read_text(encoding="utf-8")
     assert not content.startswith("---\n")
     assert "relevance_score" not in content
 
-    metadata = json.loads((run_dir / "metadata.json").read_text(encoding="utf-8"))
-    assert metadata["s3"] == "天气查询"
-    assert metadata["s4"] == "气象灾害查询"
-    assert len(metadata["documents"]) == 2
-    record = metadata["documents"][0]
+    metadata = _read_metadata(run_dir)
+    run = metadata[0]
+    assert run["type"] == "run"
+    assert run["s3"] == "天气查询"
+    assert run["s4"] == "气象灾害查询"
+    documents = [record for record in metadata if record["type"] == "document"]
+    assert len(documents) == 2
+    record = documents[0]
     assert record["file"] == "title 0.md"
     assert record["relevance_score"] == 0.9
     assert record["content_richness_score"] == 0.8
@@ -190,8 +199,8 @@ def test_pipeline_authority_disabled_writes_null_fields(tmp_path):
     assert code == 0
     assert summary.documents == 2
     run_dir = tmp_path / summary.run_id
-    metadata = json.loads((run_dir / "metadata.json").read_text(encoding="utf-8"))
-    record = metadata["documents"][0]
+    records = _read_metadata(run_dir)
+    record = next(item for item in records if item["type"] == "document")
     assert record["domain_decision"] is None
     assert record["page_score"] is None
     assert record["authority_score"] is None

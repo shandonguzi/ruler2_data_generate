@@ -29,6 +29,7 @@ from ..summary import (
     DROP_REASON_LABELS,
     STAGE_LABELS,
     RunSummary,
+    format_counts,
 )
 from .log import log_stage
 
@@ -159,10 +160,7 @@ class EvaluateStage:
         kept, diversity_reasons = apply_diversity(kept, self.settings.diversity)
         self.summary.diversity_reasons.update(diversity_reasons)
         self.summary.diversity_dropped = sum(diversity_reasons.values())
-        detail = "、".join(
-            f"{DIVERSITY_LABELS.get(reason, reason)} {count}"
-            for reason, count in diversity_reasons.most_common()
-        )
+        detail = format_counts(diversity_reasons, DIVERSITY_LABELS)
         logger.info(
             "[评估筛选] 多样性结束：保留 %d 篇，丢弃 %d 篇%s",
             len(kept),

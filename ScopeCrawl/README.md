@@ -21,7 +21,7 @@ ScopeCrawl 根据 S3/S4 场景、地点与语言，检索关联网页，清洗�
 | 3 | 筛选候选 URL | 原始结果 → 候选 URL | 去重、跳过历史、按关键词轮转截断、URL 粗筛、域名黑白名单 |
 | 4 | 提取并清洗正文 | 候选 URL → 正文文档 | Tavily Extract 批量提取，清洗导航/页脚噪声，过质量闸门 |
 | 5 | 评估并筛选文档 | 正文文档 → 带评分的文档 | LLM 内容复核、权威度评估、丢弃判定、多样性限流 |
-| 6 | 生成文档 | 文档 → Markdown + metadata.json | 分配文件名、原子写盘、增量更新元数据 |
+| 6 | 生成文档 | 文档 → Markdown + metadata.jsonl | 分配文件名、原子写盘、逐篇追加元数据 |
 
 - 阶段 3 在筛选完成后会把进入队列的 URL 写入 `config/.history.json`，供后续运行跳过。
 - 阶段 1、2、4 的致命错误（关键词生成失败、搜索全部失败或 HTTP 400、提取鉴权/额度/全批失败）会终止 run，退出码为 `1`。
@@ -96,13 +96,13 @@ python main.py --s3 "天气查询" --s4 "气象灾害查询" --location "埃及"
 
 ```text
 data/{run_id}/{标题}.md
-data/{run_id}/metadata.json
+data/{run_id}/metadata.jsonl
 config/.history.json
 ```
 
 - `run_id` 为 `{S3}-{S4}-{地点}-{语言}-{本地时间}`，例如 `天气查询-气象灾害查询-埃及-zh-20261111-163300`；地点为空时省略该段。
 - Markdown 文件名取页面标题，非法字符替换为 `_`，超长截断，重名追加序号；文件内容只保留清洗后的正文 Markdown。
-- `metadata.json` 记录本次运行的 S3/S4、地点、语言、时间范围，以及每篇文档对应的文件名、`doc_id`、URL、匹配查询、相关性与内容/权威度评分、评估结论等元数据。
+- `metadata.jsonl` 为 JSON Lines：首行记录本次运行的 S3/S4、地点、语言、时间范围（`type` 为 `run`），之后每篇文档追加一行（`type` 为 `document`），记录文件名、`doc_id`、URL、匹配查询、相关性与内容/权威度评分、评估结论等；可按行读取，例如 `pd.read_json(path, lines=True)` 或逐行 `json.loads`。
 - `config/.history.json` 为跨运行 URL 历史表，全场景共享，供下次运行跳过已处理 URL。
 
 ## 配置

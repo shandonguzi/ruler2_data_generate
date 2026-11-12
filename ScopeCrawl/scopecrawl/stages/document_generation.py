@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class DocumentGenerationStage:
-    """把保留的文档写成 Markdown，并维护 metadata.json。"""
+    """把保留的文档写成 Markdown，并追加维护 metadata.jsonl。"""
 
     def __init__(self, writer: RunWriter, summary: RunSummary) -> None:
         self.writer = writer

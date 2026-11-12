@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import re
 from collections import Counter
 from pathlib import Path
 
@@ -27,7 +25,15 @@ from .models import (
     RunInput,
     ScoreThresholds,
 )
-from .utils import domain_matches, render_template, to_iso, utc_now
+from .utils import (
+    domain_matches,
+    read_prompt,
+    render_template,
+    strip_json_noise,
+    to_iso,
+    try_json,
+    utc_now,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -262,7 +268,11 @@ def review_content(
             )
         )
 
-    template = _read_prompt(Path(prompt_path) if prompt_path else DEFAULT_REVIEW_PROMPT)
+    template = read_prompt(
+        Path(prompt_path) if prompt_path else DEFAULT_REVIEW_PROMPT,
+        label="复核 prompt",
+        error_cls=RuntimeError,
+    )
     rendered = render_template(
         template,
         {
@@ -506,30 +516,19 @@ def _score_value(value: float | None) -> float:
 
 
 def parse_json_object(text: str) -> dict | None:
-    value = (text or "").lstrip("﻿").strip()
-    if "```" in value:
-        blocks = re.findall(r"```(?:json)?\s*(.*?)```", value, re.DOTALL | re.IGNORECASE)
-        if blocks:
-            value = blocks[0].strip()
+    value = strip_json_noise(text)
 
-    data = _try_json(value)
+    data = try_json(value)
     if isinstance(data, dict):
         return data
 
     start = value.find("{")
     end = value.rfind("}")
     if start != -1 and end > start:
-        data = _try_json(value[start : end + 1])
+        data = try_json(value[start : end + 1])
         if isinstance(data, dict):
             return data
     return None
-
-
-def _try_json(text: str):
-    try:
-        return json.loads(text)
-    except (TypeError, ValueError):
-        return None
 
 
 def _to_score(value) -> float | None:
@@ -570,10 +569,3 @@ def _parse_content_score(
     else:
         level = "low"
     return ContentScore(score=score, level=level, reason=reason)
-
-
-def _read_prompt(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8")
-    except OSError as exc:
-        raise RuntimeError(f"无法读取复核 prompt：{path}：{exc}") from exc

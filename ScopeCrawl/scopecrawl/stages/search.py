@@ -80,20 +80,6 @@ class SearchStage:
                         keywords[index],
                         len(response.results),
                     )
-                except SearchError as exc:
-                    failed += 1
-                    logger.warning(
-                        "[检索] 失败 %d/%d：%s（%s）", done, len(requests), keywords[index], exc
-                    )
-                    self.summary.failures.append(
-                        Failure(
-                            stage="search",
-                            error_type="search_error",
-                            message=f"{keywords[index]}：{exc}",
-                        )
-                    )
-                    if exc.status_code == 400:
-                        fatal_400 = True
                 except Exception as exc:  # noqa: BLE001
                     failed += 1
                     logger.warning(
@@ -106,6 +92,8 @@ class SearchStage:
                             message=f"{keywords[index]}：{exc}",
                         )
                     )
+                    if isinstance(exc, SearchError) and exc.status_code == 400:
+                        fatal_400 = True
 
         succeeded = sum(1 for response in responses if response is not None)
         logger.info("[检索] 结束：成功 %d 条查询，失败 %d 条", succeeded, failed)

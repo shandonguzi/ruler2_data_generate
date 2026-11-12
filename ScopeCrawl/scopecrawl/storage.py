@@ -1,4 +1,4 @@
-"""run_id、目录创建与 Markdown / metadata.json 落盘。"""
+"""run_id、目录创建与 Markdown / metadata.jsonl 落盘。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from .models import Document, RunInput
 from .utils import make_doc_id, normalize_url
 
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "data"
-METADATA_FILENAME = "metadata.json"
+METADATA_FILENAME = "metadata.jsonl"
 _INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f\x7f]')
 _MAX_FILENAME_BYTES = 180
 
@@ -87,8 +87,21 @@ class RunWriter:
         self._ids: dict[str, str] = {}
         self._filenames: set[str] = set()
         self._paths: dict[str, Path] = {}
-        self._metadata: dict[str, dict[str, Any]] = {}
+        self._recorded: set[str] = set()
         self.run_id, self.run_dir = self._create_run_dir()
+        self._metadata_path = self.run_dir / METADATA_FILENAME
+        self._append_metadata(
+            {
+                "type": "run",
+                "run_id": self.run_id,
+                "s3": self.run.s3,
+                "s4": self.run.s4,
+                "location": self.run.location,
+                "language": self.run.language,
+                "time_range": self.run.time_range,
+                "generated_at": self._generated_at,
+            }
+        )
 
     def _create_run_dir(self) -> tuple[str, Path]:
         now = self._clock()
@@ -144,27 +157,18 @@ class RunWriter:
             path = existing
         _atomic_write(path, body)
 
-        record = build_metadata(document)
-        record["file"] = path.name
-        self._metadata[doc_id] = record
-        self._write_metadata()
+        if doc_id not in self._recorded:
+            self._recorded.add(doc_id)
+            record = build_metadata(document)
+            record["file"] = path.name
+            self._append_metadata({"type": "document", **record})
         return path
 
-    def _write_metadata(self) -> None:
-        payload = {
-            "run_id": self.run_id,
-            "s3": self.run.s3,
-            "s4": self.run.s4,
-            "location": self.run.location,
-            "language": self.run.language,
-            "time_range": self.run.time_range,
-            "generated_at": self._generated_at,
-            "documents": list(self._metadata.values()),
-        }
-        _atomic_write(
-            self.run_dir / METADATA_FILENAME,
-            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        )
+    def _append_metadata(self, record: dict[str, Any]) -> None:
+        """追加一行 JSON；单次 write 避免行内容与其他写入交叉。"""
+        line = json.dumps(record, ensure_ascii=False) + "\n"
+        with self._metadata_path.open("a", encoding="utf-8") as handle:
+            handle.write(line)
 
     def write_all(self, documents: list[Document]) -> list[Path]:
         return [self.write(document) for document in documents]

@@ -9,12 +9,12 @@ from ..config import load_authority
 from ..evaluate import DomainFilter
 from ..history import UrlHistory
 from ..models import DomainAssessment, SearchResponse, Settings, UrlTask
-from ..summary import PREFILTER_LABELS, RunSummary
+from ..summary import PREFILTER_LABELS, RunSummary, format_counts
 from ..utils import (
+    build_url_task,
     dedupe_results,
     index_url_reason,
     interleave_by_query,
-    normalize_url,
     url_host,
 )
 from .log import log_stage
@@ -77,20 +77,13 @@ class UrlFilterStage:
             )
         else:
             tasks = [
-                UrlTask(
-                    url=result.url,
-                    normalized_url=normalize_url(
-                        result.url,
-                        merge_www=dedupe.merge_www,
-                        strip_tracking=dedupe.strip_tracking_params,
-                    ),
-                    matched_queries=[query],
-                    best_rank=result.rank,
-                    first_query_index=query_index,
+                build_url_task(
+                    query_index,
+                    query,
+                    result,
                     provider=provider,
-                    title=result.title,
-                    snippet=result.snippet,
-                    published_at=result.published_at,
+                    merge_www=dedupe.merge_www,
+                    strip_tracking=dedupe.strip_tracking_params,
                 )
                 for query_index, query, result in pairs
             ]
@@ -137,10 +130,7 @@ class UrlFilterStage:
             self.summary.prefiltered_urls += 1
             self.summary.prefilter_reasons[reason] += 1
             logger.debug("[URL 筛选] 粗筛丢弃：%s（%s）", task.url, reason)
-        detail = "、".join(
-            f"{PREFILTER_LABELS.get(reason, reason)} {count}"
-            for reason, count in self.summary.prefilter_reasons.most_common()
-        )
+        detail = format_counts(self.summary.prefilter_reasons, PREFILTER_LABELS)
         logger.info(
             "[URL 筛选] 粗筛结束：保留 %d 个，丢弃 %d 个%s",
             len(kept),

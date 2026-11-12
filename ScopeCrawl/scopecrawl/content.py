@@ -18,6 +18,8 @@ from .utils import (
     RateLimiter,
     make_doc_id,
     normalize_url,
+    response_body,
+    retry_after,
     to_iso,
     url_host,
     utc_now,
@@ -244,7 +246,13 @@ class TavilyExtractor:
         except ExtractError as exc:
             if exc.fatal:
                 raise
-            return _failure_outcomes(urls, exc)
+            return failure_outcomes(
+                urls,
+                exc.error_type,
+                exc.message,
+                fatal=exc.fatal,
+                failed=exc.failed,
+            )
         return self._map_results(urls, data)
 
     def _post(self, payload: dict) -> dict:
@@ -289,7 +297,7 @@ class TavilyExtractor:
             if status == 400:
                 raise ExtractError(
                     "invalid_batch",
-                    f"提取参数错误：{_body(response)[:200]}",
+                    f"提取参数错误：{response_body(response)[:200]}",
                     status_code=status,
                     failed=_failed_from_response(response),
                 )
@@ -303,14 +311,16 @@ class TavilyExtractor:
                 )
             if status == 429 or status >= 500:
                 if attempt < cfg.max_retries:
-                    self._sleep(_retry_after(response, default=2**attempt))
+                    self._sleep(retry_after(response, default=2**attempt))
                     attempt += 1
                     continue
                 raise ExtractError(
-                    "service_error", f"服务端错误：{_body(response)[:200]}", status_code=status
+                    "service_error",
+                    f"服务端错误：{response_body(response)[:200]}",
+                    status_code=status,
                 )
             raise ExtractError(
-                "http_error", f"HTTP {status}：{_body(response)[:200]}", status_code=status
+                "http_error", f"HTTP {status}：{response_body(response)[:200]}", status_code=status
             )
 
     def _map_results(self, urls: list[str], data: dict) -> list[ExtractedContent]:
@@ -582,20 +592,26 @@ def build_extracted_doc(
     )
 
 
-def _failure_outcomes(urls: list[str], exc: ExtractError) -> list[ExtractedContent]:
-    failed = {url: error for url, error in exc.failed}
-    outcomes: list[ExtractedContent] = []
-    for url in urls:
-        outcomes.append(
-            ExtractedContent(
-                url=url,
-                final_url=url,
-                error_type=exc.error_type,
-                error=failed.get(url, exc.message),
-                fatal=exc.fatal,
-            )
+def failure_outcomes(
+    urls: list[str],
+    error_type: str,
+    message: str,
+    *,
+    fatal: bool = False,
+    failed: list[tuple[str, str]] | None = None,
+) -> list[ExtractedContent]:
+    """把一组 URL 统一包装成失败结果，可按 URL 覆盖错误信息。"""
+    per_url = dict(failed or ())
+    return [
+        ExtractedContent(
+            url=url,
+            final_url=url,
+            error_type=error_type,
+            error=per_url.get(url, message),
+            fatal=fatal,
         )
-    return outcomes
+        for url in urls
+    ]
 
 
 def _valid_payload(data: object) -> bool:
@@ -627,23 +643,6 @@ def _failed_from_response(response: httpx.Response) -> list[tuple[str, str]]:
         if url:
             failed.append((url, str(item.get("error") or "URL 未通过校验")))
     return failed
-
-
-def _retry_after(response: httpx.Response, *, default: float) -> float:
-    value = response.headers.get("retry-after")
-    if not value:
-        return default
-    try:
-        return min(float(value), 30.0)
-    except ValueError:
-        return default
-
-
-def _body(response: httpx.Response) -> str:
-    try:
-        return response.text[:300]
-    except Exception:  # noqa: BLE001
-        return ""
 
 
 def _is_http_url(value: str) -> bool:
