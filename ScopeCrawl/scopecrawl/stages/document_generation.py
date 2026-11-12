@@ -7,8 +7,8 @@ from pathlib import Path
 
 from ..models import Document, Failure
 from ..storage import RunWriter
-from ..summary import RunSummary
-from .log import log_stage
+from ..summary import DocumentStats
+from ..utils import log_stage
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +16,14 @@ logger = logging.getLogger(__name__)
 class DocumentGenerationStage:
     """把保留的文档写成 Markdown，并追加维护 metadata.jsonl。"""
 
-    def __init__(self, writer: RunWriter, summary: RunSummary) -> None:
+    def __init__(self, writer: RunWriter) -> None:
         self.writer = writer
-        self.summary = summary
 
-    def run(self, documents: list[Document]) -> None:
+    def run(self, documents: list[Document]) -> DocumentStats:
         log_stage("生成文档")
-        written: set[Path] = set()
+        stats = DocumentStats()
+        # 同一 doc_id 重复写会复用同一路径，documents 表示唯一输出文件数。
+        written_paths: set[Path] = set()
         total = len(documents)
         logger.info("[生成文档] 开始写入 %d 篇文档到 %s", total, self.writer.run_dir)
         for index, document in enumerate(documents, 1):
@@ -36,7 +37,7 @@ class DocumentGenerationStage:
                     document.extracted.url,
                     exc,
                 )
-                self.summary.failures.append(
+                stats.failures.append(
                     Failure(
                         stage="write",
                         url=document.extracted.url,
@@ -45,7 +46,8 @@ class DocumentGenerationStage:
                     )
                 )
             else:
-                written.add(path)
+                written_paths.add(path)
                 logger.info("[生成文档] %d/%d：%s", index, total, path.name)
-        self.summary.documents = len(written)
-        logger.info("[生成文档] 结束：写入 %d 篇文档", self.summary.documents)
+        stats.documents = len(written_paths)
+        logger.info("[生成文档] 结束：写入 %d 篇文档", stats.documents)
+        return stats

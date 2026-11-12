@@ -13,6 +13,31 @@ FailureStage = Literal[
     "keyword", "search", "extract", "quality", "review", "authority", "write"
 ]
 
+STAGE_LABELS: dict[FailureStage, str] = {
+    "keyword": "关键词生成",
+    "search": "检索",
+    "extract": "提取清洗",
+    "quality": "质量",
+    "review": "内容复核",
+    "authority": "权威度评估",
+    "write": "生成文档",
+}
+
+# 语言标识的两套映射：prompt 展示名与搜索接口语言码，集中维护避免多处漂移。
+LANGUAGE_NAMES: dict[Language, str] = {
+    "zh": "Simplified Chinese",
+    "en": "English",
+    "ar": "Modern Standard Arabic",
+    "ar-EG": "Egyptian Arabic",
+}
+
+LANGUAGE_CODES: dict[Language, str] = {
+    "zh": "zh-cn",
+    "en": "en",
+    "ar": "ar",
+    "ar-EG": "ar",
+}
+
 
 class Model(BaseModel):
     """项目内模型基类：拒绝未知字段，避免配置拼写错误被静默忽略。"""
@@ -75,7 +100,8 @@ class PrefilterSettings(Model):
 
 
 class SearchSettings(Model):
-    provider: str = "tavily"
+    provider: Literal["tavily"] = "tavily"
+    concurrency: int = Field(8, ge=1, le=32)
     defaults: SearchDefaults = Field(default_factory=SearchDefaults)
     dedupe: DedupeSettings = Field(default_factory=DedupeSettings)
     prefilter: PrefilterSettings = Field(default_factory=PrefilterSettings)
@@ -89,7 +115,7 @@ class ExtractSettings(Model):
     batch_size: int = Field(20, ge=1, le=20)
     concurrency: int = Field(2, ge=1, le=32)
     rate_limit_qps: float = Field(2, gt=0)
-    timeout_seconds: float = Field(60, gt=0, le=60)
+    timeout_seconds: float = Field(60, ge=1, le=60)
     max_retries: int = Field(3, ge=0, le=10)
     min_chars: int = Field(800, ge=1)
     min_paragraphs: int = Field(3, ge=0)
@@ -148,11 +174,9 @@ class AuthorityDomainSettings(Model):
 
 
 class PageWeights(Model):
-    author: float = 0.25
     published_at: float = 0.20
     content_length: float = 0.20
     citations: float = 0.20
-    structured_data: float = 0.15
 
 
 class AuthorityPageSettings(Model):
@@ -211,32 +235,23 @@ class SearchRequest(Model):
     query: str
     language: Language
     country: str | None = None
-    location: str | None = None
     max_results: int = Field(10, ge=1, le=20)
     time_range: TimeRange | None = None
-    include_domains: list[str] | None = None
-    exclude_domains: list[str] | None = None
     provider_options: dict[str, Any] = Field(default_factory=dict)
 
 
 class SearchResult(Model):
     url: str
     title: str = ""
-    snippet: str = ""
     rank: int
     score: float | None = None
-    domain: str = ""
     published_at: str | None = None
-    raw: dict[str, Any] | None = None
 
 
 class SearchResponse(Model):
     query: str
-    provider: str
     results: list[SearchResult] = Field(default_factory=list)
-    raw: dict[str, Any] = Field(default_factory=dict)
     latency_ms: int = 0
-    request_id: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -267,6 +282,7 @@ class ExtractedDoc(Model):
     fetched_at: str
     lang: str | None = None
     markdown: str
+    plain_chars: int
     matched_queries: list[str] = Field(default_factory=list)
     has_jsonld: bool = False
     outbound_links: int = 0
@@ -353,9 +369,6 @@ class UrlTask:
     url: str
     normalized_url: str
     matched_queries: list[str] = field(default_factory=list)
-    best_rank: int = 0
     first_query_index: int = 0
-    provider: str = "tavily"
     title: str = ""
-    snippet: str = ""
     published_at: str | None = None

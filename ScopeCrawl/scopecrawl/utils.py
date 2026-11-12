@@ -4,18 +4,45 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 import threading
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qsl, unquote, urlencode, urlsplit
 
 import httpx
 
 from .models import SearchResult, UrlTask
+
+logger = logging.getLogger(__name__)
+
+
+def log_stage(name: str) -> None:
+    """在控制台打印显著分隔行，标记一个新阶段的开始。"""
+    logger.info("================ %s ================", name)
+
+
+def iter_concurrent(
+    items: Iterable[Any],
+    fn: Callable[[Any], Any],
+    max_workers: int,
+) -> Iterator[tuple[int, Future[Any]]]:
+    """并发执行 fn(item)，按完成顺序产出 (index, future)；异常由调用方处理。"""
+    values = list(items)
+    if not values:
+        return
+    workers = min(max(1, max_workers), len(values))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(fn, value): index for index, value in enumerate(values)}
+        for future in as_completed(futures):
+            yield futures[future], future
+
 
 TRACKING_PARAMS = {
     "gclid",
@@ -83,11 +110,6 @@ SEARCH_QUERY_KEYS = {"q", "wd", "keyword", "keywords", "search", "page", "pn"}
 _LIST_SEGMENT_RE = re.compile(
     r"(?:^|_)(?:list|index|channel|column|category|archive)(?:\.[a-z0-9]+)?$"
 )
-
-
-def is_index_url(url: str) -> bool:
-    """确定性判断首页/栏目/列表/搜索页；解析失败或无法判断时保留。"""
-    return index_url_reason(url) is not None
 
 
 def index_url_reason(url: str) -> str | None:
@@ -203,7 +225,6 @@ def build_url_task(
     query: str,
     result: SearchResult,
     *,
-    provider: str = "tavily",
     merge_www: bool = False,
     strip_tracking: bool = True,
 ) -> UrlTask:
@@ -214,11 +235,8 @@ def build_url_task(
             result.url, merge_www=merge_www, strip_tracking=strip_tracking
         ),
         matched_queries=[query],
-        best_rank=result.rank,
         first_query_index=query_index,
-        provider=provider,
         title=result.title,
-        snippet=result.snippet,
         published_at=result.published_at,
     )
 
@@ -226,10 +244,8 @@ def build_url_task(
 def dedupe_results(
     items: Iterable[tuple[int, str, SearchResult]],
     *,
-    provider: str = "tavily",
     merge_www: bool = False,
     strip_tracking: bool = True,
-    max_urls: int | None = None,
 ) -> list[UrlTask]:
     """合并多个关键词的搜索结果，按首次出现顺序去重。
 
@@ -243,7 +259,6 @@ def dedupe_results(
             query_index,
             query,
             result,
-            provider=provider,
             merge_www=merge_www,
             strip_tracking=strip_tracking,
         )
@@ -257,18 +272,12 @@ def dedupe_results(
             continue
         if query not in task.matched_queries:
             task.matched_queries.append(query)
-        task.best_rank = min(task.best_rank, result.rank)
         if not task.title and result.title:
             task.title = result.title
-        if not task.snippet and result.snippet:
-            task.snippet = result.snippet
         if not task.published_at and result.published_at:
             task.published_at = result.published_at
 
-    tasks = [seen[key] for key in order]
-    if max_urls is not None:
-        tasks = tasks[:max_urls]
-    return tasks
+    return [seen[key] for key in order]
 
 
 def interleave_by_query(tasks: list[UrlTask], max_urls: int) -> list[UrlTask]:

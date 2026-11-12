@@ -9,7 +9,7 @@ from scopecrawl.utils import (
     dedupe_results,
     index_url_reason,
     interleave_by_query,
-    is_index_url,
+    iter_concurrent,
     make_doc_id,
     normalize_url,
     to_iso,
@@ -50,7 +50,6 @@ def test_dedupe_results_merges_queries_and_keeps_order():
                 url="http://a.com/1/#x",
                 rank=1,
                 title="补标题",
-                snippet="补摘要",
                 published_at="2026-11-01T00:00:00+00:00",
             ),
         ),
@@ -59,17 +58,19 @@ def test_dedupe_results_merges_queries_and_keeps_order():
     tasks = dedupe_results(items)
     assert [task.normalized_url for task in tasks] == ["a.com/1", "b.com/1", "c.com/1"]
     assert tasks[0].matched_queries == ["q1", "q2"]
-    assert tasks[0].best_rank == 1
     assert tasks[0].first_query_index == 0
     assert tasks[0].title == "补标题"
-    assert tasks[0].snippet == "补摘要"
     assert tasks[0].published_at == "2026-11-01T00:00:00+00:00"
     assert tasks[1].matched_queries == ["q1"]
 
 
-def test_dedupe_results_respects_max_urls():
-    items = [(0, "q", SearchResult(url=f"https://a.com/{i}", rank=i + 1)) for i in range(5)]
-    assert len(dedupe_results(items, max_urls=2)) == 2
+def test_iter_concurrent_returns_index_and_future():
+    pairs = list(iter_concurrent([3, 1, 2], lambda value: value * 2, 2))
+    assert sorted((index, future.result()) for index, future in pairs) == [
+        (0, 6),
+        (1, 2),
+        (2, 4),
+    ]
 
 
 def test_interleave_by_query_rotates_across_queries():
@@ -119,8 +120,8 @@ def test_to_iso_handles_naive_iso_and_rfc2822():
         "https://example.com/article_list",
     ],
 )
-def test_is_index_url_drops_portal_pages(url):
-    assert is_index_url(url) is True
+def test_index_url_reason_drops_portal_pages(url):
+    assert index_url_reason(url) is not None
 
 
 @pytest.mark.parametrize(
@@ -138,11 +139,11 @@ def test_is_index_url_drops_portal_pages(url):
         "http://[bad",
     ],
 )
-def test_is_index_url_keeps_articles(url):
-    assert is_index_url(url) is False
+def test_index_url_reason_keeps_articles(url):
+    assert index_url_reason(url) is None
 
 
-def test_is_index_url_keeps_wordpress_p_parameter():
-    assert is_index_url("https://example.com/2026/11/post?p=123") is False
+def test_index_url_reason_keeps_wordpress_p_parameter():
+    assert index_url_reason("https://example.com/2026/11/post?p=123") is None
     assert index_url_reason("https://example.com/tag/foo") == "category_page"
     assert index_url_reason("https://example.com/2026/11/article") is None

@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING, Any
 from ..keywords import KeywordError, generate_keywords
 from ..models import Failure, Settings
 from ..scenarios import find_coverage_points
-from ..summary import RunSummary
-from .log import log_stage
+from ..summary import KeywordStats, StageAborted
+from ..utils import log_stage
 
 if TYPE_CHECKING:
     from ..llm import LLMClient
@@ -27,18 +27,17 @@ class KeywordGenerationStage:
         settings: Settings,
         llm: LLMClient,
         scenarios: Mapping[str, Any],
-        summary: RunSummary,
         *,
         prompt_path: Path | None = None,
     ) -> None:
         self.settings = settings
         self.llm = llm
         self.scenarios = scenarios
-        self.summary = summary
         self.prompt_path = prompt_path
 
-    def run(self) -> list[str] | None:
+    def run(self) -> tuple[list[str], KeywordStats]:
         log_stage("关键词生成")
+        stats = KeywordStats()
         run = self.settings.run
         coverage_points = find_coverage_points(self.scenarios, run.s3, run.s4)
         if coverage_points is None:
@@ -65,11 +64,11 @@ class KeywordGenerationStage:
             )
         except KeywordError as exc:
             logger.error("关键词生成失败：%s", exc)
-            self.summary.failures.append(
+            stats.failures.append(
                 Failure(stage="keyword", error_type="keyword_error", message=str(exc))
             )
-            return None
+            raise StageAborted("keyword", stats) from exc
 
         logger.info("[关键词生成] 生成 %d 条：%s", len(keywords), " | ".join(keywords))
-        self.summary.keywords = keywords
-        return keywords
+        stats.keywords = keywords
+        return keywords, stats

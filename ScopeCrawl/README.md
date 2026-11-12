@@ -104,6 +104,7 @@ config/.history.json
 - Markdown 文件名取页面标题，非法字符替换为 `_`，超长截断，重名追加序号；文件内容只保留清洗后的正文 Markdown。
 - `metadata.jsonl` 为 JSON Lines：首行记录本次运行的 S3/S4、地点、语言、时间范围（`type` 为 `run`），之后每篇文档追加一行（`type` 为 `document`），记录文件名、`doc_id`、URL、匹配查询、相关性与内容/权威度评分、评估结论等；可按行读取，例如 `pd.read_json(path, lines=True)` 或逐行 `json.loads`。
 - `config/.history.json` 为跨运行 URL 历史表，全场景共享，供下次运行跳过已处理 URL。
+- 输出目录、历史表、场景表与提示词的显式相对路径统一以项目根目录为基准解析。
 
 ## 配置
 

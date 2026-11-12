@@ -5,7 +5,7 @@ import copy
 import pytest
 import yaml
 
-from scopecrawl.config import ConfigError, load_authority, load_settings
+from scopecrawl.config import ConfigError, load_authority, load_settings, resolve_path
 from tests.conftest import yaml_config
 
 
@@ -213,6 +213,26 @@ def test_load_settings_rejects_bad_extract_settings(tmp_path):
     data["extract"]["provider"] = "other"
     with pytest.raises(ConfigError):
         load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+
+    data = yaml_config()
+    data["extract"]["timeout_seconds"] = 0.5
+    with pytest.raises(ConfigError, match="timeout_seconds"):
+        load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+
+    data = yaml_config()
+    data["search"]["provider"] = "other"
+    with pytest.raises(ConfigError, match="provider"):
+        load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+
+    data = yaml_config()
+    data["search"]["concurrency"] = 0
+    with pytest.raises(ConfigError, match="concurrency"):
+        load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+
+
+def test_resolve_path_anchors_relative_to_root(tmp_path):
+    assert resolve_path(tmp_path / "a") == tmp_path / "a"
+    assert resolve_path("a", root=tmp_path) == tmp_path / "a"
 
 
 def test_load_settings_accepts_content_and_unevaluated_keys(tmp_path):

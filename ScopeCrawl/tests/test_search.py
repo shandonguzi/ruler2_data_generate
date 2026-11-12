@@ -58,10 +58,7 @@ def test_search_sends_required_language_parameters():
     assert route.calls[0].request.headers["authorization"] == "Bearer tvly-test"
 
     assert response.results[0].rank == 1
-    assert response.results[0].domain == "example.com"
-    assert response.results[0].snippet == "snippet"
     assert response.results[0].published_at == "2026-11-10T12:00:00+00:00"
-    assert response.request_id == "req-1"
 
 
 @pytest.mark.parametrize(

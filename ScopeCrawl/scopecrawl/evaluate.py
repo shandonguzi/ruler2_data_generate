@@ -7,8 +7,8 @@ from collections import Counter
 from pathlib import Path
 
 from .config import PROJECT_ROOT
-from .content import plain_length
 from .models import (
+    LANGUAGE_NAMES,
     AuthorityLists,
     AuthorityResult,
     AuthoritySettings,
@@ -38,13 +38,6 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_REVIEW_PROMPT = PROJECT_ROOT / "prompts" / "review.md"
-
-LANGUAGE_NAMES = {
-    "zh": "Simplified Chinese",
-    "en": "English",
-    "ar": "Modern Standard Arabic",
-    "ar-EG": "Egyptian Arabic",
-}
 
 ALLOWED_FLAGS = {
     "off_topic",
@@ -167,10 +160,9 @@ def assess_page(
     extract_settings: ExtractSettings,
 ) -> PageAssessment:
     weights = settings.page.weights
-    content_length = plain_length(doc.markdown)
+    content_length = doc.plain_chars
     min_chars = extract_settings.min_chars
 
-    author = 1.0 if doc.author else 0.0
     published = 1.0 if doc.published_at else 0.0
 
     if content_length >= 1000:
@@ -188,8 +180,6 @@ def assess_page(
         citations = 0.5
     else:
         citations = 0.0
-
-    structured = 1.0 if doc.has_jsonld else 0.0
 
     ratio = doc.outbound_text_ratio
     if ratio > 0.5:
@@ -228,16 +218,23 @@ def assess_page(
         url=doc.url,
         page_score=round(score, 4),
         signals={
-            "author": author,
             "published_at": published,
             "content_length": length_score,
             "citations": citations,
-            "structured_data": structured,
             "ad_penalty": ad_penalty,
         },
         quality_flags=flags,
         reasons=reasons,
         assessed_at=to_iso(utc_now()) or "",
+    )
+
+
+def load_review_prompt(prompt_path: str | Path | None = None) -> str:
+    """读取复核 prompt；阶段可在并发前调用一次后复用。"""
+    return read_prompt(
+        Path(prompt_path) if prompt_path else DEFAULT_REVIEW_PROMPT,
+        label="复核 prompt",
+        error_cls=RuntimeError,
     )
 
 
@@ -248,6 +245,7 @@ def review_content(
     settings: ReviewSettings,
     *,
     prompt_path: str | Path | None = None,
+    template: str | None = None,
 ) -> DocumentEvaluation:
     model = getattr(client, "model_name", None)
     reviewed_at = to_iso(utc_now())
@@ -268,11 +266,8 @@ def review_content(
             )
         )
 
-    template = read_prompt(
-        Path(prompt_path) if prompt_path else DEFAULT_REVIEW_PROMPT,
-        label="复核 prompt",
-        error_cls=RuntimeError,
-    )
+    if template is None:
+        template = load_review_prompt(prompt_path)
     rendered = render_template(
         template,
         {
@@ -466,10 +461,10 @@ def apply_diversity(
     settings: DiversitySettings,
 ) -> tuple[list[Document], Counter[str]]:
     """按单 query / 单域名配额做全局同质化限流；返回结果保持原队列顺序。"""
-    if (
-        not settings.enabled
-        or (settings.max_per_query is None and settings.max_per_domain is None)
-    ):
+    if not settings.enabled:
+        logger.info("[评估筛选] 多样性限流已禁用，跳过")
+        return documents, Counter()
+    if settings.max_per_query is None and settings.max_per_domain is None:
         return documents, Counter()
 
     ranked = sorted(

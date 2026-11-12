@@ -2,6 +2,30 @@
 
 ## 2026-11-12
 
+- 调整：`_validate_settings` 只保留 pydantic 无法表达的跨字段校验（s3/s4 非空、阈值排序、权重求和），删除与 `Field`/`Literal` 重复的九组检查；`search.provider` 改为 `Literal["tavily"]`，`extract.timeout_seconds` 改为 `Field(ge=1, le=60)`
+- 调整：`clean_content` 的块 metadata 直接保存构造时的链接占比，`_trim_leading_nav` 不再重复计算 `_link_stats`
+- 优化：乱码检测改为由可读区间拼接的预编译正则计数，保留非 ASCII 样本 <200 短路与忽略空白语义
+- 修复：阶段致命错误改用 `StageAborted` 异常向上传递，`Pipeline.run` 单点捕获并合并失败记录，替代三处 `None` 哨兵
+- 调整：搜索 provider 不再回退 `search.defaults.country`，国家码统一由 `SearchStage` 解析后传入
+- 调整：新增 `config.resolve_path`，`Pipeline` 的 output/history/scenarios/prompt 相对路径统一以 `project_root` 为基准
+- 移除：`SearchRequest.location/include_domains/exclude_domains`、`SearchResult.domain/raw/snippet`、`SearchResponse.raw/request_id/provider`、`UrlTask.provider/best_rank/snippet` 等只写字段
+- 调整：`dedupe_results` 删除未被生产调用的 `max_urls` 参数与内部截断，截断继续由 `interleave_by_query` 完成
+- 调整：删除 `PageWeights.author/structured_data` 及配置项，页面分只用 published_at/content_length/citations 重归一化；移除 page weights 求和校验
+- 调整：`DocumentGenerationStage` 按唯一输出路径计数，`written` 重命名为 `written_paths` 并补充语义注释
+- 文档：修正 `history.py` 顶部 docstring，历史表记录进入预筛队列的 URL，而非仅成功写盘的文档
+- 重构：`STAGE_LABELS` 移至 `models.py` 紧邻 `FailureStage`，新增键集合同步测试
+- 新增：`utils.iter_concurrent` 统一三处并发模板；新增 `search.concurrency`（默认 8，范围 1–32）
+- 重构：各阶段返回独立 stats 对象并由 `Pipeline` 合并到 `RunSummary`，阶段不再直接持有共享汇总对象
+- 重构：多样性限流从 `EvaluateStage` 拆为 `DiversityStage`，在评估后、写盘前调用，日志前缀与阶段数保持不变
+- 调整：`log_stage` 从 `stages/log.py` 移入 `utils.py`，删除单行包装模块
+- 新增：`ExtractedDoc.plain_chars` 保存清洗结果的正文字符数，`assess_page` 直接复用，不再重算
+- 重构：语言展示名与搜索语言码统一收敛到 `models.LANGUAGE_NAMES` / `models.LANGUAGE_CODES`，`keywords`、`evaluate`、`search` 不再各自维护映射
+- 调整：`RunSummary` 的粗筛、质量、评估、多样性丢弃篇数改为由原因 `Counter` 求和得到，移除四份独立计数字段
+- 调整：复核 prompt 在评估阶段开始时读取一次并复用到所有文档，不再逐篇读文件；读取失败仍按逐篇复核失败记录
+- 调整：`apply_diversity` 统一处理 `diversity.enabled`，评估阶段不再重复判断；`authority.enabled` 只在域名预筛判断一次，缺失评估的回退文案由 `combine_authority` 统一生成
+- 移除：失效代码 `utils.is_index_url`、`config.entries_to_text`、`storage.RunWriter.write_all`、`content._TABLE_RE` 与评估阶段冗余的 `page = None`
+- 调整：`json.loads` 异常捕获只保留 `ValueError`（`JSONDecodeError` 为其子类），删除 `search`、`content` 中不再使用的 `json` 导入
+- 修复：新建运行目录内的文件名分配不再做必然为假的 `exists()` 检查
 - 调整：运行元数据由 `metadata.json` 改为 `metadata.jsonl`，首行写入 run 信息（`type=run`），之后每篇文档追加一行（`type=document`），避免每写一篇就全量重写，写入量从 O(n²) 降为 O(n)；同一 `doc_id` 重复写入不再追加重复记录
 - 调整：`RunWriter` 改为追加写，`storage` 文档字符串、阶段 docstring、README 与相关测试同步为 JSONL 读取方式
 - 重构：抽出共享工具 `utils.format_counts`、`utils.strip_json_noise` / `try_json` / `read_prompt`、`utils.retry_after` / `response_body`、`utils.build_url_task`，消除 `summary` 与各阶段、`keywords` 与 `evaluate`、`search` 与 `content`、`url_filter` 与 `dedupe_results` 之间的重复实现

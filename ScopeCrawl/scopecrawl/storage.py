@@ -129,7 +129,7 @@ class RunWriter:
         index = 1
         while True:
             filename = f"{candidate}.md"
-            if filename not in self._filenames and not (self.run_dir / filename).exists():
+            if filename not in self._filenames:
                 self._filenames.add(filename)
                 return filename
             candidate = f"{base}({index})"
@@ -169,9 +169,6 @@ class RunWriter:
         line = json.dumps(record, ensure_ascii=False) + "\n"
         with self._metadata_path.open("a", encoding="utf-8") as handle:
             handle.write(line)
-
-    def write_all(self, documents: list[Document]) -> list[Path]:
-        return [self.write(document) for document in documents]
 
 
 def _atomic_write(path: Path, text: str) -> None:

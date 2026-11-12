@@ -33,6 +33,7 @@ def make_document(
             fetched_at="2026-11-10T00:00:00+00:00",
             lang="zh",
             markdown="# 正文\n\n这是一段中文内容。",
+            plain_chars=10,
             matched_queries=["埃及 沙尘暴"],
             has_jsonld=True,
             outbound_links=2,

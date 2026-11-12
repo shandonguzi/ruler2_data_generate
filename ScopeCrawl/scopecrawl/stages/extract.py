@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ..content import (
     ExtractError,
@@ -22,9 +21,8 @@ from ..models import (
     Settings,
     UrlTask,
 )
-from ..summary import RunSummary
-from ..utils import domain_matches, url_host
-from .log import log_stage
+from ..summary import ExtractStats, StageAborted
+from ..utils import domain_matches, iter_concurrent, log_stage, url_host
 
 logger = logging.getLogger(__name__)
 
@@ -36,16 +34,15 @@ class ExtractStage:
         self,
         settings: Settings,
         extractor: TavilyExtractor,
-        summary: RunSummary,
     ) -> None:
         self.settings = settings
         self.extractor = extractor
-        self.summary = summary
 
     def run(
         self, candidates: list[tuple[UrlTask, DomainAssessment | None]]
-    ) -> list[tuple[ExtractedDoc, DomainAssessment | None]] | None:
+    ) -> tuple[list[tuple[ExtractedDoc, DomainAssessment | None]], ExtractStats]:
         log_stage("提取清洗")
+        stats = ExtractStats()
         tasks: list[tuple[UrlTask, DomainAssessment | None]] = []
         skipped = 0
         for task, domain in candidates:
@@ -59,7 +56,7 @@ class ExtractStage:
             logger.info("[提取清洗] 跳过不支持的域名 %d 个", skipped)
         if not tasks:
             logger.info("[提取清洗] 结束：没有可提取的 URL")
-            return []
+            return [], stats
 
         total = len(tasks)
         batch_size = self.settings.extract.batch_size
@@ -82,52 +79,48 @@ class ExtractStage:
         fatal_error: ExtractError | None = None
         done = 0
 
-        with ThreadPoolExecutor(max_workers=min(concurrency, len(batches))) as executor:
-            futures = {
-                executor.submit(self.extractor.extract_batch, batch): index
-                for index, batch in enumerate(batches)
-            }
-            for future in as_completed(futures):
-                index = futures[future]
-                batch = batches[index]
-                offset = offsets[index]
-                done += 1
-                try:
-                    results = future.result()
-                except ExtractError as exc:
-                    if exc.fatal:
-                        fatal = True
-                        fatal_error = exc
-                        logger.error(
-                            "[提取清洗] 批次 %d/%d 致命错误：%s", done, len(batches), exc
-                        )
-                    else:
-                        logger.warning(
-                            "[提取清洗] 批次 %d/%d 失败：%s", done, len(batches), exc
-                        )
-                    outcomes[offset : offset + len(batch)] = failure_outcomes(
-                        batch, exc.error_type, exc.message, fatal=exc.fatal
-                    )
-                except Exception as exc:  # noqa: BLE001 - 单批异常不中断其他批次
-                    logger.warning(
-                        "[提取清洗] 批次 %d/%d 异常：%s", done, len(batches), exc
-                    )
-                    outcomes[offset : offset + len(batch)] = failure_outcomes(
-                        batch, "extract_error", str(exc)
+        for index, future in iter_concurrent(
+            batches, self.extractor.extract_batch, concurrency
+        ):
+            batch = batches[index]
+            offset = offsets[index]
+            done += 1
+            try:
+                results = future.result()
+            except ExtractError as exc:
+                if exc.fatal:
+                    fatal = True
+                    fatal_error = exc
+                    logger.error(
+                        "[提取清洗] 批次 %d/%d 致命错误：%s", done, len(batches), exc
                     )
                 else:
-                    outcomes[offset : offset + len(results)] = results
-                    succeeded = sum(1 for item in results if not item.error_type)
-                    logger.info(
-                        "[提取清洗] 批次 %d/%d：成功 %d，失败 %d",
-                        done,
-                        len(batches),
-                        succeeded,
-                        len(results) - succeeded,
+                    logger.warning(
+                        "[提取清洗] 批次 %d/%d 失败：%s", done, len(batches), exc
                     )
+                outcomes[offset : offset + len(batch)] = failure_outcomes(
+                    batch, exc.error_type, exc.message, fatal=exc.fatal
+                )
+            except Exception as exc:  # noqa: BLE001 - 单批异常不中断其他批次
+                logger.warning(
+                    "[提取清洗] 批次 %d/%d 异常：%s", done, len(batches), exc
+                )
+                outcomes[offset : offset + len(batch)] = failure_outcomes(
+                    batch, "extract_error", str(exc)
+                )
+            else:
+                outcomes[offset : offset + len(results)] = results
+                succeeded = sum(1 for item in results if not item.error_type)
+                logger.info(
+                    "[提取清洗] 批次 %d/%d：成功 %d，失败 %d",
+                    done,
+                    len(batches),
+                    succeeded,
+                    len(results) - succeeded,
+                )
 
         if fatal_error is not None:
-            self.summary.failures.append(
+            stats.failures.append(
                 Failure(
                     stage="extract",
                     error_type=fatal_error.error_type,
@@ -136,7 +129,7 @@ class ExtractStage:
             )
         if fatal:
             logger.error("[提取清洗] 因致命错误终止 run")
-            return None
+            raise StageAborted("extract", stats)
 
         all_infra_failed = bool(outcomes) and all(
             item is not None and item.error_type for item in outcomes
@@ -150,7 +143,7 @@ class ExtractStage:
         }
         if all_infra_failed:
             logger.error("[提取清洗] 所有提取批次均失败，终止 run")
-            return None
+            raise StageAborted("extract", stats)
 
         documents: list[tuple[ExtractedDoc, DomainAssessment | None]] = []
         failures = 0
@@ -171,7 +164,7 @@ class ExtractStage:
                     task.url,
                     outcome.error,
                 )
-                self.summary.failures.append(
+                stats.failures.append(
                     Failure(
                         stage="extract",
                         url=task.url,
@@ -186,8 +179,7 @@ class ExtractStage:
             if quality_error is not None:
                 error_type, message = quality_error
                 quality_dropped += 1
-                self.summary.quality_dropped += 1
-                self.summary.quality_reasons[error_type] += 1
+                stats.quality_reasons[error_type] += 1
                 logger.warning(
                     "[提取清洗] 质量丢弃 %d/%d：%s（%s）",
                     index,
@@ -220,4 +212,4 @@ class ExtractStage:
             failures,
             quality_dropped,
         )
-        return documents
+        return documents, stats

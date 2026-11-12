@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 import time
@@ -13,20 +12,19 @@ from typing import Any
 
 import httpx
 
-from .models import SearchRequest, SearchResponse, SearchResult, SearchSettings
-from .utils import RateLimiter, normalize_url, response_body, retry_after, to_iso, url_host
+from .models import (
+    LANGUAGE_CODES,
+    SearchRequest,
+    SearchResponse,
+    SearchResult,
+    SearchSettings,
+)
+from .utils import RateLimiter, normalize_url, response_body, retry_after, to_iso
 
 logger = logging.getLogger(__name__)
 
 TAVILY_ENDPOINT = "https://api.tavily.com/search"
 TAVILY_MAX_RESULTS = 20
-
-LANGUAGE_MAP = {
-    "zh": "zh-cn",
-    "en": "en",
-    "ar": "ar",
-    "ar-EG": "ar",
-}
 
 COUNTRY_MAP = {
     "CN": "china",
@@ -150,7 +148,6 @@ class TavilyProvider(SearchProvider):
         latency_ms = int((time.monotonic() - started) * 1000)
 
         results = self._map_results(data, request.max_results)
-        request_id = data.get("request_id") if isinstance(data, dict) else None
         logger.info(
             "搜索完成：query=%r results=%d latency=%dms",
             request.query,
@@ -165,11 +162,8 @@ class TavilyProvider(SearchProvider):
             )
         return SearchResponse(
             query=request.query,
-            provider=self.name,
             results=results,
-            raw=data if isinstance(data, dict) else {},
             latency_ms=latency_ms,
-            request_id=request_id,
         )
 
     def _build_payload(self, request: SearchRequest) -> dict[str, Any]:
@@ -180,7 +174,7 @@ class TavilyProvider(SearchProvider):
             "search_depth": cfg.search_depth,
             "topic": cfg.topic,
             "max_results": max_results,
-            "language": LANGUAGE_MAP[request.language],
+            "language": LANGUAGE_CODES[request.language],
             "filter_by_language": True,
             "include_published_date": cfg.include_published_date,
             "filter_by_published_date": cfg.filter_by_published_date,
@@ -192,7 +186,7 @@ class TavilyProvider(SearchProvider):
             "safe_search": cfg.safe_search,
         }
 
-        country_code = request.country or self.settings.defaults.country
+        country_code = request.country
         if country_code and cfg.topic == "general":
             mapped = COUNTRY_MAP.get(country_code.upper())
             if mapped:
@@ -231,7 +225,7 @@ class TavilyProvider(SearchProvider):
             if status == 200:
                 try:
                     data = response.json()
-                except (ValueError, json.JSONDecodeError) as exc:
+                except ValueError as exc:
                     raise SearchError(self.name, status, True, "响应不是合法 JSON") from exc
                 if not isinstance(data, dict):
                     raise SearchError(self.name, status, False, "响应结构异常")
@@ -282,12 +276,9 @@ class TavilyProvider(SearchProvider):
                 SearchResult(
                     url=url,
                     title=str(item.get("title") or ""),
-                    snippet=str(item.get("content") or ""),
                     rank=index + 1,
                     score=float(score) if isinstance(score, (int, float)) else None,
-                    domain=url_host(url),
                     published_at=published_at,
-                    raw=item,
                 )
             )
             if len(results) >= max_results:
@@ -302,8 +293,6 @@ def create_search_provider(
     client: httpx.Client | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> SearchProvider:
-    if settings.provider == "tavily":
-        return TavilyProvider(settings, api_key=api_key, client=client, sleep=sleep)
-    raise SearchError(settings.provider, None, False, "不支持的搜索 provider")
+    return TavilyProvider(settings, api_key=api_key, client=client, sleep=sleep)
 
 

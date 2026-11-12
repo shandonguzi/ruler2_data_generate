@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from scopecrawl.content import plain_length
 from scopecrawl.evaluate import (
     DomainFilter,
     apply_diversity,
@@ -49,6 +50,7 @@ def make_doc(**overrides) -> ExtractedDoc:
         "extractor": "tavily-extract",
     }
     data.update(overrides)
+    data.setdefault("plain_chars", plain_length(data["markdown"]))
     return ExtractedDoc(**data)
 
 
@@ -415,6 +417,7 @@ def _document(
             site=site,
             fetched_at="2026-11-10T00:00:00+00:00",
             markdown="x",
+            plain_chars=1,
             matched_queries=[query],
         ),
         evaluation=DocumentEvaluation(

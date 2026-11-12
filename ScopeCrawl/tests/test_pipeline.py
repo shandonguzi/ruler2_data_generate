@@ -58,6 +58,23 @@ def _run(tmp_path, settings=None, **kwargs):
     return pipeline.run()
 
 
+def test_pipeline_resolves_relative_paths_against_project_root(tmp_path):
+    pipeline = Pipeline(
+        make_settings(),
+        project_root=tmp_path,
+        output_root="out",
+        history_path="data/history.json",
+        scenarios_path="config/scenarios.json",
+        prompt_paths={"review": "prompts/review.md"},
+        llm_client=FakeLLM([]),
+        provider=_provider(),
+        extractor=_extractor(),
+    )
+    assert pipeline.output_root == tmp_path / "out"
+    assert pipeline.history_path == tmp_path / "data/history.json"
+    assert pipeline.prompt_paths["review"] == tmp_path / "prompts/review.md"
+
+
 def _seed_history(tmp_path, urls):
     history = UrlHistory(tmp_path / HISTORY_FILENAME)
     history.record(normalize_url(url) for url in urls)
@@ -147,6 +164,7 @@ def test_pipeline_keyword_failure_returns_1(tmp_path):
     summary, code = _run(tmp_path, llm_client=llm)
     assert code == 1
     assert summary.documents == 0
+    assert len(summary.failures) == 1
     assert summary.failures[0].stage == "keyword"
 
 
@@ -155,6 +173,7 @@ def test_pipeline_search_400_aborts(tmp_path):
     provider = FakeProvider({"关键词一": error, "关键词二": error})
     summary, code = _run(tmp_path, provider=provider)
     assert code == 1
+    assert len(summary.failures) == 2
     assert all(failure.stage == "search" for failure in summary.failures)
     assert summary.documents == 0
 

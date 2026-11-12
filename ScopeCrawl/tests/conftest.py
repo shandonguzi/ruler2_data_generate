@@ -10,7 +10,6 @@ import pytest
 
 from scopecrawl.models import ExtractedContent, SearchResponse, SearchResult, Settings
 from scopecrawl.search import SearchProvider
-from scopecrawl.utils import url_host
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -205,14 +204,12 @@ def make_search_response(query: str, urls: list[str]) -> SearchResponse:
         SearchResult(
             url=url,
             title=f"title {index}",
-            snippet="snippet",
             rank=index + 1,
             score=0.9,
-            domain=url_host(url),
         )
         for index, url in enumerate(urls)
     ]
-    return SearchResponse(query=query, provider="tavily", results=results)
+    return SearchResponse(query=query, results=results)
 
 
 def yaml_config(**overrides) -> dict:

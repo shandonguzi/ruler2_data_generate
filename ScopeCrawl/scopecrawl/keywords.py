@@ -8,19 +8,12 @@ import unicodedata
 from pathlib import Path
 
 from .config import PROJECT_ROOT
-from .models import KeywordsSettings, RunInput
+from .models import LANGUAGE_NAMES, KeywordsSettings, RunInput
 from .utils import read_prompt, render_template, strip_json_noise, try_json
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_PROMPT_PATH = PROJECT_ROOT / "prompts" / "keywords.md"
-
-LANGUAGE_NAMES = {
-    "zh": "Simplified Chinese",
-    "en": "English",
-    "ar": "Modern Standard Arabic",
-    "ar-EG": "Egyptian Arabic",
-}
 
 _PUNCT_RE = re.compile(r"[^\w\s]", re.UNICODE)
 _WHITESPACE_RE = re.compile(r"\s+")

@@ -4,18 +4,9 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, field
+from typing import Any
 
 from .models import Failure
-
-STAGE_LABELS = {
-    "keyword": "关键词生成",
-    "search": "检索",
-    "extract": "提取清洗",
-    "quality": "质量",
-    "review": "内容复核",
-    "authority": "权威度评估",
-    "write": "生成文档",
-}
 
 QUALITY_LABELS = {
     "short_content": "短正文",
@@ -56,16 +47,106 @@ class RunSummary:
     processed_urls: int = 0
     documents: int = 0
     rejected_domains: int = 0
-    prefiltered_urls: int = 0
     prefilter_reasons: Counter = field(default_factory=Counter)
     history_skipped: int = 0
-    dropped_documents: int = 0
-    diversity_dropped: int = 0
     diversity_reasons: Counter = field(default_factory=Counter)
-    quality_dropped: int = 0
     quality_reasons: Counter = field(default_factory=Counter)
     drop_reasons: Counter = field(default_factory=Counter)
     failures: list[Failure] = field(default_factory=list)
+
+    # 丢弃篇数统一由原因 Counter 求和，避免两个来源各自累加后不一致。
+    @property
+    def prefiltered_urls(self) -> int:
+        return sum(self.prefilter_reasons.values())
+
+    @property
+    def quality_dropped(self) -> int:
+        return sum(self.quality_reasons.values())
+
+    @property
+    def dropped_documents(self) -> int:
+        return sum(self.drop_reasons.values())
+
+    @property
+    def diversity_dropped(self) -> int:
+        return sum(self.diversity_reasons.values())
+
+
+class StageAborted(Exception):
+    """阶段遇到致命错误；stats 携带该阶段尚未合并的统计。"""
+
+    def __init__(self, stage: str, stats: Any) -> None:
+        super().__init__(f"阶段中止：{stage}")
+        self.stage = stage
+        self.stats = stats
+
+
+@dataclass
+class KeywordStats:
+    keywords: list[str] = field(default_factory=list)
+    failures: list[Failure] = field(default_factory=list)
+
+    def merge_into(self, summary: RunSummary) -> None:
+        summary.keywords = self.keywords
+        summary.failures.extend(self.failures)
+
+
+@dataclass
+class SearchStats:
+    failures: list[Failure] = field(default_factory=list)
+
+    def merge_into(self, summary: RunSummary) -> None:
+        summary.failures.extend(self.failures)
+
+
+@dataclass
+class UrlFilterStats:
+    history_skipped: int = 0
+    prefilter_reasons: Counter = field(default_factory=Counter)
+    rejected_domains: int = 0
+
+    def merge_into(self, summary: RunSummary) -> None:
+        summary.history_skipped = self.history_skipped
+        summary.prefilter_reasons.update(self.prefilter_reasons)
+        summary.rejected_domains = self.rejected_domains
+
+
+@dataclass
+class ExtractStats:
+    failures: list[Failure] = field(default_factory=list)
+    quality_reasons: Counter = field(default_factory=Counter)
+
+    def merge_into(self, summary: RunSummary) -> None:
+        summary.failures.extend(self.failures)
+        summary.quality_reasons.update(self.quality_reasons)
+
+
+@dataclass
+class EvaluateStats:
+    failures: list[Failure] = field(default_factory=list)
+    drop_reasons: Counter = field(default_factory=Counter)
+
+    def merge_into(self, summary: RunSummary) -> None:
+        summary.failures.extend(self.failures)
+        summary.drop_reasons.update(self.drop_reasons)
+
+
+@dataclass
+class DiversityStats:
+    reasons: Counter = field(default_factory=Counter)
+
+    def merge_into(self, summary: RunSummary) -> None:
+        summary.diversity_reasons.update(self.reasons)
+
+
+@dataclass
+class DocumentStats:
+    documents: int = 0
+    failures: list[Failure] = field(default_factory=list)
+
+    def merge_into(self, summary: RunSummary) -> None:
+        summary.documents = self.documents
+        summary.failures.extend(self.failures)
 
 
 def format_counts(counts: Counter, labels: dict[str, str]) -> str:

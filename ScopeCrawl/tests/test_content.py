@@ -449,6 +449,7 @@ def test_build_extracted_doc_uses_metadata_fallbacks():
     assert doc.final_url == task.url
     assert doc.published_at == "2026-11-01T00:00:00+00:00"
     assert doc.matched_queries == ["中国 美食"]
+    assert doc.plain_chars == clean.plain_chars
     assert doc.extractor == "tavily-extract"
 
 

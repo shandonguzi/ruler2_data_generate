@@ -1,5 +1,6 @@
 """六个文档生成阶段。"""
 
+from .diversity import DiversityStage
 from .document_generation import DocumentGenerationStage
 from .evaluate import EvaluateStage
 from .extract import ExtractStage
@@ -13,5 +14,6 @@ __all__ = [
     "UrlFilterStage",
     "ExtractStage",
     "EvaluateStage",
+    "DiversityStage",
     "DocumentGenerationStage",
 ]

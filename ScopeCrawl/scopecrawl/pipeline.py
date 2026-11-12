@@ -6,14 +6,15 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
-from .config import PROJECT_ROOT
+from .config import PROJECT_ROOT, resolve_path
 from .content import TavilyExtractor
 from .history import DEFAULT_HISTORY_PATH, UrlHistory
 from .llm import LLMClient
-from .models import Settings
+from .models import STAGE_LABELS, Settings
 from .scenarios import load_scenarios
 from .search import SearchProvider, create_search_provider
 from .stages import (
+    DiversityStage,
     DocumentGenerationStage,
     EvaluateStage,
     ExtractStage,
@@ -22,7 +23,7 @@ from .stages import (
     UrlFilterStage,
 )
 from .storage import RunWriter
-from .summary import RunSummary, print_summary
+from .summary import RunSummary, StageAborted, print_summary
 
 logger = logging.getLogger(__name__)
 
@@ -45,14 +46,26 @@ class Pipeline:
         history_path: str | Path | None = None,
     ) -> None:
         self.settings = settings
-        self.output_root = output_root
-        self.writer_factory = writer_factory
         self.project_root = project_root or PROJECT_ROOT
-        self.history_path = Path(history_path) if history_path is not None else DEFAULT_HISTORY_PATH
-        self.prompt_paths = prompt_paths or {}
-        scenarios_file = Path(scenarios_path or settings.keywords.scenarios_path)
+        self.output_root = (
+            resolve_path(output_root, root=self.project_root)
+            if output_root is not None
+            else None
+        )
+        self.writer_factory = writer_factory
+        self.history_path = resolve_path(
+            history_path if history_path is not None else DEFAULT_HISTORY_PATH,
+            root=self.project_root,
+        )
+        self.prompt_paths = {
+            key: resolve_path(path, root=self.project_root)
+            for key, path in (prompt_paths or {}).items()
+        }
         self.scenarios = load_scenarios(
-            scenarios_file if scenarios_file.is_absolute() else self.project_root / scenarios_file
+            resolve_path(
+                scenarios_path or settings.keywords.scenarios_path,
+                root=self.project_root,
+            )
         )
         self.llm = llm_client or LLMClient(
             settings.llm,
@@ -87,39 +100,44 @@ class Pipeline:
         )
         logger.info("输出目录：%s", writer.run_dir)
 
-        keywords = KeywordGenerationStage(
-            self.settings,
-            self.llm,
-            self.scenarios,
-            summary,
-            prompt_path=self.prompt_paths.get("keywords"),
-        ).run()
-        if keywords is None:
+        try:
+            keywords, stats = KeywordGenerationStage(
+                self.settings,
+                self.llm,
+                self.scenarios,
+                prompt_path=self.prompt_paths.get("keywords"),
+            ).run()
+            stats.merge_into(summary)
+
+            responses, stats = SearchStage(self.settings, self.provider).run(keywords)
+            stats.merge_into(summary)
+
+            candidates, stats = UrlFilterStage(
+                self.settings, history, project_root=self.project_root
+            ).run(responses)
+            stats.merge_into(summary)
+            summary.processed_urls = len(candidates)
+
+            documents, stats = ExtractStage(self.settings, self.extractor).run(candidates)
+            stats.merge_into(summary)
+
+            kept, stats = EvaluateStage(
+                self.settings,
+                self.llm,
+                prompt_path=self.prompt_paths.get("review"),
+            ).run(documents)
+            stats.merge_into(summary)
+
+            kept, stats = DiversityStage(self.settings).run(kept)
+            stats.merge_into(summary)
+
+            stats = DocumentGenerationStage(writer).run(kept)
+            stats.merge_into(summary)
+        except StageAborted as exc:
+            exc.stats.merge_into(summary)
+            logger.error("阶段中止：%s", STAGE_LABELS.get(exc.stage, exc.stage))
             print_summary(summary)
             return summary, 1
-
-        responses = SearchStage(self.settings, self.provider, summary).run(keywords)
-        if responses is None:
-            print_summary(summary)
-            return summary, 1
-
-        candidates = UrlFilterStage(
-            self.settings, history, summary, project_root=self.project_root
-        ).run(responses)
-        summary.processed_urls = len(candidates)
-
-        documents = ExtractStage(self.settings, self.extractor, summary).run(candidates)
-        if documents is None:
-            print_summary(summary)
-            return summary, 1
-
-        kept = EvaluateStage(
-            self.settings,
-            self.llm,
-            summary,
-            prompt_path=self.prompt_paths.get("review"),
-        ).run(documents)
-        DocumentGenerationStage(writer, summary).run(kept)
 
         print_summary(summary)
         return summary, 0

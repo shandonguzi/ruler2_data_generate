@@ -9,15 +9,15 @@ from ..config import load_authority
 from ..evaluate import DomainFilter
 from ..history import UrlHistory
 from ..models import DomainAssessment, SearchResponse, Settings, UrlTask
-from ..summary import PREFILTER_LABELS, RunSummary, format_counts
+from ..summary import PREFILTER_LABELS, UrlFilterStats, format_counts
 from ..utils import (
     build_url_task,
     dedupe_results,
     index_url_reason,
     interleave_by_query,
+    log_stage,
     url_host,
 )
-from .log import log_stage
 
 logger = logging.getLogger(__name__)
 
@@ -29,20 +29,19 @@ class UrlFilterStage:
         self,
         settings: Settings,
         history: UrlHistory,
-        summary: RunSummary,
         *,
         project_root: Path,
     ) -> None:
         self.settings = settings
         self.history = history
-        self.summary = summary
         self.project_root = project_root
 
     def run(
         self, responses: list[tuple[int, str, SearchResponse]]
-    ) -> list[tuple[UrlTask, DomainAssessment | None]]:
+    ) -> tuple[list[tuple[UrlTask, DomainAssessment | None]], UrlFilterStats]:
         log_stage("URL 筛选")
-        tasks = self._build_url_queue(responses)
+        stats = UrlFilterStats()
+        tasks = self._build_url_queue(responses, stats)
         raw_results = sum(len(response.results) for _, _, response in responses)
         logger.info(
             "[URL 筛选] 原始结果 %d 条，进入预筛队列 %d 个 URL",
@@ -52,14 +51,15 @@ class UrlFilterStage:
         self._record_queue(tasks)
 
         if self.settings.search.prefilter.enabled:
-            tasks = self._url_prefilter(tasks)
-        return self._domain_prefilter(tasks)
+            tasks = self._url_prefilter(tasks, stats)
+        return self._domain_prefilter(tasks, stats), stats
 
     def _build_url_queue(
-        self, responses: list[tuple[int, str, SearchResponse]]
+        self,
+        responses: list[tuple[int, str, SearchResponse]],
+        stats: UrlFilterStats,
     ) -> list[UrlTask]:
         dedupe = self.settings.search.dedupe
-        provider = responses[0][2].provider if responses else "tavily"
         pairs = [
             (index, query, result)
             for index, query, response in responses
@@ -70,10 +70,8 @@ class UrlFilterStage:
             # 先不截断，命中历史后由后续结果补位，最后再按上限截断。
             tasks = dedupe_results(
                 pairs,
-                provider=provider,
                 merge_www=dedupe.merge_www,
                 strip_tracking=dedupe.strip_tracking_params,
-                max_urls=None,
             )
         else:
             tasks = [
@@ -81,7 +79,6 @@ class UrlFilterStage:
                     query_index,
                     query,
                     result,
-                    provider=provider,
                     merge_www=dedupe.merge_www,
                     strip_tracking=dedupe.strip_tracking_params,
                 )
@@ -89,16 +86,16 @@ class UrlFilterStage:
             ]
 
         kept = [task for task in tasks if not self.history.contains(task.normalized_url)]
-        self.summary.history_skipped = len(tasks) - len(kept)
-        if self.summary.history_skipped:
+        stats.history_skipped = len(tasks) - len(kept)
+        if stats.history_skipped:
             logger.info(
-                "[URL 筛选] 历史命中 %d 个已收 URL，跳过", self.summary.history_skipped
+                "[URL 筛选] 历史命中 %d 个已收 URL，跳过", stats.history_skipped
             )
 
         if dedupe.max_urls is not None:
             # 按关键词轮转取数，避免靠前的关键词占满配额导致后续关键词无 URL 进入。
             tasks = interleave_by_query(kept, dedupe.max_urls)
-            if self.summary.history_skipped:
+            if stats.history_skipped:
                 logger.info(
                     "[URL 筛选] 由后续结果补位，按关键词轮转后进入队列 %d 个（上限 %d）",
                     len(tasks),
@@ -119,7 +116,9 @@ class UrlFilterStage:
                 "[URL 筛选] 保存 URL 历史表失败：%s（%s）", self.history.path, exc
             )
 
-    def _url_prefilter(self, tasks: list[UrlTask]) -> list[UrlTask]:
+    def _url_prefilter(
+        self, tasks: list[UrlTask], stats: UrlFilterStats
+    ) -> list[UrlTask]:
         logger.info("[URL 筛选] 粗筛开始：评估 %d 个 URL…", len(tasks))
         kept: list[UrlTask] = []
         for task in tasks:
@@ -127,20 +126,19 @@ class UrlFilterStage:
             if reason is None:
                 kept.append(task)
                 continue
-            self.summary.prefiltered_urls += 1
-            self.summary.prefilter_reasons[reason] += 1
+            stats.prefilter_reasons[reason] += 1
             logger.debug("[URL 筛选] 粗筛丢弃：%s（%s）", task.url, reason)
-        detail = format_counts(self.summary.prefilter_reasons, PREFILTER_LABELS)
+        detail = format_counts(stats.prefilter_reasons, PREFILTER_LABELS)
         logger.info(
             "[URL 筛选] 粗筛结束：保留 %d 个，丢弃 %d 个%s",
             len(kept),
-            self.summary.prefiltered_urls,
+            sum(stats.prefilter_reasons.values()),
             f"（{detail}）" if detail else "",
         )
         return kept
 
     def _domain_prefilter(
-        self, tasks: list[UrlTask]
+        self, tasks: list[UrlTask], stats: UrlFilterStats
     ) -> list[tuple[UrlTask, DomainAssessment | None]]:
         if not self.settings.authority.enabled:
             logger.info("[URL 筛选] 域名预筛已禁用，跳过")
@@ -155,12 +153,12 @@ class UrlFilterStage:
         for task in tasks:
             assessment = domain_filter.assess(url_host(task.url))
             if assessment.decision == "reject":
-                self.summary.rejected_domains += 1
+                stats.rejected_domains += 1
                 continue
             kept.append((task, assessment))
         logger.info(
             "[URL 筛选] 域名预筛结束：保留 %d 个 URL，拒绝 %d 个",
             len(kept),
-            self.summary.rejected_domains,
+            stats.rejected_domains,
         )
         return kept

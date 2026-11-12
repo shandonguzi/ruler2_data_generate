@@ -10,7 +10,7 @@ from typing import Any
 import yaml
 from pydantic import SecretStr, ValidationError
 
-from .models import AuthorityEntry, AuthorityLists, Settings
+from .models import AuthorityLists, Settings
 
 logger = logging.getLogger(__name__)
 
@@ -142,14 +142,16 @@ def _patterns_overlap(left: str, right: str) -> bool:
     return False
 
 
-def _resolve_path(path: Path, root: Path) -> Path:
-    return path if path.is_absolute() else root / path
+def resolve_path(path: str | Path, *, root: Path = PROJECT_ROOT) -> Path:
+    """绝对路径原样返回，相对路径以 root 为基准。"""
+    value = Path(path)
+    return value if value.is_absolute() else root / value
 
 
 def _resolve_default(candidate: str | Path | None, default: Path, root: Path) -> Path:
     """未显式提供路径时，使用相对于项目根目录的默认路径（如 config/.env）。"""
     path = Path(candidate) if candidate is not None else default.relative_to(PROJECT_ROOT)
-    return _resolve_path(path, root)
+    return resolve_path(path, root=root)
 
 
 def _read_yaml(path: Path) -> Any:
@@ -178,47 +180,19 @@ def _apply_run_overrides(data: dict[str, Any], overrides: Mapping[str, Any]) -> 
 
 
 def _validate_settings(settings: Settings) -> None:
+    """只保留 pydantic Field 无法表达的去空白与跨字段校验。"""
     if not settings.run.s3.strip():
         raise ConfigError("run.s3 不能为空")
     if not settings.run.s4.strip():
         raise ConfigError("run.s4 不能为空")
 
-    if settings.search.provider != "tavily":
-        raise ConfigError(f"不支持的搜索 provider：{settings.search.provider}")
-    if settings.extract.provider != "tavily":
-        raise ConfigError(f"不支持的正文提取 provider：{settings.extract.provider}")
-    if not 1 <= settings.extract.batch_size <= 20:
-        raise ConfigError("extract.batch_size 必须在 1–20 之间")
-    if not 1 <= settings.extract.timeout_seconds <= 60:
-        raise ConfigError("extract.timeout_seconds 必须在 1–60 之间")
-    if settings.extract.concurrency < 1:
-        raise ConfigError("extract.concurrency 必须大于等于 1")
-    if settings.extract.min_chars < 1:
-        raise ConfigError("extract.min_chars 必须大于 0")
-    if settings.extract.min_paragraphs < 0:
-        raise ConfigError("extract.min_paragraphs 不能为负数")
-    for name in ("max_link_text_ratio", "max_nav_line_ratio", "max_garbled_ratio"):
-        value = getattr(settings.extract, name)
-        if not 0 <= value <= 1:
-            raise ConfigError(f"extract.{name} 必须在 0–1 之间")
-
     thresholds = settings.review.thresholds
     if not (0 <= thresholds.low < thresholds.medium < thresholds.high <= 1):
         raise ConfigError("review.thresholds 必须满足 0 <= low < medium < high <= 1")
 
-    content = settings.review.content
-    for name in ("richness_low", "quality_low"):
-        value = getattr(content, name)
-        if not 0 <= value <= 1:
-            raise ConfigError(f"review.content.{name} 必须在 0–1 之间")
-
     scoring_weights = settings.authority.scoring.weights
     if abs(sum(scoring_weights.values()) - 1.0) > 1e-6:
         raise ConfigError("authority.scoring.weights 之和必须为 1")
-
-    page_weights = settings.authority.page.weights.model_dump()
-    if abs(sum(page_weights.values()) - 1.0) > 1e-6:
-        raise ConfigError("authority.page.weights 之和必须为 1")
 
     if (
         not 0
@@ -296,7 +270,3 @@ def _format_validation_error(exc: ValidationError) -> str:
         location = ".".join(str(item) for item in error["loc"])
         parts.append(f"{location}: {error['msg']}")
     return "配置校验失败：" + "; ".join(parts)
-
-
-def entries_to_text(entries: Sequence[AuthorityEntry]) -> str:
-    return ", ".join(entry.domain for entry in entries)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import html
-import json
 import logging
 import re
 import time
@@ -38,7 +37,6 @@ _TABLE_SEP_RE = re.compile(r"^\s*\|?[\s:|-]+\|?\s*$")
 _IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 _BARE_URL_RE = re.compile(r"https?://\S+")
-_TABLE_RE = re.compile(r"\|")
 
 _NAV_WORDS = (
     "首页",
@@ -280,7 +278,7 @@ class TavilyExtractor:
             if status == 200:
                 try:
                     data = response.json()
-                except (ValueError, json.JSONDecodeError) as exc:
+                except ValueError as exc:
                     if attempt < cfg.max_retries:
                         self._sleep(2**attempt)
                         attempt += 1
@@ -406,7 +404,7 @@ def clean_content(raw: str, *, url: str) -> CleanResult:
 
     blocks = [block.strip("\n") for block in re.split(r"\n\s*\n", text) if block.strip()]
     total_link_text = 0
-    metadata: list[tuple[str, bool, int, bool]] = []
+    metadata: list[tuple[str, bool, float, bool]] = []
     keys = [re.sub(r"\s+", "", block.strip()).casefold() for block in blocks]
     first_seen: dict[str, int] = {}
     for index, key in enumerate(keys):
@@ -423,13 +421,13 @@ def clean_content(raw: str, *, url: str) -> CleanResult:
         key = keys[index]
 
         if _is_image_only(stripped):
-            metadata.append((block, True, plain, True))
+            metadata.append((block, True, link_ratio, True))
             continue
         plain_without_links = visible_length(
             _LINK_RE.sub("", _IMAGE_RE.sub("", stripped))
         )
         if plain_without_links == 0 and _LINK_RE.search(stripped):
-            metadata.append((block, True, plain, True))
+            metadata.append((block, True, link_ratio, True))
             continue
         if (
             counts[key] >= 3
@@ -437,9 +435,9 @@ def clean_content(raw: str, *, url: str) -> CleanResult:
             and not _is_heading(stripped)
             and plain < 30
         ):
-            metadata.append((block, True, plain, True))
+            metadata.append((block, True, link_ratio, True))
             continue
-        metadata.append((block, _is_nav_block(stripped, link_ratio), plain, False))
+        metadata.append((block, _is_nav_block(stripped, link_ratio), link_ratio, False))
 
     keep = [not drop for _, _, _, drop in metadata]
     _trim_leading_nav(metadata, keep)
@@ -526,21 +524,19 @@ _READABLE_RANGES = (
     (0x1F000, 0x1FAFF),  # emoji
 )
 _GARBLED_MIN_NON_ASCII = 200
+_READABLE_CLASS = "".join(
+    f"\\U{low:08x}-\\U{high:08x}" for low, high in _READABLE_RANGES
+)
+_NON_ASCII_RE = re.compile(r"[^\x00-\x7f\s]")
+_GARBLED_RE = re.compile(rf"[^\x00-\x7f\s{_READABLE_CLASS}]")
 
 
 def _garbled_ratio(text: str) -> float:
     """非 ASCII 字符中落在预期文种之外的比例；样本太小时返回 0。"""
-    non_ascii = bad = 0
-    for char in text:
-        code = ord(char)
-        if code < 0x80 or char.isspace():
-            continue
-        non_ascii += 1
-        if not any(low <= code <= high for low, high in _READABLE_RANGES):
-            bad += 1
+    non_ascii = len(_NON_ASCII_RE.findall(text))
     if non_ascii < _GARBLED_MIN_NON_ASCII:
         return 0.0
-    return bad / non_ascii
+    return len(_GARBLED_RE.findall(text)) / non_ascii
 
 
 def check_quality(clean: CleanResult, settings: ExtractSettings) -> tuple[str, str] | None:
@@ -584,6 +580,7 @@ def build_extracted_doc(
         fetched_at=to_iso(utc_now()) or "",
         lang=None,
         markdown=clean.markdown,
+        plain_chars=clean.plain_chars,
         matched_queries=list(task.matched_queries),
         has_jsonld=False,
         outbound_links=clean.outbound_links,
@@ -625,7 +622,7 @@ def _valid_payload(data: object) -> bool:
 def _failed_from_response(response: httpx.Response) -> list[tuple[str, str]]:
     try:
         data = response.json()
-    except (ValueError, json.JSONDecodeError):
+    except ValueError:
         return []
     if not isinstance(data, dict):
         return []
@@ -819,28 +816,28 @@ def _is_substantive(block: str, link_ratio: float) -> bool:
 
 
 def _trim_leading_nav(
-    metadata: list[tuple[str, bool, int, bool]], keep: list[bool]
+    metadata: list[tuple[str, bool, float, bool]], keep: list[bool]
 ) -> None:
-    for index, (block, navish, _, dropped) in enumerate(metadata):
+    for index, (block, navish, link_ratio, dropped) in enumerate(metadata):
         if dropped or navish or _is_infobox_table(block):
             keep[index] = False
             continue
         if _is_heading(block):
             following = _next_content(metadata, index + 1)
             if following is not None and _is_substantive(
-                metadata[following][0], _link_stats(metadata[following][0])[1]
+                metadata[following][0], metadata[following][2]
             ):
                 break
             keep[index] = False
             continue
-        if not _is_substantive(block, _link_stats(block)[1]):
+        if not _is_substantive(block, link_ratio):
             keep[index] = False
             continue
         break
 
 
 def _next_content(
-    metadata: list[tuple[str, bool, int, bool]], index: int
+    metadata: list[tuple[str, bool, float, bool]], index: int
 ) -> int | None:
     for current in range(index, len(metadata)):
         if not metadata[current][3] and not metadata[current][1]:
@@ -848,7 +845,7 @@ def _next_content(
     return None
 
 
-def _trim_edges(metadata: list[tuple[str, bool, int, bool]], keep: list[bool]) -> None:
+def _trim_edges(metadata: list[tuple[str, bool, float, bool]], keep: list[bool]) -> None:
     index = 0
     while index < len(metadata):
         block, navish, _, dropped = metadata[index]
@@ -882,7 +879,7 @@ def _trim_edges(metadata: list[tuple[str, bool, int, bool]], keep: list[bool]) -
 
 
 def _has_kept_content_after(
-    metadata: list[tuple[str, bool, int, bool]], keep: list[bool], index: int
+    metadata: list[tuple[str, bool, float, bool]], keep: list[bool], index: int
 ) -> bool:
     return any(
         keep[current] and not _is_heading(metadata[current][0])
@@ -891,7 +888,7 @@ def _has_kept_content_after(
 
 
 def _trim_trailing_nav_sections(
-    metadata: list[tuple[str, bool, int, bool]], keep: list[bool]
+    metadata: list[tuple[str, bool, float, bool]], keep: list[bool]
 ) -> None:
     """删除尾部导航区（网站地图、快速链接等）及其后的链接块，再清空尾部标题。"""
     for index in range(len(metadata) - 1, -1, -1):
@@ -920,7 +917,7 @@ def _is_edge_content(block: str) -> bool:
     return plain_length(text) >= 30 and bool(_SENTENCE_RE.search(text))
 
 
-def _drop_middle_nav(metadata: list[tuple[str, bool, int, bool]], keep: list[bool]) -> None:
+def _drop_middle_nav(metadata: list[tuple[str, bool, float, bool]], keep: list[bool]) -> None:
     for index in range(len(metadata)):
         if not keep[index] or not metadata[index][1]:
             continue
@@ -935,7 +932,7 @@ def _drop_middle_nav(metadata: list[tuple[str, bool, int, bool]], keep: list[boo
 
 
 def _nearest_kept(
-    metadata: list[tuple[str, bool, int, bool]],
+    metadata: list[tuple[str, bool, float, bool]],
     keep: list[bool],
     index: int,
     *,
