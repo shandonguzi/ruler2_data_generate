@@ -107,6 +107,10 @@ def test_write_body_and_metadata(tmp_path):
     assert path.name == "标题：埃及沙尘暴.md"
     assert path.suffix == ".md"
     assert path.read_text(encoding="utf-8") == "# 正文\n\n这是一段中文内容。\n"
+    assert {item.name for item in writer.run_dir.iterdir()} == {
+        "标题：埃及沙尘暴.md",
+        METADATA_FILENAME,
+    }
 
     metadata = read_metadata(writer.run_dir)
     run = metadata[0]
@@ -139,14 +143,6 @@ def test_write_body_and_metadata(tmp_path):
     assert record["quality_flags"] == []
     assert record["extractor"] == "tavily-extract"
     assert record["published_at"] == "2026-11-01T00:00:00+00:00"
-
-
-def test_run_dir_contains_md_and_metadata(tmp_path):
-    settings = make_settings()
-    writer = RunWriter(tmp_path, settings.run)
-    writer.write(make_document())
-    files = {path.name for path in writer.run_dir.iterdir()}
-    assert files == {"标题：埃及沙尘暴.md", METADATA_FILENAME}
 
 
 def test_doc_id_collision_gets_salt(tmp_path):

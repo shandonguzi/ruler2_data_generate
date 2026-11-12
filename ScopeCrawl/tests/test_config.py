@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import copy
-
 import pytest
 import yaml
 
@@ -206,11 +204,6 @@ def test_load_authority_rejects_overlap(tmp_path):
     )
     with pytest.raises(ConfigError, match="冲突"):
         load_authority(project_root=tmp_path)
-
-
-def test_config_data_not_mutated_between_calls():
-    data = copy.deepcopy(yaml_config())
-    assert data["run"]["s3"] == "天气查询"
 
 
 def test_load_settings_rejects_bad_extract_settings(tmp_path):

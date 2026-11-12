@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import copy
 import json
-from pathlib import Path
 
 import pytest
 
 from scopecrawl.models import ExtractedContent, SearchResponse, SearchResult, Settings
 from scopecrawl.search import SearchProvider
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 _PROXY_ENV = (
     "HTTP_PROXY",
@@ -69,11 +66,6 @@ def make_settings(**overrides) -> Settings:
         else:
             data[key] = copy.deepcopy(value)
     return Settings.model_validate(data)
-
-
-@pytest.fixture
-def settings() -> Settings:
-    return make_settings()
 
 
 class FakeLLM:
@@ -191,13 +183,6 @@ MARKDOWN_NAV = """[首页](https://example.com/)
 
 [热门城市](https://example.com/cities)
 """
-
-MARKDOWN_TABLE = """| 城市 | 天气 |
-|---|---|
-| 开罗 | 晴 |
-| 亚历山大 | 多云 |
-"""
-
 
 def make_search_response(query: str, urls: list[str]) -> SearchResponse:
     results = [

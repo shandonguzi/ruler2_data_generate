@@ -143,7 +143,3 @@ def test_missing_api_key_raises():
 def test_missing_model_raises():
     with pytest.raises(LLMError, match="模型名"):
         LLMClient(LLMSettings(), model=None, api_key="k")
-
-
-def test_openai_error_types_are_importable():
-    assert issubclass(openai.BadRequestError, openai.APIStatusError)

@@ -2,6 +2,7 @@
 
 ## 2026-11-12
 
+- 清理：删除测试中的无用代码——未使用的 `settings` fixture、`PROJECT_ROOT` / `MARKDOWN_TABLE` 常量，仅测试第三方库或测试辅助函数的用例，以及重复的 pipeline 丢弃统计用例与 storage 目录断言
 - 修复：Ctrl+C 无法及时打断——`utils.iter_concurrent` 退出时不再等待排队任务（`shutdown(wait=False, cancel_futures=True)`）；`main` 捕获 `KeyboardInterrupt` 后提示并 `os._exit(130)`，放弃线程池中的在途请求，不再等待 HTTP/LLM 超时与重试
 - 调整：`config/config.yaml` 的 `diversity.enabled` 改为 `false`，默认关闭多样性限流；代码中 `DiversitySettings.enabled` 的默认值仍为 `true`，配置省略该字段时仍会启用
 - 新增：`config/authority.yaml` 增加 `unfetchable` 名单（收录原 `extract.skip_domains` 的视频站），阶段 3 在 URL 粗筛与 `max_urls` 截断前跳过无法提取正文的域名，名额留给可提取 URL；该过滤不受 `authority.enabled` 影响

@@ -248,18 +248,18 @@ def test_pipeline_partial_search_failure_continues(tmp_path):
     assert any(failure.stage == "search" for failure in summary.failures)
 
 
-def test_pipeline_relevance_none_can_be_dropped(tmp_path):
+def test_pipeline_relevance_none_can_be_dropped(tmp_path, capsys):
     llm = RouterLLM()
     llm.complete = lambda messages, json_mode=False: (
         '["关键词一", "关键词二"]'
         if "search query generator" in messages[0]["content"]
         else '{"relevance_score": 0.1, "matched_scope": "none"}'
     )
-    settings = make_settings(review={"drop_none": True})
-    summary, code = _run(tmp_path, settings=settings, llm_client=llm)
+    summary, code = _run(tmp_path, llm_client=llm)
     assert code == 0
     assert summary.documents == 0
     assert summary.dropped_documents == 2
+    assert "评估丢弃明细：相关性不足 2" in capsys.readouterr().out
 
 
 def test_pipeline_authority_disabled_writes_null_fields(tmp_path):
@@ -516,18 +516,6 @@ def test_pipeline_review_llm_failure_drops_when_unevaluated(tmp_path):
     assert summary.documents == 0
     assert summary.dropped_documents == 2
     assert summary.drop_reasons["relevance_unevaluated"] == 2
-
-
-def test_pipeline_summary_reports_drop_reasons(tmp_path, capsys):
-    llm = RouterLLM()
-    llm.complete = lambda messages, json_mode=False: (
-        '["关键词一", "关键词二"]'
-        if "search query generator" in messages[0]["content"]
-        else '{"relevance_score": 0.1, "matched_scope": "none"}'
-    )
-    _run(tmp_path, llm_client=llm)
-    output = capsys.readouterr().out
-    assert "评估丢弃明细：相关性不足 2" in output
 
 
 def test_pipeline_quality_drop_is_not_a_failure(tmp_path, capsys):

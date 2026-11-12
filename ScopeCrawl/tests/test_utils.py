@@ -175,5 +175,3 @@ def test_index_url_reason_keeps_articles(url):
 
 def test_index_url_reason_keeps_wordpress_p_parameter():
     assert index_url_reason("https://example.com/2026/11/post?p=123") is None
-    assert index_url_reason("https://example.com/tag/foo") == "category_page"
-    assert index_url_reason("https://example.com/2026/11/article") is None
