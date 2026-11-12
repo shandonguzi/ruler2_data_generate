@@ -39,10 +39,14 @@ def iter_concurrent(
     if not values:
         return
     workers = min(max(1, max_workers), len(values))
-    with ThreadPoolExecutor(max_workers=workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=workers)
+    try:
         futures = {executor.submit(fn, value): index for index, value in enumerate(values)}
         for future in as_completed(futures):
             yield futures[future], future
+    finally:
+        # 中断时不能等排队任务跑完：取消未开始的任务并立即返回；在途请求由调用方直接退出进程。
+        executor.shutdown(wait=False, cancel_futures=True)
 
 
 TRACKING_PARAMS = {

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+import time
 from datetime import UTC, datetime
 
 import pytest
@@ -78,6 +80,27 @@ def test_iter_concurrent_returns_index_and_future():
         (1, 2),
         (2, 4),
     ]
+
+
+def test_iter_concurrent_close_does_not_wait_pending_tasks():
+    started = threading.Event()
+    release = threading.Event()
+
+    def work(value):
+        if value:
+            started.set()
+            release.wait(10)
+        return value
+
+    stream = iter_concurrent(range(4), work, 2)
+    next(stream)
+    assert started.wait(1)
+    then = time.monotonic()
+    stream.close()
+    try:
+        assert time.monotonic() - then < 1
+    finally:
+        release.set()
 
 
 def test_interleave_by_query_rotates_across_queries():

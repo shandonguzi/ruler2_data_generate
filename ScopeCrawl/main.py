@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 
 from scopecrawl.config import ConfigError, load_settings
@@ -59,6 +60,11 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         print(f"配置错误：{exc}", file=sys.stderr)
         return 1
+    except KeyboardInterrupt:
+        # 线程池里的在途 HTTP/LLM 请求无法取消，等待线程收尾会拖住退出，直接结束进程。
+        print("\n已中断（Ctrl+C），退出。", file=sys.stderr, flush=True)
+        sys.stdout.flush()
+        os._exit(130)
 
 
 if __name__ == "__main__":

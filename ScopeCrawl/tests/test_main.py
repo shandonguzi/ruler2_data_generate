@@ -36,3 +36,18 @@ def test_restart_clears_history_table(tmp_path, monkeypatch, capsys):
     assert main(["--restart"]) == 0
     assert not (tmp_path / HISTORY_FILENAME).exists()
     assert "已清空 URL 历史表" in capsys.readouterr().out
+
+
+def test_keyboard_interrupt_exits_immediately(monkeypatch, capsys):
+    def interrupt(settings):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("main.load_settings", lambda **kwargs: make_settings())
+    monkeypatch.setattr("main.run_pipeline", interrupt)
+    exit_codes: list[int] = []
+    monkeypatch.setattr("main.os._exit", exit_codes.append)
+
+    main([])
+
+    assert exit_codes == [130]
+    assert "已中断" in capsys.readouterr().err
