@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 
+from scopecrawl.evaluate import DomainFilter
 from scopecrawl.history import HISTORY_FILENAME, UrlHistory
 from scopecrawl.models import ExtractedContent
 from scopecrawl.pipeline import Pipeline
@@ -84,6 +85,53 @@ def _seed_history(tmp_path, urls):
 def _read_metadata(run_dir):
     lines = (run_dir / METADATA_FILENAME).read_text(encoding="utf-8").splitlines()
     return [json.loads(line) for line in lines if line.strip()]
+
+
+def test_pipeline_domain_prefilter_assesses_each_host_once(tmp_path, monkeypatch):
+    calls: list[str] = []
+    original = DomainFilter.assess
+
+    def counting(self, domain):
+        calls.append(domain)
+        return original(self, domain)
+
+    monkeypatch.setattr(DomainFilter, "assess", counting)
+    summary, code = _run(tmp_path)
+    assert code == 0
+    # 三个 URL 都属于 example.com，只评估一次。
+    assert calls == ["example.com"]
+
+
+def test_pipeline_extract_preserves_order_across_batches(tmp_path):
+    urls = [f"https://example.com/{name}" for name in "abcd"]
+    provider = FakeProvider(
+        {
+            "关键词一": make_search_response("关键词一", urls),
+            "关键词二": make_search_response("关键词二", []),
+        }
+    )
+    extractor = FakeExtractor({url: MARKDOWN_OK for url in urls})
+    settings = make_settings(
+        extract={"batch_size": 1, "concurrency": 4},
+        diversity={"max_per_query": None, "max_per_domain": None},
+    )
+
+    summary, code = _run(
+        tmp_path, settings=settings, provider=provider, extractor=extractor
+    )
+
+    assert code == 0
+    assert summary.documents == 4
+    records = _read_metadata(tmp_path / summary.run_id)
+    documents = [record for record in records if record["type"] == "document"]
+    # 批次按完成顺序返回，但文档仍按 URL 入队顺序写盘。
+    assert [record["url"] for record in documents] == urls
+    assert [record["file"] for record in documents] == [
+        "title 0.md",
+        "title 1.md",
+        "title 2.md",
+        "title 3.md",
+    ]
 
 
 def test_pipeline_end_to_end_mock(tmp_path, capsys):

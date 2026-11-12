@@ -12,6 +12,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, unquote, urlencode, urlsplit
@@ -149,6 +150,7 @@ def index_url_reason(url: str) -> str | None:
     return None
 
 
+@lru_cache(maxsize=4096)
 def normalize_url(
     url: str,
     *,
@@ -160,6 +162,7 @@ def normalize_url(
     规则：scheme/host 小写、去 fragment、去默认端口、去跟踪参数、
     查询参数排序、去路径末尾斜杠、忽略 scheme、www 默认不合并、不展开短链。
     无法解析时返回去空白后的原始 URL。
+    同一 URL 在检索去重、批次内去重与写入等环节会被反复规范化，缓存结果避免重复解析。
     """
     raw = (url or "").strip()
     if not raw:

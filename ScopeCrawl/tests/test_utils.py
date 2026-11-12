@@ -39,6 +39,13 @@ def test_normalize_scheme_www_and_custom_port():
     assert normalize_url("https://a.com:8443/x") == "a.com:8443/x"
 
 
+def test_normalize_url_reuses_cached_result():
+    normalize_url.cache_clear()
+    url = "https://example.com/a?utm_source=news"
+    assert normalize_url(url) == normalize_url(url)
+    assert normalize_url.cache_info().hits >= 1
+
+
 def test_dedupe_results_merges_queries_and_keeps_order():
     items = [
         (0, "q1", SearchResult(url="https://a.com/1", rank=2)),

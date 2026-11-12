@@ -144,14 +144,18 @@ class UrlFilterStage:
             logger.info("[URL 筛选] 域名预筛已禁用，跳过")
             return [(task, None) for task in tasks]
 
-        logger.info("[URL 筛选] 域名预筛开始：评估 %d 个域名…", len(tasks))
         lists = load_authority(
             self.settings.authority.config_path, project_root=self.project_root
         )
         domain_filter = DomainFilter(lists, self.settings.authority)
+        hosts = [url_host(task.url) for task in tasks]
+        logger.info("[URL 筛选] 域名预筛开始：评估 %d 个域名…", len(set(hosts)))
+        assessments: dict[str, DomainAssessment] = {}
         kept: list[tuple[UrlTask, DomainAssessment | None]] = []
-        for task in tasks:
-            assessment = domain_filter.assess(url_host(task.url))
+        for task, host in zip(tasks, hosts):
+            assessment = assessments.get(host)
+            if assessment is None:
+                assessment = assessments[host] = domain_filter.assess(host)
             if assessment.decision == "reject":
                 stats.rejected_domains += 1
                 continue

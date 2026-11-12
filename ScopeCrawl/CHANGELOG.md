@@ -2,6 +2,10 @@
 
 ## 2026-11-12
 
+- 优化：域名预筛按主机名缓存 `DomainFilter.assess` 结果，同一域名的多个 URL 只评估一次，开始日志改为输出实际去重后的域名数
+- 优化：提取阶段每批结果返回后立即清洗，与仍在并发执行的其余批次重叠，不再等全部批次结束后串行清洗；文档仍按 URL 入队顺序写盘
+- 调整：提取致命错误或全部批次失败中止时，已返回批次的逐 URL 失败记录会一并计入汇总
+- 优化：`normalize_url` 增加 `lru_cache(maxsize=4096)`，同一 URL 在检索去重、批次内去重与写盘环节复用解析结果
 - 调整：`_validate_settings` 只保留 pydantic 无法表达的跨字段校验（s3/s4 非空、阈值排序、权重求和），删除与 `Field`/`Literal` 重复的九组检查；`search.provider` 改为 `Literal["tavily"]`，`extract.timeout_seconds` 改为 `Field(ge=1, le=60)`
 - 调整：`clean_content` 的块 metadata 直接保存构造时的链接占比，`_trim_leading_nav` 不再重复计算 `_link_stats`
 - 优化：乱码检测改为由可读区间拼接的预编译正则计数，保留非 ASCII 样本 <200 短路与忽略空白语义
