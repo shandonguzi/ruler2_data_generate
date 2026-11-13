@@ -33,15 +33,18 @@ ScopeCrawl 根据 S3/S4 场景、地点与语言，检索关联网页，清洗�
 scopecrawl/
   pipeline.py                # 串联 6 个阶段
   provider.py                # 统一搜索 + 提取 Provider 抽象与工厂
-  search.py                  # Tavily Provider
-  deepseek.py                # DeepSeek Provider
-  content.py                 # 正文清洗、质量闸门与 Tavily 提取客户端
+  tavily.py                  # Tavily Provider（搜索 + 提取）
+  deepseek.py                # DeepSeek Provider（搜索 + fetch）
+  content.py                 # 正文清洗、质量闸门与通用提取辅助
+  authority.py               # 域名预筛、页面评分与权威度综合
+  evaluate.py                # 内容复核、丢弃判定与多样性选择
   stages/
     keyword_generation.py    # 1 关键词生成
     search.py                # 2 检索候选网页
     url_filter.py            # 3 筛选候选 URL
     extract.py               # 4 提取并清洗正文
     evaluate.py              # 5 评估并筛选文档
+    diversity.py             # 5 子步骤：多样性限流
     document_generation.py   # 6 生成文档
   summary.py                 # 运行统计与控制台汇总
 ```
@@ -125,7 +128,7 @@ config/.history.json
 
 `config/config.yaml` 顶层 `provider` 只选择一个引擎（`tavily` 或 `deepseek`），搜索与正文提取共用同一个引擎，不支持混用。引擎参数位于 `providers.<name>.search` 与 `providers.<name>.extract`，运行时只读取选中引擎的配置。
 
-正文清洗开关位于 `extract`：`strip_links`（默认 `false`）把 `[文字](url)` 清洗为文字，`strip_images`（默认 `false`）删除整条图片 `![alt](url)`；只处理 Markdown 行内语法，围栏代码块内保持原样。
+正文清洗开关位于 `extract`：`strip_links`（模型默认 `false`，仓库 `config/config.yaml` 设为 `true`）把 `[文字](url)` 清洗为文字，`strip_images`（同样默认 `false`、仓库设为 `true`）删除整条图片 `![alt](url)`；只处理 Markdown 行内语法，围栏代码块内保持原样。
 
 DeepSeek 的已知差异：
 

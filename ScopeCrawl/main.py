@@ -6,9 +6,11 @@ import argparse
 import logging
 import os
 import sys
+from typing import get_args
 
 from scopecrawl.config import ConfigError, load_settings
 from scopecrawl.history import DEFAULT_HISTORY_PATH, reset_history
+from scopecrawl.models import Language
 from scopecrawl.pipeline import run_pipeline
 
 
@@ -22,8 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--location", help="地点限定，例如「埃及」；可选")
     parser.add_argument(
         "--language",
-        choices=["zh", "en", "ar", "ar-EG"],
-        help="关键词语言：zh / en / ar / ar-EG",
+        choices=get_args(Language),
+        help=f"关键词语言：{' / '.join(get_args(Language))}",
     )
     parser.add_argument(
         "--restart",

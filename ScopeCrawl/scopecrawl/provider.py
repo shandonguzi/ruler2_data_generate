@@ -1,4 +1,4 @@
-"""统一搜索 + 提取 Provider 抽象与工厂。"""
+"""统一搜索 + 提取 Provider 抽象、共享搜索错误与工厂。"""
 
 from __future__ import annotations
 
@@ -10,6 +10,27 @@ import httpx
 
 from .content import dedupe_inputs, expand_outcomes
 from .models import ExtractedContent, SearchRequest, SearchResponse, Settings
+
+
+class SearchError(Exception):
+    """搜索失败；两个引擎共用，携带引擎名与可选 HTTP 状态码。"""
+
+    def __init__(
+        self,
+        provider: str,
+        status_code: int | None,
+        message: str,
+    ) -> None:
+        super().__init__(message)
+        self.provider = provider
+        self.status_code = status_code
+        self.message = message
+
+    def __str__(self) -> str:
+        prefix = f"{self.provider}"
+        if self.status_code is not None:
+            prefix += f" HTTP {self.status_code}"
+        return f"{prefix}: {self.message}"
 
 
 class Provider(ABC):
@@ -49,7 +70,7 @@ def create_provider(
 ) -> Provider:
     """按顶层 provider 选择器构造搜索与提取共用的同一引擎实例。"""
     if settings.provider == "tavily":
-        from .search import TavilyProvider
+        from .tavily import TavilyProvider
 
         return TavilyProvider(settings, client=client, sleep=sleep)
 

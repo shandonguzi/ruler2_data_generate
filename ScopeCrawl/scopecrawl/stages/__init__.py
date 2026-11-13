@@ -1,4 +1,4 @@
-"""六个文档生成阶段。"""
+"""文档生成各阶段；多样性限流是阶段 5 的子步骤。"""
 
 from .diversity import DiversityStage
 from .document_generation import DocumentGenerationStage

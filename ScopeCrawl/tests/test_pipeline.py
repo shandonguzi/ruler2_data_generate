@@ -5,11 +5,11 @@ import logging
 
 import pytest
 
-from scopecrawl.evaluate import DomainFilter
+from scopecrawl.authority import DomainFilter
 from scopecrawl.history import HISTORY_FILENAME, UrlHistory
 from scopecrawl.models import ExtractedContent
 from scopecrawl.pipeline import Pipeline
-from scopecrawl.search import SearchError
+from scopecrawl.provider import SearchError
 from scopecrawl.storage import METADATA_FILENAME
 from scopecrawl.utils import normalize_url
 from tests.conftest import (
@@ -432,7 +432,7 @@ def test_pipeline_records_screened_urls_but_not_truncated(tmp_path):
     )
 
     assert code == 0
-    assert summary.prefiltered_urls == 1
+    assert summary.url_prefiltered_urls == 1
     assert summary.quality_dropped == 1
     history = UrlHistory(tmp_path / HISTORY_FILENAME)
     # 被 URL 粗筛、质量闸门丢弃的 URL 仍记录；被 max_urls 截断的 URL 留给下次。
@@ -466,7 +466,7 @@ def test_pipeline_domain_prefilter_runs_before_url_prefilter(tmp_path):
     assert code == 0
     # 黑名单域名整体拒绝，不再计入 URL 粗筛的 homepage 原因。
     assert summary.rejected_domains == 1
-    assert summary.prefiltered_urls == 0
+    assert summary.url_prefiltered_urls == 0
     assert summary.processed_urls == 1
     history = UrlHistory(tmp_path / HISTORY_FILENAME)
     assert history.contains("spam.example")
@@ -541,7 +541,7 @@ def test_pipeline_interleaves_queries_under_max_urls(tmp_path):
     assert extractor.calls == [first]
 
 
-def test_pipeline_prefilter_drops_portal_homepages(tmp_path):
+def test_pipeline_url_prefilter_drops_portal_homepages(tmp_path):
     provider = FakeProvider(
         {
             "关键词一": make_search_response(
@@ -553,8 +553,8 @@ def test_pipeline_prefilter_drops_portal_homepages(tmp_path):
     extractor = FakeExtractor({"https://example.com/a": MARKDOWN_OK})
     summary, code = _run(tmp_path, provider=provider, extractor=extractor)
     assert code == 0
-    assert summary.prefiltered_urls == 1
-    assert summary.prefilter_reasons["homepage"] == 1
+    assert summary.url_prefiltered_urls == 1
+    assert summary.url_prefilter_reasons["homepage"] == 1
     assert summary.processed_urls == 1
     assert summary.documents == 1
 

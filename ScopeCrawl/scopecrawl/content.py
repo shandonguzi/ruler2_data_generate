@@ -1,40 +1,26 @@
-"""正文提取、清洗与质量闸门；包含 Tavily Extract 客户端。"""
+"""正文清洗、质量闸门与通用提取辅助。"""
 
 from __future__ import annotations
 
 import html
-import logging
 import re
-import time
-from collections.abc import Callable
 from dataclasses import dataclass, replace
 from urllib.parse import urlsplit
-
-import httpx
 
 from .models import (
     ExtractedContent,
     ExtractedDoc,
     ExtractSettings,
-    TavilyExtractSettings,
     UrlTask,
 )
 from .utils import (
-    RateLimiter,
     make_doc_id,
     normalize_url,
-    response_body,
-    retry_after,
     to_iso,
     url_host,
     utc_now,
     visible_length,
 )
-
-logger = logging.getLogger(__name__)
-
-TAVILY_EXTRACT_ENDPOINT = "https://api.tavily.com/extract"
-MAX_BATCH_SIZE = 20
 
 _SENTENCE_RE = re.compile(r"[。！？；.!?;؟]")
 _HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+")
@@ -78,67 +64,67 @@ _NAV_WORDS = (
 _ZERO_WIDTH_RE = re.compile(r"[\u200b-\u200f\ufeff\u00a0]")
 
 _FOOTER_STRONG = (
-    "\u7248\u6743\u6240\u6709",
+    "版权所有",
     "copyright",
-    "icp\u5907",
-    "icp\u8bc1",
-    "\u516c\u5b89\u5907\u6848",
-    "\u5907\u6848\u53f7",
+    "icp备",
+    "icp证",
+    "公安备案",
+    "备案号",
     "gmt+8",
     "gmt+08",
     "processed in",
     "powered by",
-    "\u514d\u8d23\u58f0\u660e",
-    "\u514d\u8d23\u7533\u660e",
-    "\u9690\u79c1\u653f\u7b56",
-    "\u670d\u52a1\u6761\u6b3e",
+    "免责声明",
+    "免责申明",
+    "隐私政策",
+    "服务条款",
 )
 _FOOTER_WORDS = _FOOTER_STRONG + (
-    "\u7248\u6743",
-    "\u5907\u6848",
-    "\u8054\u7cfb\u6211\u4eec",
-    "\u8054\u7cfb\u7535\u8bdd",
-    "\u7535\u8bdd",
-    "\u90ae\u7bb1",
-    "\u5fae\u4fe1",
-    "\u5730\u5740",
-    "\u6280\u672f\u652f\u6301",
-    "\u8425\u4e1a\u6267\u7167",
-    "\u4fb5\u6743",
-    "\u4fb5\u72af",
-    "\u8457\u4f5c\u6743",
-    "\u5408\u6cd5\u6743\u76ca",
-    "\u539f\u4f5c\u8005",
-    "\u7528\u6237",
-    "\u4f5c\u8005",
-    "\u5e73\u53f0",
-    "\u514d\u8d23",
+    "版权",
+    "备案",
+    "联系我们",
+    "联系电话",
+    "电话",
+    "邮箱",
+    "微信",
+    "地址",
+    "技术支持",
+    "营业执照",
+    "侵权",
+    "侵犯",
+    "著作权",
+    "合法权益",
+    "原作者",
+    "用户",
+    "作者",
+    "平台",
+    "免责",
 )
 _UI_WORDS = (
-    "\u4e3e\u62a5",
-    "\u6536\u85cf",
-    "\u70b9\u8d5e",
-    "\u8bc4\u8bba",
-    "\u767b\u5f55\u540e",
-    "\u70b9\u51fb\u6b64\u5904",
-    "\u8fd4\u56de\u9876\u90e8",
-    "\u5206\u4eab\u5230",
+    "举报",
+    "收藏",
+    "点赞",
+    "评论",
+    "登录后",
+    "点击此处",
+    "返回顶部",
+    "分享到",
 )
 _CONTACT_RE = re.compile(
-    r"(?:\u7535\u8bdd|\u90ae\u7bb1|\u5fae\u4fe1|\u5730\u5740)\s*[:\uff1a]|\b\d{7,}\b|[\w.+-]+@[\w-]+\.[\w.]+"
+    r"(?:电话|邮箱|微信|地址)\s*[:：]|\b\d{7,}\b|[\w.+-]+@[\w-]+\.[\w.]+"
 )
-_CATEGORY_RE = re.compile(r"(?:category|\u5206\u7c7b|special:categories)", re.IGNORECASE)
+_CATEGORY_RE = re.compile(r"(?:category|分类|special:categories)", re.IGNORECASE)
 _NAV_HEADING_WORDS = (
-    "\u76ee\u5f55",
-    "\u5bfc\u822a",
-    "\u83dc\u5355",
-    "\u76f8\u5173\u63a8\u8350",
-    "\u7f51\u7ad9\u5730\u56fe",
-    "\u5feb\u901f\u94fe\u63a5",
-    "\u70ed\u95e8\u76ee\u7684\u5730",
-    "\u70ed\u95e8\u65c5\u6e38\u76ee\u7684\u5730",
-    "\u9875\u811a",
-    "\u53cb\u60c5\u94fe\u63a5",
+    "目录",
+    "导航",
+    "菜单",
+    "相关推荐",
+    "网站地图",
+    "快速链接",
+    "热门目的地",
+    "热门旅游目的地",
+    "页脚",
+    "友情链接",
 )
 
 
@@ -147,8 +133,10 @@ class CleanResult:
     markdown: str
     plain_chars: int
     outbound_links: int
-    outbound_text_ratio: float
-    link_text_ratio: float
+    # 清洗后保留块内的链接文字占比，用于页面评分中的广告/导航扣分。
+    kept_link_text_ratio: float
+    # 清洗前全文的链接文字占比，用于质量闸门判断链接堆砌。
+    raw_link_text_ratio: float
     nav_ratio: float
     substantive_blocks: int
     first_heading: str | None
@@ -170,209 +158,6 @@ class ExtractError(Exception):
         self.message = message
         self.fatal = fatal
         self.failed = failed or []
-
-
-class TavilyExtractor:
-    """Tavily /extract 单批客户端。切块与并发由 pipeline 控制。"""
-
-    name = "tavily"
-
-    def __init__(
-        self,
-        settings: TavilyExtractSettings,
-        *,
-        api_key: str | None = None,
-        client: httpx.Client | None = None,
-        sleep: Callable[[float], None] = time.sleep,
-    ) -> None:
-        if client is None and not api_key:
-            raise ExtractError("auth_error", "缺少 Tavily API Key", fatal=True)
-        self.settings = settings
-        self._api_key = api_key or ""
-        self._sleep = sleep
-        self._limiter = RateLimiter(settings.rate_limit_qps)
-        self._client = client or httpx.Client(
-            timeout=settings.timeout_seconds + 30,
-            follow_redirects=False,
-        )
-
-    def extract_batch(self, urls: list[str]) -> list[ExtractedContent]:
-        """提取一批 URL，返回与输入等长、按输入顺序排列的结果。"""
-        keys, unique_urls, key_to_unique = dedupe_inputs(urls)
-        if not unique_urls:
-            return []
-        return expand_outcomes(
-            urls,
-            keys,
-            key_to_unique,
-            unique_urls,
-            self.extract_unique(unique_urls),
-        )
-
-    def extract_unique(self, urls: list[str]) -> list[ExtractedContent]:
-        """提取已去重的 URL，返回与输入等长的结果。"""
-        if not urls:
-            return []
-        if len(urls) > MAX_BATCH_SIZE:
-            outcomes: list[ExtractedContent] = []
-            for chunk in chunk_urls(urls, MAX_BATCH_SIZE):
-                outcomes.extend(self._request(chunk))
-            return outcomes
-        return self._request(urls)
-
-    def _request(self, urls: list[str]) -> list[ExtractedContent]:
-        payload = {
-            "urls": urls,
-            "extract_depth": self.settings.depth,
-            "format": self.settings.format,
-            "timeout": int(self.settings.timeout_seconds),
-            "include_images": False,
-            "include_favicon": False,
-        }
-        try:
-            data = self._post(payload)
-        except ExtractError as exc:
-            if exc.fatal:
-                raise
-            return failure_outcomes(
-                urls,
-                exc.error_type,
-                exc.message,
-                failed=exc.failed,
-            )
-        return self._map_results(urls, data)
-
-    def _post(self, payload: dict) -> dict:
-        cfg = self.settings
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
-        }
-        attempt = 0
-
-        while True:
-            self._limiter.wait()
-            try:
-                response = self._client.post(
-                    TAVILY_EXTRACT_ENDPOINT, json=payload, headers=headers
-                )
-            except (httpx.TimeoutException, httpx.TransportError) as exc:
-                if attempt < cfg.max_retries:
-                    self._sleep(2**attempt)
-                    attempt += 1
-                    continue
-                raise ExtractError("network_error", f"网络错误：{exc}") from exc
-
-            status = response.status_code
-            if status == 200:
-                try:
-                    data = response.json()
-                except ValueError as exc:
-                    if attempt < cfg.max_retries:
-                        self._sleep(2**attempt)
-                        attempt += 1
-                        continue
-                    raise ExtractError("protocol_error", "响应不是合法 JSON") from exc
-                if not _valid_payload(data):
-                    if attempt < cfg.max_retries:
-                        self._sleep(2**attempt)
-                        attempt += 1
-                        continue
-                    raise ExtractError("protocol_error", "响应结构异常")
-                return data
-
-            if status == 400:
-                raise ExtractError(
-                    "invalid_batch",
-                    f"提取参数错误：{response_body(response)[:200]}",
-                    failed=_failed_from_response(response),
-                )
-            if status in (401, 403):
-                raise ExtractError(
-                    "auth_error", "鉴权失败，请检查 Tavily API Key", fatal=True
-                )
-            if status in (432, 433):
-                raise ExtractError(
-                    "quota_exceeded", "Tavily 额度或套餐上限", fatal=True
-                )
-            if status == 429 or status >= 500:
-                if attempt < cfg.max_retries:
-                    self._sleep(retry_after(response, default=2**attempt))
-                    attempt += 1
-                    continue
-                raise ExtractError(
-                    "service_error",
-                    f"服务端错误：{response_body(response)[:200]}",
-                )
-            raise ExtractError(
-                "http_error", f"HTTP {status}：{response_body(response)[:200]}"
-            )
-
-    def _map_results(self, urls: list[str], data: dict) -> list[ExtractedContent]:
-        by_url: dict[str, dict] = {}
-        by_normalized: dict[str, dict] = {}
-        for item in data.get("results") or []:
-            if not isinstance(item, dict):
-                continue
-            raw_url = str(item.get("url") or "").strip()
-            if not raw_url:
-                continue
-            by_url[raw_url] = item
-            normalized = normalize_url(raw_url)
-            if normalized:
-                by_normalized[normalized] = item
-
-        failed: dict[str, str] = {}
-        failed_normalized: dict[str, str] = {}
-        for item in data.get("failed_results") or []:
-            if not isinstance(item, dict):
-                continue
-            raw_url = str(item.get("url") or "").strip()
-            if not raw_url:
-                continue
-            error = str(item.get("error") or "提取失败")
-            failed[raw_url] = error
-            normalized = normalize_url(raw_url)
-            if normalized:
-                failed_normalized[normalized] = error
-
-        outcomes: list[ExtractedContent] = []
-        for raw_url in urls:
-            normalized = normalize_url(raw_url) or raw_url
-            item = by_url.get(raw_url) or by_normalized.get(normalized)
-            if item is not None:
-                content = item.get("raw_content")
-                raw_content = content if isinstance(content, str) else ""
-                final_url = str(item.get("url") or "").strip()
-                if not _is_http_url(final_url):
-                    final_url = raw_url
-                if not raw_content.strip():
-                    outcomes.append(
-                        ExtractedContent(
-                            url=raw_url,
-                            final_url=final_url,
-                            error_type="empty",
-                            error="正文为空",
-                        )
-                    )
-                else:
-                    outcomes.append(
-                        ExtractedContent(
-                            url=raw_url,
-                            final_url=final_url,
-                            raw_content=raw_content,
-                        )
-                    )
-                continue
-            error = failed.get(raw_url) or failed_normalized.get(normalized)
-            outcomes.append(
-                ExtractedContent(
-                    url=raw_url,
-                    error_type="failed",
-                    error=error or "提取结果缺失",
-                )
-            )
-        return outcomes
 
 
 def dedupe_inputs(urls: list[str]) -> tuple[list[str], list[str], dict[str, int]]:
@@ -500,7 +285,7 @@ def clean_content(
         link_text, link_ratio = _link_stats(block)
         retained_link_text += link_text
         for _, href in _LINK_RE.findall(block):
-            if _is_http_url(href) and url_host(href) != host:
+            if is_http_url(href) and url_host(href) != host:
                 outbound.add(href)
         if _is_substantive(block, link_ratio):
             substantive += 1
@@ -518,8 +303,8 @@ def clean_content(
         markdown=markdown,
         plain_chars=plain_length(markdown),
         outbound_links=len(outbound),
-        outbound_text_ratio=min(max(retained_link_text / retained_visible, 0.0), 1.0),
-        link_text_ratio=min(max(total_link_text / pre_visible, 0.0), 1.0),
+        kept_link_text_ratio=min(max(retained_link_text / retained_visible, 0.0), 1.0),
+        raw_link_text_ratio=min(max(total_link_text / pre_visible, 0.0), 1.0),
         nav_ratio=min(max(removed_visible / pre_visible, 0.0), 1.0),
         substantive_blocks=substantive,
         first_heading=first_heading,
@@ -619,10 +404,11 @@ def check_quality(clean: CleanResult, settings: ExtractSettings) -> tuple[str, s
             "few_paragraphs",
             f"实质段落不足（{clean.substantive_blocks} < {settings.min_paragraphs}）",
         )
-    if clean.link_text_ratio > settings.max_link_text_ratio:
+    if clean.raw_link_text_ratio > settings.max_link_text_ratio:
         return (
             "link_heavy",
-            f"链接文本占比过高（{clean.link_text_ratio:.2f} > {settings.max_link_text_ratio:.2f}）",
+            "链接文本占比过高"
+            f"（{clean.raw_link_text_ratio:.2f} > {settings.max_link_text_ratio:.2f}）",
         )
     return None
 
@@ -648,7 +434,7 @@ def build_extracted_doc(
         plain_chars=clean.plain_chars,
         matched_queries=list(task.matched_queries),
         outbound_links=clean.outbound_links,
-        outbound_text_ratio=clean.outbound_text_ratio,
+        kept_link_text_ratio=clean.kept_link_text_ratio,
         extractor=extractor,
     )
 
@@ -673,38 +459,7 @@ def failure_outcomes(
     ]
 
 
-def _valid_payload(data: object) -> bool:
-    if not isinstance(data, dict):
-        return False
-    results = data.get("results", [])
-    failed = data.get("failed_results", [])
-    return isinstance(results, list) and isinstance(failed, list)
-
-
-def _failed_from_response(response: httpx.Response) -> list[tuple[str, str]]:
-    try:
-        data = response.json()
-    except ValueError:
-        return []
-    if not isinstance(data, dict):
-        return []
-    detail = data.get("detail")
-    if isinstance(detail, dict):
-        data = detail
-    items = data.get("failed_results")
-    if not isinstance(items, list):
-        return []
-    failed: list[tuple[str, str]] = []
-    for item in items:
-        if not isinstance(item, dict):
-            continue
-        url = str(item.get("url") or "").strip()
-        if url:
-            failed.append((url, str(item.get("error") or "URL 未通过校验")))
-    return failed
-
-
-def _is_http_url(value: str) -> bool:
+def is_http_url(value: str) -> bool:
     try:
         parsed = urlsplit(value)
     except ValueError:

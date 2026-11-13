@@ -2,6 +2,14 @@
 
 ## 2026-11-13
 
+- 调整：`TavilyExtractor` 及提取端点/批次常量移入 `tavily.py`，`content.py` 只保留正文清洗、质量闸门与通用提取辅助；`is_http_url` 改为跨模块公开函数；`TavilyExtractor` 测试从 `test_content.py` 移到 `test_tavily.py`
+- 调整：`evaluate.py` 拆分出 `authority.py`（域名预筛、页面评分、权威度综合），`evaluate.py` 只保留内容复核、丢弃判定与多样性选择；阶段 3/5/6 与测试同步更新导入
+- 调整：清洗比例字段改名以区分口径——`link_text_ratio` → `raw_link_text_ratio`（清洗前全文），`outbound_text_ratio` → `kept_link_text_ratio`（清洗后保留块；同名 `ExtractedDoc` 字段一并改名）
+- 调整：`search.prefilter.enabled` 改名 `search.url_prefilter.enabled`（`PrefilterSettings` → `UrlPrefilterSettings`），汇总字段同步改为 `url_prefiltered_urls` / `url_prefilter_reasons` / `URL_PREFILTER_LABELS`，避免与受 `authority.enabled` 控制的域名预筛混淆；旧配置键会因 `extra="forbid"` 报错
+- 调整：移除 `RunInput` 别名，统一使用 `RunConfig`；`content.py` 中的中文噪声词与正则由 `\uXXXX` 转义改为字面量；DeepSeek 常量 `TIME_RANGE_DAYS` 改名 `AFTER_DAYS_BY_TIME_RANGE`，两个引擎的空结果日志键统一为 `search_empty`
+- 调整：`scopecrawl/search.py` 重命名为 `scopecrawl/tavily.py`（`tests/test_search.py` → `tests/test_tavily.py`），与 `deepseek.py` 的引擎命名对齐；`SearchError` 移至 `provider.py` 由两个引擎共用，`LANGUAGE_CODES` 改为 `tavily.py` 内的 `TAVILY_LANGUAGE_CODES`，`country_from_location` 移至 `utils.py`，阶段 2 不再依赖具体引擎模块
+- 调整：修正过时注释与文案——`stages/__init__.py` 阶段数量、`Pipeline` 阶段串联说明、README 代码结构补充 `diversity.py`；页面评分原因不再硬编码 “Tavily Extract”；移除未使用的 `TavilyExtractor.name`
+- 调整：`main.py` 的 `--language` 可选值改为从 `Language` 类型推导，避免与模型定义漂移
 - 新增：`providers.deepseek.search.need_content`（模型默认 `false`，`config/config.yaml` 设为 `true`）；开启后 DeepSeek 搜索随结果返回正文，`SearchResult` / `UrlTask` 携带 `content` 透传到提取阶段，有正文时跳过 `/v1/tools/fetch`，正文为空才 fetch；提取阶段只判断正文是否存在，不读取该配置
 - 调整：`metadata.jsonl` 的 `extractor` 增加 `deepseek-search`，用于区分搜索正文与 `deepseek-fetch` 实际抓取；搜索正文未通过质量闸门时不回退 fetch
 - 测试：补充 `need_content` 配置解析、搜索 payload 与正文映射、重复 URL 最长正文合并、提取阶段搜索正文直通/混合批次/fetch 回退/致命错误，以及端到端只 fetch 空正文 URL 的用例

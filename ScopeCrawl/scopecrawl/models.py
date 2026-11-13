@@ -23,19 +23,12 @@ STAGE_LABELS: dict[FailureStage, str] = {
     "write": "生成文档",
 }
 
-# 语言标识的两套映射：prompt 展示名与搜索接口语言码，集中维护避免多处漂移。
+# prompt 展示名；各引擎的搜索语言码在对应 provider 模块内维护。
 LANGUAGE_NAMES: dict[Language, str] = {
     "zh": "Simplified Chinese",
     "en": "English",
     "ar": "Modern Standard Arabic",
     "ar-EG": "Egyptian Arabic",
-}
-
-LANGUAGE_CODES: dict[Language, str] = {
-    "zh": "zh-cn",
-    "en": "en",
-    "ar": "ar",
-    "ar-EG": "ar",
 }
 
 
@@ -57,9 +50,6 @@ class RunConfig(Model):
     language: Language = "zh"
     time_range: TimeRange | None = None
 
-
-# 与文档中的命名保持一致。
-RunInput = RunConfig
 
 
 class KeywordsSettings(Model):
@@ -135,7 +125,9 @@ class ProviderSettings(Model):
     deepseek: DeepSeekProviderSettings = Field(default_factory=DeepSeekProviderSettings)
 
 
-class PrefilterSettings(Model):
+class UrlPrefilterSettings(Model):
+    """URL 结构粗筛开关；域名预筛由 authority.enabled 控制。"""
+
     enabled: bool = True
 
 
@@ -143,7 +135,7 @@ class SearchSettings(Model):
     concurrency: int = Field(8, ge=1, le=32)
     defaults: SearchDefaults = Field(default_factory=SearchDefaults)
     dedupe: DedupeSettings = Field(default_factory=DedupeSettings)
-    prefilter: PrefilterSettings = Field(default_factory=PrefilterSettings)
+    url_prefilter: UrlPrefilterSettings = Field(default_factory=UrlPrefilterSettings)
 
 
 class ExtractSettings(Model):
@@ -308,7 +300,8 @@ class ExtractedDoc(Model):
     plain_chars: int
     matched_queries: list[str] = Field(default_factory=list)
     outbound_links: int = 0
-    outbound_text_ratio: float = 0.0
+    # 清洗后保留块内的链接文字占比，用于权威度页面评分扣分。
+    kept_link_text_ratio: float = 0.0
     extractor: str = ""
 
 

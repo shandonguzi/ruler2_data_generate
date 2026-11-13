@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import PROJECT_ROOT
-from .models import Document, RunInput
+from .models import Document, RunConfig
 from .utils import make_doc_id, normalize_url
 
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "data"
@@ -73,7 +73,7 @@ class RunWriter:
     def __init__(
         self,
         output_root: str | Path | None = None,
-        run: RunInput | None = None,
+        run: RunConfig | None = None,
         *,
         clock=datetime.now,
     ) -> None:

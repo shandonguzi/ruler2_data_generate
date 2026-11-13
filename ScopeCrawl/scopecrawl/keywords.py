@@ -8,7 +8,7 @@ import unicodedata
 from pathlib import Path
 
 from .config import PROJECT_ROOT
-from .models import LANGUAGE_NAMES, KeywordsSettings, RunInput
+from .models import LANGUAGE_NAMES, KeywordsSettings, RunConfig
 from .utils import read_prompt, render_template, strip_json_noise, try_json
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class KeywordError(Exception):
 
 
 def generate_keywords(
-    run: RunInput,
+    run: RunConfig,
     client,
     settings: KeywordsSettings,
     *,
@@ -208,7 +208,7 @@ def _dedupe_key(text: str) -> str:
     return _WHITESPACE_RE.sub("", value)
 
 
-def _copies_catalog_labels(queries: list[str], run: RunInput) -> bool:
+def _copies_catalog_labels(queries: list[str], run: RunConfig) -> bool:
     """检测查询是否把 S3/S4 场景标签原样拼进了搜索词。"""
     s3 = _dedupe_key(run.s3)
     s4 = _dedupe_key(run.s4)

@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from ..authority import DomainFilter
 from ..config import load_authority
-from ..evaluate import DomainFilter
 from ..history import UrlHistory
 from ..models import (
     AuthorityLists,
@@ -15,7 +15,7 @@ from ..models import (
     Settings,
     UrlTask,
 )
-from ..summary import PREFILTER_LABELS, UrlFilterStats, format_counts
+from ..summary import URL_PREFILTER_LABELS, UrlFilterStats, format_counts
 from ..utils import (
     build_url_task,
     dedupe_results,
@@ -64,7 +64,7 @@ class UrlFilterStage:
         candidates, assessments = self._domain_prefilter(
             candidates, lists, stats, rejected
         )
-        if self.settings.search.prefilter.enabled:
+        if self.settings.search.url_prefilter.enabled:
             candidates = self._url_prefilter(candidates, stats, rejected)
 
         max_urls = self.settings.search.dedupe.max_urls
@@ -148,14 +148,14 @@ class UrlFilterStage:
             if reason is None:
                 kept.append(task)
                 continue
-            stats.prefilter_reasons[reason] += 1
+            stats.url_prefilter_reasons[reason] += 1
             rejected.append(task)
             logger.debug("[URL 筛选] 粗筛丢弃：%s（%s）", task.url, reason)
-        detail = format_counts(stats.prefilter_reasons, PREFILTER_LABELS)
+        detail = format_counts(stats.url_prefilter_reasons, URL_PREFILTER_LABELS)
         logger.info(
             "[URL 筛选] 粗筛结束：保留 %d 个，丢弃 %d 个%s",
             len(kept),
-            sum(stats.prefilter_reasons.values()),
+            sum(stats.url_prefilter_reasons.values()),
             f"（{detail}）" if detail else "",
         )
         return kept

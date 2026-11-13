@@ -1,4 +1,4 @@
-"""URL 规范化、去重、哈希、时间与文本辅助函数。"""
+"""URL 规范化、去重、哈希、时间、地点与文本辅助函数。"""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import logging
 import re
 import threading
 import time
+import unicodedata
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
@@ -217,6 +218,62 @@ def normalize_url(
 def _is_tracking_param(name: str) -> bool:
     lowered = name.lower()
     return lowered.startswith("utm_") or lowered in TRACKING_PARAMS
+
+
+# 只映射国家级别名，不猜城市；未命中时不传 country。
+LOCATION_COUNTRY_MAP = {
+    "中国": "CN",
+    "china": "CN",
+    "cn": "CN",
+    "中国大陆": "CN",
+    "中华人民共和国": "CN",
+    "الصين": "CN",
+    "埃及": "EG",
+    "egypt": "EG",
+    "مصر": "EG",
+    "沙特": "SA",
+    "沙特阿拉伯": "SA",
+    "saudi arabia": "SA",
+    "ksa": "SA",
+    "السعودية": "SA",
+    "阿联酋": "AE",
+    "阿拉伯联合酋长国": "AE",
+    "uae": "AE",
+    "united arab emirates": "AE",
+    "الإمارات": "AE",
+    "美国": "US",
+    "usa": "US",
+    "united states": "US",
+}
+
+
+def country_from_location(location: str | None) -> str | None:
+    """把地点名确定性映射为 ISO alpha-2 国家码；无法确定时返回 None。"""
+    text = _normalize_location(location)
+    if not text:
+        return None
+    if text in LOCATION_COUNTRY_MAP:
+        return LOCATION_COUNTRY_MAP[text]
+
+    best: tuple[int, str] | None = None
+    for alias, code in LOCATION_COUNTRY_MAP.items():
+        if not _contains_location_alias(text, alias):
+            continue
+        if best is None or len(alias) > best[0]:
+            best = (len(alias), code)
+    return best[1] if best else None
+
+
+def _normalize_location(value: str | None) -> str:
+    text = unicodedata.normalize("NFKC", value or "").casefold()
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _contains_location_alias(text: str, alias: str) -> bool:
+    if alias.isascii():
+        pattern = rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])"
+        return re.search(pattern, text) is not None
+    return alias in text
 
 
 def url_host(url: str) -> str:

@@ -5,10 +5,9 @@ from __future__ import annotations
 import logging
 
 from ..models import Failure, SearchRequest, SearchResponse, Settings
-from ..provider import Provider
-from ..search import SearchError, country_from_location
+from ..provider import Provider, SearchError
 from ..summary import SearchStats, StageAborted
-from ..utils import iter_concurrent, log_stage
+from ..utils import country_from_location, iter_concurrent, log_stage
 
 logger = logging.getLogger(__name__)
 

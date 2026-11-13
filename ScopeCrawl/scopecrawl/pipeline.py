@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class Pipeline:
-    """按「关键词生成 → 检索 → URL 筛选 → 提取清洗 → 评估筛选 → 生成文档」串联各阶段。"""
+    """串联「关键词生成 → 检索 → URL 筛选 → 提取清洗 → 评估筛选 → 多样性限流 → 生成文档」。"""
 
     def __init__(
         self,

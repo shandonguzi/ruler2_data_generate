@@ -10,7 +10,7 @@ import respx
 from scopecrawl.content import ExtractError
 from scopecrawl.deepseek import DeepSeekProvider
 from scopecrawl.models import SearchRequest
-from scopecrawl.search import SearchError
+from scopecrawl.provider import SearchError
 from tests.conftest import make_settings
 
 SEARCH_ENDPOINT = "https://api.deepseek.com/v1/tools/search"

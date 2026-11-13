@@ -16,7 +16,7 @@ keywords:
 
 search:
   concurrency: 8
-  prefilter:
+  url_prefilter:
     enabled: true
   defaults:
     max_results: 20
@@ -34,9 +34,9 @@ extract:
   max_link_text_ratio: 0.4
   # 非 ASCII 字符中异常文种占比超过该值时，判为编码乱码并丢弃
   max_garbled_ratio: 0.35
-  # 去掉 Markdown 行内链接的 URL 与括号，保留链接文字（默认关闭）
+  # 去掉 Markdown 行内链接的 URL 与括号，保留链接文字（模型默认 false，此处开启）
   strip_links: true
-  # 删除 Markdown 图片 ![alt](url)（默认关闭）
+  # 删除 Markdown 图片 ![alt](url)（模型默认 false，此处开启）
   strip_images: true
 
 providers:

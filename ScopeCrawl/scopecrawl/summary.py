@@ -25,7 +25,7 @@ DROP_REASON_LABELS = {
     "authority_low": "权威度过低",
 }
 
-PREFILTER_LABELS = {
+URL_PREFILTER_LABELS = {
     "homepage": "首页",
     "index_page": "索引页",
     "category_page": "栏目页",
@@ -48,7 +48,7 @@ class RunSummary:
     documents: int = 0
     rejected_domains: int = 0
     unfetchable_skipped: int = 0
-    prefilter_reasons: Counter = field(default_factory=Counter)
+    url_prefilter_reasons: Counter = field(default_factory=Counter)
     history_skipped: int = 0
     diversity_reasons: Counter = field(default_factory=Counter)
     quality_reasons: Counter = field(default_factory=Counter)
@@ -57,8 +57,8 @@ class RunSummary:
 
     # 丢弃篇数统一由原因 Counter 求和，避免两个来源各自累加后不一致。
     @property
-    def prefiltered_urls(self) -> int:
-        return sum(self.prefilter_reasons.values())
+    def url_prefiltered_urls(self) -> int:
+        return sum(self.url_prefilter_reasons.values())
 
     @property
     def quality_dropped(self) -> int:
@@ -103,13 +103,13 @@ class SearchStats:
 @dataclass
 class UrlFilterStats:
     history_skipped: int = 0
-    prefilter_reasons: Counter = field(default_factory=Counter)
+    url_prefilter_reasons: Counter = field(default_factory=Counter)
     rejected_domains: int = 0
     unfetchable_skipped: int = 0
 
     def merge_into(self, summary: RunSummary) -> None:
         summary.history_skipped = self.history_skipped
-        summary.prefilter_reasons.update(self.prefilter_reasons)
+        summary.url_prefilter_reasons.update(self.url_prefilter_reasons)
         summary.rejected_domains = self.rejected_domains
         summary.unfetchable_skipped = self.unfetchable_skipped
 
@@ -166,7 +166,7 @@ def print_summary(summary: RunSummary) -> None:
     if (
         summary.rejected_domains
         or summary.unfetchable_skipped
-        or summary.prefiltered_urls
+        or summary.url_prefiltered_urls
         or summary.dropped_documents
         or summary.diversity_dropped
         or summary.quality_dropped
@@ -174,13 +174,14 @@ def print_summary(summary: RunSummary) -> None:
         print(
             f"域名拒绝 {summary.rejected_domains} 个，"
             f"无法提取跳过 {summary.unfetchable_skipped} 个，"
-            f"粗筛丢弃 {summary.prefiltered_urls} 个，"
+            f"粗筛丢弃 {summary.url_prefiltered_urls} 个，"
             f"质量丢弃 {summary.quality_dropped} 篇，"
             f"评估丢弃 {summary.dropped_documents} 篇，"
             f"多样性丢弃 {summary.diversity_dropped} 篇。"
         )
-    if summary.prefilter_reasons:
-        print(f"粗筛丢弃明细：{format_counts(summary.prefilter_reasons, PREFILTER_LABELS)}。")
+    if summary.url_prefilter_reasons:
+        detail = format_counts(summary.url_prefilter_reasons, URL_PREFILTER_LABELS)
+        print(f"粗筛丢弃明细：{detail}。")
     if summary.quality_reasons:
         print(f"质量丢弃明细：{format_counts(summary.quality_reasons, QUALITY_LABELS)}。")
     if summary.drop_reasons:

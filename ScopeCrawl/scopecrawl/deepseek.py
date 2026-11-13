@@ -1,4 +1,4 @@
-"""DeepSeek Search + Fetch provider。"""
+"""DeepSeek Search + Fetch Provider。"""
 
 from __future__ import annotations
 
@@ -19,8 +19,7 @@ from .models import (
     SearchResult,
     Settings,
 )
-from .provider import Provider
-from .search import SearchError
+from .provider import Provider, SearchError
 from .utils import (
     RateLimiter,
     iter_concurrent,
@@ -44,7 +43,7 @@ DEEPSEEK_LANGUAGE_CODES = {
     "ar-EG": "ar",
 }
 
-TIME_RANGE_DAYS = {
+AFTER_DAYS_BY_TIME_RANGE = {
     "day": 1,
     "week": 7,
     "month": 31,
@@ -354,5 +353,5 @@ class DeepSeekProvider(Provider):
 
 
 def _after_date(time_range: str) -> str:
-    days = TIME_RANGE_DAYS[time_range]
+    days = AFTER_DAYS_BY_TIME_RANGE[time_range]
     return (datetime.now(UTC) - timedelta(days=days)).date().isoformat()

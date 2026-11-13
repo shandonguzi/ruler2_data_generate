@@ -1,4 +1,4 @@
-"""共享测试夹具：配置构造、假 LLM/Provider/Extractor。"""
+"""共享测试夹具：配置构造、文档构造、假 LLM/Provider/Extractor。"""
 
 from __future__ import annotations
 
@@ -7,7 +7,8 @@ import json
 
 import pytest
 
-from scopecrawl.models import ExtractedContent, SearchResponse, SearchResult, Settings
+from scopecrawl.content import plain_length
+from scopecrawl.models import ExtractedContent, ExtractedDoc, SearchResponse, SearchResult, Settings
 from scopecrawl.provider import Provider
 
 _PROXY_ENV = (
@@ -241,3 +242,27 @@ def yaml_config(**overrides) -> dict:
     for key, value in overrides.items():
         data[key] = copy.deepcopy(value)
     return data
+
+
+MARKDOWN = "word " * 300
+
+
+def make_doc(**overrides) -> ExtractedDoc:
+    data = {
+        "doc_id": "0123456789abcdef",
+        "url": "https://example.com/a",
+        "final_url": "https://example.com/a",
+        "title": "title",
+        "site": "example.com",
+        "published_at": "2026-11-01T00:00:00+00:00",
+        "fetched_at": "2026-11-10T00:00:00+00:00",
+        "lang": "en",
+        "markdown": MARKDOWN,
+        "matched_queries": [],
+        "outbound_links": 2,
+        "kept_link_text_ratio": 0.0,
+        "extractor": "tavily-extract",
+    }
+    data.update(overrides)
+    data.setdefault("plain_chars", plain_length(data["markdown"]))
+    return ExtractedDoc(**data)

@@ -4,7 +4,7 @@ import httpx
 
 from scopecrawl.deepseek import DeepSeekProvider
 from scopecrawl.provider import Provider, create_provider
-from scopecrawl.search import TavilyProvider
+from scopecrawl.tavily import TavilyProvider
 from tests.conftest import make_settings
 
 

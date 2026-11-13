@@ -5,10 +5,10 @@ import json
 import pytest
 
 from scopecrawl.keywords import KeywordError, _parse_payload, generate_keywords
-from scopecrawl.models import KeywordsSettings, RunInput
+from scopecrawl.models import KeywordsSettings, RunConfig
 from tests.conftest import FakeLLM
 
-RUN = RunInput(
+RUN = RunConfig(
     s3="天气查询",
     s4="气象灾害查询",
     location="埃及",

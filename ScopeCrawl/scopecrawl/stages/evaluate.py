@@ -6,9 +6,8 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ..authority import assess_page, combine_authority
 from ..evaluate import (
-    assess_page,
-    combine_authority,
     load_review_prompt,
     review_content,
     should_drop,
