@@ -57,7 +57,7 @@ def test_search_sends_required_language_parameters():
     assert "include_raw_content" not in body
     assert route.calls[0].request.headers["authorization"] == "Bearer tvly-test"
 
-    assert response.results[0].rank == 1
+    assert response.results[0].url == "https://example.com/a"
     assert response.results[0].published_at == "2026-11-10T12:00:00+00:00"
 
 
@@ -127,19 +127,17 @@ def test_country_omitted_for_news_topic():
 
 
 @respx.mock
-def test_time_range_and_provider_options():
+def test_time_range():
     route = respx.post(TAVILY_ENDPOINT).mock(return_value=httpx.Response(200, json=_response([])))
     _provider().search(
         SearchRequest(
             query="q",
             language="en",
             time_range="week",
-            provider_options={"include_domains": ["example.com"]},
         )
     )
     body = json.loads(route.calls[0].request.content)
     assert body["time_range"] == "week"
-    assert body["include_domains"] == ["example.com"]
 
 
 @respx.mock
@@ -161,7 +159,7 @@ def test_duplicate_urls_removed_within_response():
         "https://example.com/a",
         "https://example.com/b",
     ]
-    assert [item.rank for item in response.results] == [1, 3]
+    assert [item.title for item in response.results] == ["1", "3"]
 
 
 @respx.mock
@@ -187,7 +185,6 @@ def test_401_is_not_retried():
     with pytest.raises(SearchError) as excinfo:
         _provider().search(SearchRequest(query="q", language="en"))
     assert excinfo.value.status_code == 401
-    assert excinfo.value.retryable is False
     assert route.call_count == 1
 
 
@@ -199,7 +196,6 @@ def test_400_is_not_retried_and_marked_fatal():
     with pytest.raises(SearchError) as excinfo:
         _provider().search(SearchRequest(query="q", language="en"))
     assert excinfo.value.status_code == 400
-    assert excinfo.value.retryable is False
     assert route.call_count == 1
 
 

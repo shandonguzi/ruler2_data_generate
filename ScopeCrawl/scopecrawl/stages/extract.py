@@ -92,7 +92,7 @@ class ExtractStage:
                         "[提取清洗] 批次 %d/%d 失败：%s", done, len(batches), exc
                     )
                 outcomes[offset : offset + len(batch)] = failure_outcomes(
-                    batch, exc.error_type, exc.message, fatal=exc.fatal
+                    batch, exc.error_type, exc.message
                 )
             except Exception as exc:  # noqa: BLE001 - 单批异常不中断其他批次
                 logger.warning(
@@ -213,13 +213,6 @@ class ExtractStage:
                     message,
                 )
                 continue
-
-            if clean.nav_ratio > self.settings.extract.max_nav_line_ratio:
-                logger.debug(
-                    "[提取清洗] 导航占比 %.2f 超过阈值，但正文达标，保留：%s",
-                    clean.nav_ratio,
-                    task.url,
-                )
 
             document = build_extracted_doc(task, outcome, clean)
             slots[position] = (document, domain)

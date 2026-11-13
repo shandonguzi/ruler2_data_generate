@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
@@ -100,7 +100,6 @@ class PrefilterSettings(Model):
 
 
 class SearchSettings(Model):
-    provider: Literal["tavily"] = "tavily"
     concurrency: int = Field(8, ge=1, le=32)
     defaults: SearchDefaults = Field(default_factory=SearchDefaults)
     dedupe: DedupeSettings = Field(default_factory=DedupeSettings)
@@ -109,7 +108,6 @@ class SearchSettings(Model):
 
 
 class ExtractSettings(Model):
-    provider: Literal["tavily"] = "tavily"
     format: Literal["markdown", "text"] = "markdown"
     depth: Literal["basic", "advanced"] = "basic"
     batch_size: int = Field(20, ge=1, le=20)
@@ -120,7 +118,6 @@ class ExtractSettings(Model):
     min_chars: int = Field(800, ge=1)
     min_paragraphs: int = Field(3, ge=0)
     max_link_text_ratio: float = Field(0.4, ge=0, le=1)
-    max_nav_line_ratio: float = Field(0.5, ge=0, le=1)
     max_garbled_ratio: float = Field(0.35, ge=0, le=1)
 
 
@@ -230,21 +227,16 @@ class SearchRequest(Model):
     country: str | None = None
     max_results: int = Field(10, ge=1, le=20)
     time_range: TimeRange | None = None
-    provider_options: dict[str, Any] = Field(default_factory=dict)
 
 
 class SearchResult(Model):
     url: str
     title: str = ""
-    rank: int
-    score: float | None = None
     published_at: str | None = None
 
 
 class SearchResponse(Model):
-    query: str
     results: list[SearchResult] = Field(default_factory=list)
-    latency_ms: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -261,7 +253,6 @@ class ExtractedContent:
     raw_content: str = ""
     error_type: str = ""
     error: str = ""
-    fatal: bool = False
 
 
 class ExtractedDoc(Model):
@@ -270,14 +261,12 @@ class ExtractedDoc(Model):
     final_url: str
     title: str = ""
     site: str = ""
-    author: str | None = None
     published_at: str | None = None
     fetched_at: str
     lang: str | None = None
     markdown: str
     plain_chars: int
     matched_queries: list[str] = Field(default_factory=list)
-    has_jsonld: bool = False
     outbound_links: int = 0
     outbound_text_ratio: float = 0.0
     extractor: str = "tavily-extract"
@@ -303,17 +292,12 @@ class DomainAssessment(Model):
     domain_score: float
     signals: list[str] = Field(default_factory=list)
     reasons: list[str] = Field(default_factory=list)
-    assessed_at: str = ""
 
 
 class PageAssessment(Model):
-    doc_id: str
-    url: str
     page_score: float
-    signals: dict[str, float] = Field(default_factory=dict)
     quality_flags: list[str] = Field(default_factory=list)
     reasons: list[str] = Field(default_factory=list)
-    assessed_at: str = ""
 
 
 class AuthorityResult(Model):

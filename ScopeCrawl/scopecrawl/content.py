@@ -152,14 +152,12 @@ class ExtractError(Exception):
         message: str,
         *,
         fatal: bool = False,
-        status_code: int | None = None,
         failed: list[tuple[str, str]] | None = None,
     ) -> None:
         super().__init__(message)
         self.error_type = error_type
         self.message = message
         self.fatal = fatal
-        self.status_code = status_code
         self.failed = failed or []
 
 
@@ -186,11 +184,6 @@ class TavilyExtractor:
             timeout=settings.timeout_seconds + 30,
             follow_redirects=False,
         )
-        self._owns_client = client is None
-
-    def close(self) -> None:
-        if self._owns_client:
-            self._client.close()
 
     def extract_batch(self, urls: list[str]) -> list[ExtractedContent]:
         """提取一批 URL，返回与输入等长、按输入顺序排列的结果。"""
@@ -248,7 +241,6 @@ class TavilyExtractor:
                 urls,
                 exc.error_type,
                 exc.message,
-                fatal=exc.fatal,
                 failed=exc.failed,
             )
         return self._map_results(urls, data)
@@ -296,16 +288,15 @@ class TavilyExtractor:
                 raise ExtractError(
                     "invalid_batch",
                     f"提取参数错误：{response_body(response)[:200]}",
-                    status_code=status,
                     failed=_failed_from_response(response),
                 )
             if status in (401, 403):
                 raise ExtractError(
-                    "auth_error", "鉴权失败，请检查 Tavily API Key", fatal=True, status_code=status
+                    "auth_error", "鉴权失败，请检查 Tavily API Key", fatal=True
                 )
             if status in (432, 433):
                 raise ExtractError(
-                    "quota_exceeded", "Tavily 额度或套餐上限", fatal=True, status_code=status
+                    "quota_exceeded", "Tavily 额度或套餐上限", fatal=True
                 )
             if status == 429 or status >= 500:
                 if attempt < cfg.max_retries:
@@ -315,10 +306,9 @@ class TavilyExtractor:
                 raise ExtractError(
                     "service_error",
                     f"服务端错误：{response_body(response)[:200]}",
-                    status_code=status,
                 )
             raise ExtractError(
-                "http_error", f"HTTP {status}：{response_body(response)[:200]}", status_code=status
+                "http_error", f"HTTP {status}：{response_body(response)[:200]}"
             )
 
     def _map_results(self, urls: list[str], data: dict) -> list[ExtractedContent]:
@@ -575,14 +565,12 @@ def build_extracted_doc(
         final_url=content.final_url or task.url,
         title=title,
         site=url_host(task.url),
-        author=None,
         published_at=to_iso(task.published_at),
         fetched_at=to_iso(utc_now()) or "",
         lang=None,
         markdown=clean.markdown,
         plain_chars=clean.plain_chars,
         matched_queries=list(task.matched_queries),
-        has_jsonld=False,
         outbound_links=clean.outbound_links,
         outbound_text_ratio=clean.outbound_text_ratio,
         extractor="tavily-extract",
@@ -594,7 +582,6 @@ def failure_outcomes(
     error_type: str,
     message: str,
     *,
-    fatal: bool = False,
     failed: list[tuple[str, str]] | None = None,
 ) -> list[ExtractedContent]:
     """把一组 URL 统一包装成失败结果，可按 URL 覆盖错误信息。"""
@@ -605,7 +592,6 @@ def failure_outcomes(
             final_url=url,
             error_type=error_type,
             error=per_url.get(url, message),
-            fatal=fatal,
         )
         for url in urls
     ]

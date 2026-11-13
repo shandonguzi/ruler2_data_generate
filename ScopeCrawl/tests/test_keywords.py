@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from scopecrawl.keywords import KeywordError, generate_keywords, parse_keywords
+from scopecrawl.keywords import KeywordError, _parse_payload, generate_keywords
 from scopecrawl.models import KeywordsSettings, RunInput
 from tests.conftest import FakeLLM
 
@@ -16,27 +16,31 @@ RUN = RunInput(
 )
 
 
+def _parse_queries(text: str) -> list[str] | None:
+    return _parse_payload(text)[0]
+
+
 def test_parse_plain_array():
-    assert parse_keywords('["a", "b"]') == ["a", "b"]
+    assert _parse_queries('["a", "b"]') == ["a", "b"]
 
 
 def test_parse_fenced_array_with_noise():
     text = 'Here you go:\n```json\n["埃及 沙尘暴", "埃及 高温"]\n```\nDone.'
-    assert parse_keywords(text) == ["埃及 沙尘暴", "埃及 高温"]
+    assert _parse_queries(text) == ["埃及 沙尘暴", "埃及 高温"]
 
 
 def test_parse_object_with_queries_key():
-    assert parse_keywords('{"queries": ["a", "b"]}') == ["a", "b"]
-    assert parse_keywords('prefix {"keywords": ["a"]} suffix') == ["a"]
+    assert _parse_queries('{"queries": ["a", "b"]}') == ["a", "b"]
+    assert _parse_queries('prefix {"keywords": ["a"]} suffix') == ["a"]
 
 
 def test_parse_skips_non_string_items():
-    assert parse_keywords('["a", 1, null, "b"]') == ["a", "b"]
+    assert _parse_queries('["a", 1, null, "b"]') == ["a", "b"]
 
 
 def test_parse_invalid_returns_none():
-    assert parse_keywords("not json at all") is None
-    assert parse_keywords("[]") is None
+    assert _parse_queries("not json at all") is None
+    assert _parse_queries("[]") is None
 
 
 def test_generate_keywords_renders_prompt(tmp_path):

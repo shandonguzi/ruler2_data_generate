@@ -71,7 +71,6 @@ class DomainFilter:
 
     def assess(self, domain: str) -> DomainAssessment:
         host = (domain or "").lower().strip().rstrip(".")
-        assessed_at = to_iso(utc_now()) or ""
 
         for entry in self.lists.blacklist:
             if domain_matches(host, entry.domain):
@@ -84,7 +83,6 @@ class DomainFilter:
                     domain_score=0.0,
                     signals=["blacklist"],
                     reasons=[reason],
-                    assessed_at=assessed_at,
                 )
 
         for entry in self.lists.whitelist:
@@ -98,7 +96,6 @@ class DomainFilter:
                     domain_score=1.0,
                     signals=["whitelist"],
                     reasons=[reason],
-                    assessed_at=assessed_at,
                 )
 
         tld = host.rsplit(".", 1)[-1] if host else ""
@@ -110,7 +107,6 @@ class DomainFilter:
                 domain_score=score,
                 signals=[f"tld:{tld}"],
                 reasons=[f"政府/学术/国际组织 TLD：.{tld}"],
-                assessed_at=assessed_at,
             )
 
         if _is_suspicious(host):
@@ -120,7 +116,6 @@ class DomainFilter:
                 domain_score=0.3,
                 signals=["suspicious_domain"],
                 reasons=["域名命中可疑规则（短链或批量生成特征）"],
-                assessed_at=assessed_at,
             )
 
         score = self.settings.domain.unknown_domain_score
@@ -130,7 +125,6 @@ class DomainFilter:
             domain_score=score,
             signals=["unknown_domain"],
             reasons=["未知域名，保守放行"],
-            assessed_at=assessed_at,
         )
 
 
@@ -214,18 +208,9 @@ def assess_page(
         reasons.append(f"广告/导航比例过高，扣分 {ad_penalty:.2f}")
 
     return PageAssessment(
-        doc_id=doc.doc_id,
-        url=doc.url,
         page_score=round(score, 4),
-        signals={
-            "published_at": published,
-            "content_length": length_score,
-            "citations": citations,
-            "ad_penalty": ad_penalty,
-        },
         quality_flags=flags,
         reasons=reasons,
-        assessed_at=to_iso(utc_now()) or "",
     )
 
 

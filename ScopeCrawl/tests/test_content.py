@@ -169,7 +169,6 @@ def test_extract_batch_service_error_returns_failures():
     respx.post(TAVILY_EXTRACT_ENDPOINT).mock(return_value=httpx.Response(503))
     results = _extractor(settings).extract_batch(["https://example.com/a"])
     assert results[0].error_type == "service_error"
-    assert not results[0].fatal
 
 
 @respx.mock

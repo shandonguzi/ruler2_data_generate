@@ -38,13 +38,11 @@ def make_doc(**overrides) -> ExtractedDoc:
         "final_url": "https://example.com/a",
         "title": "title",
         "site": "example.com",
-        "author": "Author",
         "published_at": "2026-11-01T00:00:00+00:00",
         "fetched_at": "2026-11-10T00:00:00+00:00",
         "lang": "en",
         "markdown": MARKDOWN,
         "matched_queries": [],
-        "has_jsonld": True,
         "outbound_links": 2,
         "outbound_text_ratio": 0.0,
         "extractor": "tavily-extract",
@@ -113,9 +111,7 @@ def test_assess_page_flags_missing_signals():
     settings = make_settings()
     page = assess_page(
         make_doc(
-            author=None,
             published_at=None,
-            has_jsonld=False,
             outbound_links=0,
             markdown="short " * 60,
         ),
@@ -129,19 +125,19 @@ def test_assess_page_flags_missing_signals():
 def test_assess_page_ad_penalty():
     settings = make_settings()
     page = assess_page(make_doc(outbound_text_ratio=0.6), settings.authority, settings.extract)
-    assert page.signals["ad_penalty"] == settings.authority.page.max_ad_penalty
     assert page.page_score == pytest.approx(0.8)
+    assert any("广告/导航比例过高" in reason for reason in page.reasons)
 
 
 def test_combine_authority_levels():
     settings = make_settings()
     domain = DomainAssessment(domain="example.com", decision="allow", domain_score=1.0)
-    page = PageAssessment(doc_id="x", url="https://example.com", page_score=1.0)
+    page = PageAssessment(page_score=1.0)
     result = combine_authority(domain, page, settings.authority)
     assert result.authority_score == 1.0
     assert result.authority_level == "high"
 
-    low_page = PageAssessment(doc_id="x", url="u", page_score=0.0)
+    low_page = PageAssessment(page_score=0.0)
     low_domain = DomainAssessment(domain="d", decision="allow", domain_score=0.3)
     low = combine_authority(low_domain, low_page, settings.authority)
     assert low.authority_level == "low"
@@ -151,7 +147,7 @@ def test_combine_authority_levels():
 def test_combine_authority_attaches_domain_and_page():
     settings = make_settings()
     domain = DomainAssessment(domain="example.com", decision="allow", domain_score=1.0)
-    page = PageAssessment(doc_id="x", url="u", page_score=1.0)
+    page = PageAssessment(page_score=1.0)
     result = combine_authority(domain, page, settings.authority)
     assert result.domain is domain
     assert result.page is page
@@ -165,7 +161,7 @@ def test_combine_authority_propagates_unknown_domain():
         domain_score=0.4,
         signals=["unknown_domain"],
     )
-    page = PageAssessment(doc_id="x", url="u", page_score=0.5)
+    page = PageAssessment(page_score=0.5)
     result = combine_authority(domain, page, settings.authority)
     assert "unknown_domain" in result.quality_flags
 

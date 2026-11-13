@@ -27,12 +27,8 @@ from tests.conftest import (
 def _provider():
     return FakeProvider(
         {
-            "关键词一": make_search_response(
-                "关键词一", ["https://example.com/a", "https://example.com/b"]
-            ),
-            "关键词二": make_search_response(
-                "关键词二", ["https://example.com/a", "https://example.com/c"]
-            ),
+            "关键词一": make_search_response(["https://example.com/a", "https://example.com/b"]),
+            "关键词二": make_search_response(["https://example.com/a", "https://example.com/c"]),
         }
     )
 
@@ -108,8 +104,8 @@ def test_pipeline_extract_preserves_order_across_batches(tmp_path):
     urls = [f"https://example.com/{name}" for name in "abcd"]
     provider = FakeProvider(
         {
-            "关键词一": make_search_response("关键词一", urls),
-            "关键词二": make_search_response("关键词二", []),
+            "关键词一": make_search_response(urls),
+            "关键词二": make_search_response([]),
         }
     )
     extractor = FakeExtractor({url: MARKDOWN_OK for url in urls})
@@ -219,7 +215,7 @@ def test_pipeline_keyword_failure_returns_1(tmp_path):
 
 
 def test_pipeline_search_400_aborts(tmp_path):
-    error = SearchError("tavily", 400, False, "bad language")
+    error = SearchError("tavily", 400, "bad language")
     provider = FakeProvider({"关键词一": error, "关键词二": error})
     summary, code = _run(tmp_path, provider=provider)
     assert code == 1
@@ -229,7 +225,7 @@ def test_pipeline_search_400_aborts(tmp_path):
 
 
 def test_pipeline_all_search_failures_aborts(tmp_path):
-    error = SearchError("tavily", 500, True, "server error")
+    error = SearchError("tavily", 500, "server error")
     provider = FakeProvider({"关键词一": error, "关键词二": error})
     summary, code = _run(tmp_path, provider=provider)
     assert code == 1
@@ -238,8 +234,8 @@ def test_pipeline_all_search_failures_aborts(tmp_path):
 def test_pipeline_partial_search_failure_continues(tmp_path):
     provider = FakeProvider(
         {
-            "关键词一": make_search_response("关键词一", ["https://example.com/a"]),
-            "关键词二": SearchError("tavily", 500, True, "server error"),
+            "关键词一": make_search_response(["https://example.com/a"]),
+            "关键词二": SearchError("tavily", 500, "server error"),
         }
     )
     summary, code = _run(tmp_path, provider=provider)
@@ -307,8 +303,8 @@ def test_pipeline_backfills_after_history_skip(tmp_path):
     urls = [f"https://example.com/{name}" for name in "abcdef"]
     provider = FakeProvider(
         {
-            "关键词一": make_search_response("关键词一", urls[:3]),
-            "关键词二": make_search_response("关键词二", urls[3:]),
+            "关键词一": make_search_response(urls[:3]),
+            "关键词二": make_search_response(urls[3:]),
         }
     )
     extractor = FakeExtractor({url: MARKDOWN_OK for url in urls})
@@ -339,8 +335,8 @@ def test_pipeline_records_screened_urls_but_not_truncated(tmp_path):
     ]
     provider = FakeProvider(
         {
-            "关键词一": make_search_response("关键词一", urls[:3]),
-            "关键词二": make_search_response("关键词二", urls[3:]),
+            "关键词一": make_search_response(urls[:3]),
+            "关键词二": make_search_response(urls[3:]),
         }
     )
     extractor = FakeExtractor(
@@ -373,10 +369,8 @@ def test_pipeline_domain_prefilter_runs_before_url_prefilter(tmp_path):
     )
     provider = FakeProvider(
         {
-            "关键词一": make_search_response(
-                "关键词一", ["https://spam.example", "https://example.com/a"]
-            ),
-            "关键词二": make_search_response("关键词二", []),
+            "关键词一": make_search_response(["https://spam.example", "https://example.com/a"]),
+            "关键词二": make_search_response([]),
         }
     )
     extractor = FakeExtractor({"https://example.com/a": MARKDOWN_OK})
@@ -408,10 +402,9 @@ def test_pipeline_skips_unfetchable_domains_before_truncation(
     provider = FakeProvider(
         {
             "关键词一": make_search_response(
-                "关键词一",
-                ["https://www.youtube.com/watch?v=1", "https://example.com/a"],
+                ["https://www.youtube.com/watch?v=1", "https://example.com/a"]
             ),
-            "关键词二": make_search_response("关键词二", []),
+            "关键词二": make_search_response([]),
         }
     )
     extractor = FakeExtractor({"https://example.com/a": MARKDOWN_OK})
@@ -442,7 +435,7 @@ def test_pipeline_interleaves_queries_under_max_urls(tmp_path):
         "关键词三": [f"https://example.com/c{i}" for i in range(3)],
     }
     provider = FakeProvider(
-        {query: make_search_response(query, urls) for query, urls in groups.items()}
+        {query: make_search_response(urls) for query, urls in groups.items()}
     )
     extractor = FakeExtractor(
         {url: MARKDOWN_OK for urls in groups.values() for url in urls}
@@ -471,9 +464,9 @@ def test_pipeline_prefilter_drops_portal_homepages(tmp_path):
     provider = FakeProvider(
         {
             "关键词一": make_search_response(
-                "关键词一", ["https://m.cn.nytimes.com", "https://example.com/a"]
+                ["https://m.cn.nytimes.com", "https://example.com/a"]
             ),
-            "关键词二": make_search_response("关键词二", ["https://example.com/a"]),
+            "关键词二": make_search_response(["https://example.com/a"]),
         }
     )
     extractor = FakeExtractor({"https://example.com/a": MARKDOWN_OK})
@@ -489,8 +482,8 @@ def test_pipeline_diversity_limits_domain(tmp_path):
     urls = [f"https://example.com/{name}" for name in "abcdef"]
     provider = FakeProvider(
         {
-            "关键词一": make_search_response("关键词一", urls[:4]),
-            "关键词二": make_search_response("关键词二", urls[4:]),
+            "关键词一": make_search_response(urls[:4]),
+            "关键词二": make_search_response(urls[4:]),
         }
     )
     extractor = FakeExtractor({url: MARKDOWN_OK for url in urls})

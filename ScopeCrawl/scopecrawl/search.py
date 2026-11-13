@@ -95,13 +95,11 @@ class SearchError(Exception):
         self,
         provider: str,
         status_code: int | None,
-        retryable: bool,
         message: str,
     ) -> None:
         super().__init__(message)
         self.provider = provider
         self.status_code = status_code
-        self.retryable = retryable
         self.message = message
 
     def __str__(self) -> str:
@@ -131,7 +129,7 @@ class TavilyProvider(SearchProvider):
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         if client is None and not api_key:
-            raise SearchError(self.name, None, False, "缺少 Tavily API Key")
+            raise SearchError(self.name, None, "缺少 Tavily API Key")
         self.settings = settings
         self._api_key = api_key or ""
         self._sleep = sleep
@@ -160,11 +158,7 @@ class TavilyProvider(SearchProvider):
                 request.query,
                 request.language,
             )
-        return SearchResponse(
-            query=request.query,
-            results=results,
-            latency_ms=latency_ms,
-        )
+        return SearchResponse(results=results)
 
     def _build_payload(self, request: SearchRequest) -> dict[str, Any]:
         cfg = self.settings.tavily
@@ -199,7 +193,6 @@ class TavilyProvider(SearchProvider):
         if request.time_range:
             payload["time_range"] = request.time_range
 
-        payload.update(request.provider_options)
         return payload
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -219,34 +212,33 @@ class TavilyProvider(SearchProvider):
                     self._sleep(2**attempt)
                     attempt += 1
                     continue
-                raise SearchError(self.name, None, True, f"网络错误：{exc}") from exc
+                raise SearchError(self.name, None, f"网络错误：{exc}") from exc
 
             status = response.status_code
             if status == 200:
                 try:
                     data = response.json()
                 except ValueError as exc:
-                    raise SearchError(self.name, status, True, "响应不是合法 JSON") from exc
+                    raise SearchError(self.name, status, "响应不是合法 JSON") from exc
                 if not isinstance(data, dict):
-                    raise SearchError(self.name, status, False, "响应结构异常")
+                    raise SearchError(self.name, status, "响应结构异常")
                 return data
 
             if status == 400:
                 raise SearchError(
                     self.name,
                     status,
-                    False,
                     f"搜索参数错误（language/filter_by_language）：{response_body(response)}",
                 )
             if status in (401, 403):
-                raise SearchError(self.name, status, False, "鉴权失败，请检查 API Key")
+                raise SearchError(self.name, status, "鉴权失败，请检查 API Key")
             if status == 429 or status >= 500:
                 if attempt < cfg.max_retries:
                     self._sleep(retry_after(response, default=2**attempt))
                     attempt += 1
                     continue
-                raise SearchError(self.name, status, True, f"服务端错误：{response_body(response)}")
-            raise SearchError(self.name, status, False, f"请求失败：{response_body(response)}")
+                raise SearchError(self.name, status, f"服务端错误：{response_body(response)}")
+            raise SearchError(self.name, status, f"请求失败：{response_body(response)}")
 
     def _map_results(self, data: dict[str, Any], max_results: int) -> list[SearchResult]:
         raw_items = data.get("results")
@@ -256,7 +248,7 @@ class TavilyProvider(SearchProvider):
         seen: set[str] = set()
         results: list[SearchResult] = []
 
-        for index, item in enumerate(raw_items):
+        for item in raw_items:
             if not isinstance(item, dict):
                 continue
             url = str(item.get("url") or "").strip()
@@ -267,7 +259,6 @@ class TavilyProvider(SearchProvider):
                 continue
             seen.add(key)
 
-            score = item.get("score")
             raw_published = item.get("published_date") or item.get("published_at")
             published_at = to_iso(raw_published) if isinstance(raw_published, str) else None
             if published_at is None and raw_published:
@@ -276,8 +267,6 @@ class TavilyProvider(SearchProvider):
                 SearchResult(
                     url=url,
                     title=str(item.get("title") or ""),
-                    rank=index + 1,
-                    score=float(score) if isinstance(score, (int, float)) else None,
                     published_at=published_at,
                 )
             )

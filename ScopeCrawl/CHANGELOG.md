@@ -2,6 +2,8 @@
 
 ## 2026-11-13
 
+- 清理：移除只写或未被生产代码读取的字段与方法——`TavilyExtractor.close()` / `_owns_client`、`ExtractedContent.fatal`、`ExtractError.status_code`、`SearchError.retryable`、`SearchResult.rank/score`、`SearchResponse.query/latency_ms`、`ExtractedDoc.author/has_jsonld`、`DomainAssessment/PageAssessment.assessed_at`、`PageAssessment.doc_id/url/signals`、`keywords.parse_keywords`；`failure_outcomes` 同步去掉 `fatal` 参数。测试改为直接覆盖 `_parse_payload`，`metadata.jsonl` 输出结构不变
+- 调整：删除未接线的配置与请求字段 `search.provider`、`extract.provider`、`extract.max_nav_line_ratio`、`SearchRequest.provider_options`，同步移除 `config/config.yaml` 对应项与阶段 4 的导航占比 debug 日志
 - 调整：`config/config.yaml` 的 `extract.depth` 改为 `advanced`，提取正文时使用 Tavily 深度抽取，提升 JS 渲染与复杂页面的正文完整度
 
 ## 2026-11-12

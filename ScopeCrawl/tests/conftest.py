@@ -37,7 +37,6 @@ BASE_CONFIG = {
     },
     "keywords": {"max_queries": 5},
     "search": {
-        "provider": "tavily",
         "defaults": {"max_results": 10, "country": None},
         "dedupe": {
             "enabled": True,
@@ -184,17 +183,13 @@ MARKDOWN_NAV = """[首页](https://example.com/)
 [热门城市](https://example.com/cities)
 """
 
-def make_search_response(query: str, urls: list[str]) -> SearchResponse:
-    results = [
-        SearchResult(
-            url=url,
-            title=f"title {index}",
-            rank=index + 1,
-            score=0.9,
-        )
-        for index, url in enumerate(urls)
-    ]
-    return SearchResponse(query=query, results=results)
+def make_search_response(urls: list[str]) -> SearchResponse:
+    return SearchResponse(
+        results=[
+            SearchResult(url=url, title=f"title {index}")
+            for index, url in enumerate(urls)
+        ]
+    )
 
 
 def yaml_config(**overrides) -> dict:

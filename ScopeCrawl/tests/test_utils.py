@@ -50,19 +50,18 @@ def test_normalize_url_reuses_cached_result():
 
 def test_dedupe_results_merges_queries_and_keeps_order():
     items = [
-        (0, "q1", SearchResult(url="https://a.com/1", rank=2)),
-        (0, "q1", SearchResult(url="https://b.com/1", rank=1)),
+        (0, "q1", SearchResult(url="https://a.com/1")),
+        (0, "q1", SearchResult(url="https://b.com/1")),
         (
             1,
             "q2",
             SearchResult(
                 url="http://a.com/1/#x",
-                rank=1,
                 title="补标题",
                 published_at="2026-11-01T00:00:00+00:00",
             ),
         ),
-        (1, "q2", SearchResult(url="https://c.com/1", rank=3)),
+        (1, "q2", SearchResult(url="https://c.com/1")),
     ]
     tasks = dedupe_results(items)
     assert [task.normalized_url for task in tasks] == ["a.com/1", "b.com/1", "c.com/1"]

@@ -132,12 +132,6 @@ def generate_keywords(
     return result
 
 
-def parse_keywords(text: str) -> list[str] | None:
-    """从模型输出中容错解析字符串数组；失败返回 None。"""
-    queries, _ = _parse_payload(text)
-    return queries
-
-
 def _parse_payload(text: str) -> tuple[list[str] | None, dict | None]:
     """解析 queries 与可选 scene；缺失的部分返回 None。"""
     payload = strip_json_noise(text)
