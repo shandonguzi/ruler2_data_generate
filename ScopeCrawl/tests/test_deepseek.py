@@ -97,6 +97,54 @@ def test_search_dedupes_urls():
     assert route.call_count == 1
 
 
+@respx.mock
+def test_search_sends_need_content_from_settings():
+    route = respx.post(SEARCH_ENDPOINT).mock(
+        return_value=httpx.Response(200, json=_results())
+    )
+    settings = make_settings(
+        provider="deepseek",
+        providers={"deepseek": {"search": {"need_content": True}}},
+    )
+    _provider(settings=settings).search(SearchRequest(query="q", language="en"))
+    body = json.loads(route.calls[0].request.content)
+    assert body["need_content"] is True
+
+
+@respx.mock
+def test_search_maps_content_and_normalizes_empty_values():
+    respx.post(SEARCH_ENDPOINT).mock(
+        return_value=httpx.Response(
+            200,
+            json=_results(
+                {"url": "https://example.com/a", "content": "  正文  "},
+                {"url": "https://example.com/b", "content": None},
+                {"url": "https://example.com/c", "content": 123},
+                {"url": "https://example.com/d", "content": "   "},
+            ),
+        )
+    )
+    response = _provider().search(SearchRequest(query="q", language="en"))
+    assert [result.content for result in response.results] == ["正文", "", "", ""]
+
+
+@respx.mock
+def test_search_keeps_longest_content_for_duplicate_urls():
+    respx.post(SEARCH_ENDPOINT).mock(
+        return_value=httpx.Response(
+            200,
+            json=_results(
+                {"url": "https://example.com/a?utm_source=x", "content": ""},
+                {"url": "https://example.com/a", "content": "长正文"},
+                {"url": "http://example.com/a", "content": "短"},
+            ),
+        )
+    )
+    response = _provider().search(SearchRequest(query="q", language="en"))
+    assert len(response.results) == 1
+    assert response.results[0].content == "长正文"
+
+
 @pytest.mark.parametrize("status", [401, 402])
 @respx.mock
 def test_search_auth_and_quota_are_fatal(status):

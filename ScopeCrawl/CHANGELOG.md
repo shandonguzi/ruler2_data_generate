@@ -2,6 +2,9 @@
 
 ## 2026-11-13
 
+- 新增：`providers.deepseek.search.need_content`（模型默认 `false`，`config/config.yaml` 设为 `true`）；开启后 DeepSeek 搜索随结果返回正文，`SearchResult` / `UrlTask` 携带 `content` 透传到提取阶段，有正文时跳过 `/v1/tools/fetch`，正文为空才 fetch；提取阶段只判断正文是否存在，不读取该配置
+- 调整：`metadata.jsonl` 的 `extractor` 增加 `deepseek-search`，用于区分搜索正文与 `deepseek-fetch` 实际抓取；搜索正文未通过质量闸门时不回退 fetch
+- 测试：补充 `need_content` 配置解析、搜索 payload 与正文映射、重复 URL 最长正文合并、提取阶段搜索正文直通/混合批次/fetch 回退/致命错误，以及端到端只 fetch 空正文 URL 的用例
 - 新增：统一 `Provider` 抽象（`scopecrawl/provider.py`），同时提供 `search()` 与 `extract_batch()`；`Pipeline` 只持有一个 provider 并传给阶段 2/4，从结构上禁止“一个引擎搜索 + 另一个引擎提取”
 - 新增：DeepSeek Search + Fetch Provider（`scopecrawl/deepseek.py`），支持 `lang:`/`after:` 查询操作符、按 URL 并发提取与错误码映射；新增 `.env` 键 `SCOPECRAWL_DEEPSEEK_API_KEY`
 - 调整：配置树改为顶层 `provider: tavily | deepseek`；`search.tavily.*` 迁至 `providers.tavily.search.*`，`extract.format/depth/batch_size/timeout_seconds/max_retries/rate_limit_qps` 迁至 `providers.tavily.extract.*`；`extract` 只保留 `concurrency` 与质量阈值。旧配置键会因 `extra="forbid"` 报错

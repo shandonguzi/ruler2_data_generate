@@ -105,7 +105,7 @@ class DeepSeekProvider(Provider):
         payload = {
             "query": self._build_query(request),
             "count": min(request.max_results, DEEPSEEK_MAX_RESULTS),
-            "need_content": False,
+            "need_content": self._search_cfg.need_content,
         }
         started = time.monotonic()
         data, response = self._request_json(
@@ -246,7 +246,7 @@ class DeepSeekProvider(Provider):
         if not isinstance(raw_items, list):
             return []
 
-        seen: set[str] = set()
+        seen: dict[str, SearchResult] = {}
         results: list[SearchResult] = []
         for item in raw_items:
             if not isinstance(item, dict):
@@ -255,19 +255,26 @@ class DeepSeekProvider(Provider):
             if not url:
                 continue
             key = normalize_url(url)
-            if key in seen:
+            raw_content = item.get("content")
+            content = raw_content.strip() if isinstance(raw_content, str) else ""
+
+            existing = seen.get(key)
+            if existing is not None:
+                # 同一 URL 的重复条目保留最长非空正文，空正文不覆盖已有正文。
+                if len(content) > len(existing.content):
+                    existing.content = content
                 continue
-            seen.add(key)
 
             raw_date = item.get("date")
             published_at = to_iso(raw_date) if isinstance(raw_date, str) else None
-            results.append(
-                SearchResult(
-                    url=url,
-                    title=str(item.get("title") or ""),
-                    published_at=published_at,
-                )
+            result = SearchResult(
+                url=url,
+                title=str(item.get("title") or ""),
+                published_at=published_at,
+                content=content,
             )
+            seen[key] = result
+            results.append(result)
             if len(results) >= max_results:
                 break
         return results

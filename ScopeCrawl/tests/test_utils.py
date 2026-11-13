@@ -8,6 +8,7 @@ import pytest
 
 from scopecrawl.models import SearchResult, UrlTask
 from scopecrawl.utils import (
+    build_url_task,
     dedupe_results,
     index_url_reason,
     interleave_by_query,
@@ -59,6 +60,7 @@ def test_dedupe_results_merges_queries_and_keeps_order():
                 url="http://a.com/1/#x",
                 title="补标题",
                 published_at="2026-11-01T00:00:00+00:00",
+                content="搜索正文",
             ),
         ),
         (1, "q2", SearchResult(url="https://c.com/1")),
@@ -69,7 +71,24 @@ def test_dedupe_results_merges_queries_and_keeps_order():
     assert tasks[0].first_query_index == 0
     assert tasks[0].title == "补标题"
     assert tasks[0].published_at == "2026-11-01T00:00:00+00:00"
+    assert tasks[0].content == "搜索正文"
     assert tasks[1].matched_queries == ["q1"]
+
+
+def test_dedupe_results_keeps_longest_content():
+    items = [
+        (0, "q1", SearchResult(url="https://a.com/1", content="短")),
+        (1, "q2", SearchResult(url="https://a.com/1", content="更长的正文")),
+        (1, "q2", SearchResult(url="https://a.com/1", content="中等")),
+    ]
+    tasks = dedupe_results(items)
+    assert len(tasks) == 1
+    assert tasks[0].content == "更长的正文"
+
+
+def test_build_url_task_copies_content():
+    task = build_url_task(0, "q", SearchResult(url="https://a.com/1", content="正文"))
+    assert task.content == "正文"
 
 
 def test_iter_concurrent_returns_index_and_future():

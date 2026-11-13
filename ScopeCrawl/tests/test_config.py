@@ -319,6 +319,22 @@ def test_load_settings_accepts_extract_strip_switches(tmp_path):
     assert defaults.extract.strip_images is False
 
 
+def test_load_settings_accepts_deepseek_need_content(tmp_path):
+    defaults = load_settings(
+        _write(tmp_path, yaml_config()), env={}, require_secrets=False
+    )
+    assert defaults.providers.deepseek.search.need_content is False
+
+    data = yaml_config()
+    data["providers"]["deepseek"]["search"]["need_content"] = True
+    settings = load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+    assert settings.providers.deepseek.search.need_content is True
+
+    data["providers"]["deepseek"]["search"]["need_content"] = "maybe"
+    with pytest.raises(ConfigError, match="need_content"):
+        load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+
+
 def test_load_settings_rejects_bad_diversity(tmp_path):
     data = yaml_config()
     data["diversity"] = {"max_per_query": 0}

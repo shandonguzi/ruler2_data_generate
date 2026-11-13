@@ -139,6 +139,68 @@ def test_pipeline_extract_preserves_order_across_batches(tmp_path):
     ]
 
 
+def test_pipeline_uses_search_content_and_fetches_only_empty(tmp_path):
+    urls = ["https://example.com/a", "https://example.com/b", "https://example.com/c"]
+    provider = FakeProvider(
+        {
+            "关键词一": make_search_response(
+                urls,
+                {
+                    urls[0]: MARKDOWN_OK,
+                    urls[2]: MARKDOWN_OK,
+                },
+            ),
+            "关键词二": make_search_response([]),
+        }
+    )
+    provider.name = "deepseek"
+    provider.extractor_name = "deepseek-fetch"
+    extractor = FakeExtractor({urls[1]: MARKDOWN_OK})
+    settings = make_settings(provider="deepseek")
+
+    summary, code = _run(
+        tmp_path, settings=settings, provider=provider, extractor=extractor
+    )
+
+    assert code == 0
+    assert summary.documents == 3
+    # 只有正文为空的 b 需要 fetch。
+    assert extractor.calls == [[urls[1]]]
+    records = _read_metadata(tmp_path / summary.run_id)
+    by_url = {
+        record["url"]: record
+        for record in records
+        if record["type"] == "document"
+    }
+    assert by_url[urls[0]]["extractor"] == "deepseek-search"
+    assert by_url[urls[1]]["extractor"] == "deepseek-fetch"
+    assert by_url[urls[2]]["extractor"] == "deepseek-search"
+
+
+def test_pipeline_merges_search_content_across_queries(tmp_path):
+    a, b = "https://example.com/a", "https://example.com/b"
+    provider = FakeProvider(
+        {
+            "关键词一": make_search_response([a, b]),
+            "关键词二": make_search_response([a], {a: MARKDOWN_OK}),
+        }
+    )
+    provider.name = "deepseek"
+    provider.extractor_name = "deepseek-fetch"
+    extractor = FakeExtractor({b: MARKDOWN_OK})
+
+    summary, code = _run(
+        tmp_path,
+        settings=make_settings(provider="deepseek"),
+        provider=provider,
+        extractor=extractor,
+    )
+
+    assert code == 0
+    assert summary.documents == 2
+    assert extractor.calls == [[b]]
+
+
 def test_pipeline_end_to_end_mock(tmp_path, capsys):
     summary, code = _run(tmp_path)
 

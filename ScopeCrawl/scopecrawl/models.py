@@ -113,6 +113,7 @@ class DeepSeekSearchSettings(Model):
     timeout_seconds: float = Field(30, gt=0)
     max_retries: int = Field(3, ge=0, le=10)
     rate_limit_qps: float = Field(5, gt=0)
+    need_content: bool = False
 
 
 class DeepSeekExtractSettings(Model):
@@ -270,6 +271,8 @@ class SearchResult(Model):
     url: str
     title: str = ""
     published_at: str | None = None
+    # 搜索接口直接返回的正文；空串表示需要后续 fetch。
+    content: str = ""
 
 
 class SearchResponse(Model):
@@ -386,3 +389,5 @@ class UrlTask:
     first_query_index: int = 0
     title: str = ""
     published_at: str | None = None
+    # 搜索接口随结果返回的正文；非空时提取阶段不再调用 fetch。
+    content: str = ""

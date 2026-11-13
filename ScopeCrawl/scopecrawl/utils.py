@@ -245,6 +245,7 @@ def build_url_task(
         first_query_index=query_index,
         title=result.title,
         published_at=result.published_at,
+        content=result.content,
     )
 
 
@@ -283,6 +284,8 @@ def dedupe_results(
             task.title = result.title
         if not task.published_at and result.published_at:
             task.published_at = result.published_at
+        if len(result.content) > len(task.content):
+            task.content = result.content
 
     return [seen[key] for key in order]
 

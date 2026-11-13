@@ -59,6 +59,8 @@ def test_search_sends_required_language_parameters():
 
     assert response.results[0].url == "https://example.com/a"
     assert response.results[0].published_at == "2026-11-10T12:00:00+00:00"
+    # Tavily 的 content 是短摘要，不能透传给提取阶段。
+    assert response.results[0].content == ""
 
 
 @pytest.mark.parametrize(

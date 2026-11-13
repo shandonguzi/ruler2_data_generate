@@ -220,10 +220,17 @@ MARKDOWN_NAV = """[首页](https://example.com/)
 [热门城市](https://example.com/cities)
 """
 
-def make_search_response(urls: list[str]) -> SearchResponse:
+def make_search_response(
+    urls: list[str], contents: dict[str, str] | None = None
+) -> SearchResponse:
+    contents = contents or {}
     return SearchResponse(
         results=[
-            SearchResult(url=url, title=f"title {index}")
+            SearchResult(
+                url=url,
+                title=f"title {index}",
+                content=contents.get(url, ""),
+            )
             for index, url in enumerate(urls)
         ]
     )

@@ -107,7 +107,7 @@ config/.history.json
 
 - `run_id` 为 `{S3}-{S4}-{地点}-{语言}-{本地时间}`，例如 `天气查询-气象灾害查询-埃及-zh-20261111-163300`；地点为空时省略该段。
 - Markdown 文件名取页面标题，非法字符替换为 `_`，超长截断，重名追加序号；文件内容只保留清洗后的正文 Markdown。
-- `metadata.jsonl` 为 JSON Lines：首行记录本次运行的 S3/S4、地点、语言、时间范围（`type` 为 `run`），之后每篇文档追加一行（`type` 为 `document`），记录文件名、`doc_id`、URL、匹配查询、相关性与内容/权威度评分、评估结论等；`extractor` 记录实际提取引擎（`tavily-extract` / `deepseek-fetch`）。可按行读取，例如 `pd.read_json(path, lines=True)` 或逐行 `json.loads`。
+- `metadata.jsonl` 为 JSON Lines：首行记录本次运行的 S3/S4、地点、语言、时间范围（`type` 为 `run`），之后每篇文档追加一行（`type` 为 `document`），记录文件名、`doc_id`、URL、匹配查询、相关性与内容/权威度评分、评估结论等；`extractor` 记录正文来源（`tavily-extract` / `deepseek-fetch` / `deepseek-search`，其中 `deepseek-search` 表示直接复用搜索接口返回的正文）。可按行读取，例如 `pd.read_json(path, lines=True)` 或逐行 `json.loads`。
 - `config/.history.json` 为跨运行 URL 历史表，全场景共享，供下次运行跳过已处理 URL。
 - 输出目录、历史表、场景表与提示词的显式相对路径统一以项目根目录为基准解析。
 
@@ -130,6 +130,8 @@ config/.history.json
 DeepSeek 的已知差异：
 
 - 搜索不支持 `country`、`safe_search` 与独立的 news topic，地点只能靠查询语言（`lang:`）或 `site:` 约束；埃及场景不会自动做国别限定。
+- `providers.deepseek.search.need_content`（默认 `false`，仓库 `config/config.yaml` 设为 `true`）让搜索接口随结果返回网页正文。提取阶段不判断该配置，只看结果里有没有正文：有正文就直接清洗使用，不再调用 `/v1/tools/fetch`；正文为空才 fetch。搜索正文未通过质量闸门（如不足 `extract.min_chars`）时不会重新 fetch，该 URL 已写入历史表，后续运行也不会重新抓取。
+- 开启 `need_content` 后搜索响应体与耗时略有增加，但搜索按请求计费、与 `count` / `need_content` 无关，整体可减少提取请求数。
 - 正文提取按单 URL 请求，受 25 QPS 与单域名 QPS 限制；`final_url` 使用输入 URL，不反映重定向后的地址。
 - PDF / 非 HTML 页面可能返回 404；Tavily 的 PDF 与 JS 深度渲染能力不会自动继承。
 

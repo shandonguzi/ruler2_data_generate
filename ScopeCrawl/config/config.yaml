@@ -68,6 +68,8 @@ providers:
       timeout_seconds: 30
       max_retries: 3
       rate_limit_qps: 5
+      # 搜索时返回网页正文；提取阶段有正文则跳过 /v1/tools/fetch
+      need_content: true
     extract:
       batch_size: 20
       fetch_concurrency: 8
