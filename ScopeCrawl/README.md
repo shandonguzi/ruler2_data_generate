@@ -19,12 +19,12 @@ ScopeCrawl 根据 S3/S4 场景、地点与语言，检索关联网页，清洗�
 | 1 | 关键词生成 | S3/S4、地点、语言 → 搜索词 | 查场景覆盖要点，调用 LLM 生成关键词 |
 | 2 | 检索候选网页 | 搜索词 → 原始搜索结果 | 并发调用搜索接口；单条查询失败不中断 |
 | 3 | 筛选候选 URL | 原始结果 → 候选 URL | 去重、跳过历史、无法提取域名过滤、域名黑白名单、URL 粗筛、按关键词轮转截断 |
-| 4 | 提取并清洗正文 | 候选 URL → 正文文档 | Tavily Extract 批量提取，清洗导航/页脚噪声，过质量闸门 |
+| 4 | 提取并清洗正文 | 候选 URL → 正文文档 | 按所选引擎提取正文（Tavily 批量 / DeepSeek 单 URL 并发），清洗导航/页脚噪声，过质量闸门 |
 | 5 | 评估并筛选文档 | 正文文档 → 带评分的文档 | LLM 内容复核、权威度评估、丢弃判定、多样性限流 |
 | 6 | 生成文档 | 文档 → Markdown + metadata.jsonl | 分配文件名、原子写盘、逐篇追加元数据 |
 
 - 阶段 3 在筛选完成后会把进入队列的 URL 写入 `config/.history.json`，供后续运行跳过。
-- 阶段 1、2、4 的致命错误（关键词生成失败、搜索全部失败或 HTTP 400、提取鉴权/额度/全批失败）会终止 run，退出码为 `1`。
+- 阶段 1、2、4 的致命错误（关键词生成失败、搜索致命错误或全部失败、提取鉴权/额度/全批失败）会终止 run，退出码为 `1`。
 - 阶段 3、5、6 只做剔除或降级：单个 URL、单篇文档或单次 LLM 调用失败不会中断运行，结束后统一汇总。
 
 代码结构：
@@ -32,6 +32,10 @@ ScopeCrawl 根据 S3/S4 场景、地点与语言，检索关联网页，清洗�
 ```text
 scopecrawl/
   pipeline.py                # 串联 6 个阶段
+  provider.py                # 统一搜索 + 提取 Provider 抽象与工厂
+  search.py                  # Tavily Provider
+  deepseek.py                # DeepSeek Provider
+  content.py                 # 正文清洗、质量闸门与 Tavily 提取客户端
   stages/
     keyword_generation.py    # 1 关键词生成
     search.py                # 2 检索候选网页
@@ -55,12 +59,13 @@ cp config/.env.example config/.env
 
 | 键 | 说明 |
 |---|---|
-| `SCOPECRAWL_TAVILY_API_KEY` | Tavily 搜索与正文提取 Key |
+| `SCOPECRAWL_TAVILY_API_KEY` | 当 `provider: tavily` 时必填，搜索与正文提取共用 |
+| `SCOPECRAWL_DEEPSEEK_API_KEY` | 当 `provider: deepseek` 时必填，DeepSeek 平台 Key（不是 LLM 网关 Key） |
 | `SCOPECRAWL_LLM_MODEL` | 兼容 `/v1/chat/completions` 的模型名 |
 | `SCOPECRAWL_LLM_API_KEY` | LLM Key |
 | `SCOPECRAWL_LLM_BASE_URL` | 可选，留空使用 OpenAI 官方地址 |
 
-密钥与模型名只从 `config/.env` 读取，不读取进程环境变量。
+密钥与模型名只从 `config/.env` 读取，不读取进程环境变量。两个搜索/提取 Key 只需填写当前 `provider` 对应的那一项。
 
 ## 运行
 
@@ -102,7 +107,7 @@ config/.history.json
 
 - `run_id` 为 `{S3}-{S4}-{地点}-{语言}-{本地时间}`，例如 `天气查询-气象灾害查询-埃及-zh-20261111-163300`；地点为空时省略该段。
 - Markdown 文件名取页面标题，非法字符替换为 `_`，超长截断，重名追加序号；文件内容只保留清洗后的正文 Markdown。
-- `metadata.jsonl` 为 JSON Lines：首行记录本次运行的 S3/S4、地点、语言、时间范围（`type` 为 `run`），之后每篇文档追加一行（`type` 为 `document`），记录文件名、`doc_id`、URL、匹配查询、相关性与内容/权威度评分、评估结论等；可按行读取，例如 `pd.read_json(path, lines=True)` 或逐行 `json.loads`。
+- `metadata.jsonl` 为 JSON Lines：首行记录本次运行的 S3/S4、地点、语言、时间范围（`type` 为 `run`），之后每篇文档追加一行（`type` 为 `document`），记录文件名、`doc_id`、URL、匹配查询、相关性与内容/权威度评分、评估结论等；`extractor` 记录实际提取引擎（`tavily-extract` / `deepseek-fetch`）。可按行读取，例如 `pd.read_json(path, lines=True)` 或逐行 `json.loads`。
 - `config/.history.json` 为跨运行 URL 历史表，全场景共享，供下次运行跳过已处理 URL。
 - 输出目录、历史表、场景表与提示词的显式相对路径统一以项目根目录为基准解析。
 
@@ -110,11 +115,21 @@ config/.history.json
 
 所有配置集中在 `config/` 目录：
 
-- `config/config.yaml`：本次运行输入，以及搜索、提取、评估、限流参数。
+- `config/config.yaml`：本次运行输入，以及 `provider` 选择器、搜索、提取、评估、限流参数。
 - `config/.env`：密钥与 LLM 模型名，模板见 `config/.env.example`。
 - `config/scenarios.json`：场景表（S1 → S2 → S3 → S4 嵌套），记录每个 S4 的 `coverage_points`。关键词生成时按 `run.s3` / `run.s4` 精确查找并注入提示词，作为关键词必须覆盖的下限；场景未收录时告警并按无要点继续。路径由 `keywords.scenarios_path` 指定。
 - `config/authority.yaml`：域名白名单 / 黑名单 / 无法提取名单（如视频站，阶段 3 在配额截断前跳过），支持 `*.gov.eg` 通配。路径由 `authority.config_path` 指定。
 - `prompts/`：关键词生成与内容评估提示词。
+
+### 搜索/提取引擎
+
+`config/config.yaml` 顶层 `provider` 只选择一个引擎（`tavily` 或 `deepseek`），搜索与正文提取共用同一个引擎，不支持混用。引擎参数位于 `providers.<name>.search` 与 `providers.<name>.extract`，运行时只读取选中引擎的配置。
+
+DeepSeek 的已知差异：
+
+- 搜索不支持 `country`、`safe_search` 与独立的 news topic，地点只能靠查询语言（`lang:`）或 `site:` 约束；埃及场景不会自动做国别限定。
+- 正文提取按单 URL 请求，受 25 QPS 与单域名 QPS 限制；`final_url` 使用输入 URL，不反映重定向后的地址。
+- PDF / 非 HTML 页面可能返回 404；Tavily 的 PDF 与 JS 深度渲染能力不会自动继承。
 
 ## 测试
 

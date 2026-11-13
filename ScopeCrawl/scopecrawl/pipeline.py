@@ -7,12 +7,11 @@ from collections.abc import Callable
 from pathlib import Path
 
 from .config import PROJECT_ROOT, resolve_path
-from .content import TavilyExtractor
 from .history import DEFAULT_HISTORY_PATH, UrlHistory
 from .llm import LLMClient
 from .models import STAGE_LABELS, Settings
+from .provider import Provider, create_provider
 from .scenarios import load_scenarios
-from .search import SearchProvider, create_search_provider
 from .stages import (
     DiversityStage,
     DocumentGenerationStage,
@@ -37,8 +36,7 @@ class Pipeline:
         *,
         output_root: str | Path | None = None,
         llm_client=None,
-        provider: SearchProvider | None = None,
-        extractor: TavilyExtractor | None = None,
+        provider: Provider | None = None,
         writer_factory: Callable[..., RunWriter] = RunWriter,
         prompt_paths: dict[str, Path] | None = None,
         project_root: Path | None = None,
@@ -73,18 +71,7 @@ class Pipeline:
             api_key=(settings.llm_api_key.get_secret_value() if settings.llm_api_key else None),
             base_url=settings.llm_base_url,
         )
-        self.provider = provider or create_search_provider(
-            settings.search,
-            api_key=(
-                settings.tavily_api_key.get_secret_value() if settings.tavily_api_key else None
-            ),
-        )
-        self.extractor = extractor or TavilyExtractor(
-            settings.extract,
-            api_key=(
-                settings.tavily_api_key.get_secret_value() if settings.tavily_api_key else None
-            ),
-        )
+        self.provider = provider or create_provider(settings)
 
     def run(self) -> tuple[RunSummary, int]:
         writer = self.writer_factory(self.output_root, self.settings.run)
@@ -99,6 +86,7 @@ class Pipeline:
             run_config.language,
         )
         logger.info("输出目录：%s", writer.run_dir)
+        logger.info("搜索/提取引擎：%s", self.provider.name)
 
         try:
             keywords, stats = KeywordGenerationStage(
@@ -118,7 +106,7 @@ class Pipeline:
             stats.merge_into(summary)
             summary.processed_urls = len(candidates)
 
-            documents, stats = ExtractStage(self.settings, self.extractor).run(candidates)
+            documents, stats = ExtractStage(self.settings, self.provider).run(candidates)
             stats.merge_into(summary)
 
             kept, stats = EvaluateStage(

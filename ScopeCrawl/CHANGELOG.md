@@ -2,6 +2,13 @@
 
 ## 2026-11-13
 
+- 新增：统一 `Provider` 抽象（`scopecrawl/provider.py`），同时提供 `search()` 与 `extract_batch()`；`Pipeline` 只持有一个 provider 并传给阶段 2/4，从结构上禁止“一个引擎搜索 + 另一个引擎提取”
+- 新增：DeepSeek Search + Fetch Provider（`scopecrawl/deepseek.py`），支持 `lang:`/`after:` 查询操作符、按 URL 并发提取与错误码映射；新增 `.env` 键 `SCOPECRAWL_DEEPSEEK_API_KEY`
+- 调整：配置树改为顶层 `provider: tavily | deepseek`；`search.tavily.*` 迁至 `providers.tavily.search.*`，`extract.format/depth/batch_size/timeout_seconds/max_retries/rate_limit_qps` 迁至 `providers.tavily.extract.*`；`extract` 只保留 `concurrency` 与质量阈值。旧配置键会因 `extra="forbid"` 报错
+- 调整：`_resolve_secrets` 只要求当前 `provider` 对应的搜索/提取 Key，未选中引擎的 Key 不再必填
+- 调整：`metadata.jsonl` 的 `extractor` 随引擎变化（Tavily 为 `tavily-extract`，DeepSeek 为 `deepseek-fetch`）
+- 清理：移除独立 `SearchProvider` / `create_search_provider` 与 `Pipeline.extractor` 注入点；Tavily 搜索与提取统一由 `TavilyProvider` 持有
+- 测试：fake provider 合并搜索/提取能力，新增 DeepSeek 搜索/提取与 provider 工厂用例
 - 清理：移除只写或未被生产代码读取的字段与方法——`TavilyExtractor.close()` / `_owns_client`、`ExtractedContent.fatal`、`ExtractError.status_code`、`SearchError.retryable`、`SearchResult.rank/score`、`SearchResponse.query/latency_ms`、`ExtractedDoc.author/has_jsonld`、`DomainAssessment/PageAssessment.assessed_at`、`PageAssessment.doc_id/url/signals`、`keywords.parse_keywords`；`failure_outcomes` 同步去掉 `fatal` 参数。测试改为直接覆盖 `_parse_payload`，`metadata.jsonl` 输出结构不变
 - 调整：删除未接线的配置与请求字段 `search.provider`、`extract.provider`、`extract.max_nav_line_ratio`、`SearchRequest.provider_options`，同步移除 `config/config.yaml` 对应项与阶段 4 的导航占比 debug 日志
 - 调整：`config/config.yaml` 的 `extract.depth` 改为 `advanced`，提取正文时使用 Tavily 深度抽取，提升 JS 渲染与复杂页面的正文完整度

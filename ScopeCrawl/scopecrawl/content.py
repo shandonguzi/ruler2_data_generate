@@ -1,4 +1,4 @@
-"""Tavily /extract 正文提取、Markdown 清洗与质量闸门。"""
+"""正文提取、清洗与质量闸门；包含 Tavily Extract 客户端。"""
 
 from __future__ import annotations
 
@@ -12,7 +12,13 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from .models import ExtractedContent, ExtractedDoc, ExtractSettings, UrlTask
+from .models import (
+    ExtractedContent,
+    ExtractedDoc,
+    ExtractSettings,
+    TavilyExtractSettings,
+    UrlTask,
+)
 from .utils import (
     RateLimiter,
     make_doc_id,
@@ -168,7 +174,7 @@ class TavilyExtractor:
 
     def __init__(
         self,
-        settings: ExtractSettings,
+        settings: TavilyExtractSettings,
         *,
         api_key: str | None = None,
         client: httpx.Client | None = None,
@@ -187,41 +193,27 @@ class TavilyExtractor:
 
     def extract_batch(self, urls: list[str]) -> list[ExtractedContent]:
         """提取一批 URL，返回与输入等长、按输入顺序排列的结果。"""
+        keys, unique_urls, key_to_unique = dedupe_inputs(urls)
+        if not unique_urls:
+            return []
+        return expand_outcomes(
+            urls,
+            keys,
+            key_to_unique,
+            unique_urls,
+            self.extract_unique(unique_urls),
+        )
+
+    def extract_unique(self, urls: list[str]) -> list[ExtractedContent]:
+        """提取已去重的 URL，返回与输入等长的结果。"""
         if not urls:
             return []
-
-        unique_urls: list[str] = []
-        key_to_unique: dict[str, int] = {}
-        keys: list[str] = []
-        for raw_url in urls:
-            key = normalize_url(raw_url) or raw_url
-            keys.append(key)
-            if key not in key_to_unique:
-                key_to_unique[key] = len(unique_urls)
-                unique_urls.append(raw_url)
-
-        if len(unique_urls) > MAX_BATCH_SIZE:
+        if len(urls) > MAX_BATCH_SIZE:
             outcomes: list[ExtractedContent] = []
-            for chunk in chunk_urls(unique_urls, MAX_BATCH_SIZE):
+            for chunk in chunk_urls(urls, MAX_BATCH_SIZE):
                 outcomes.extend(self._request(chunk))
-        else:
-            outcomes = self._request(unique_urls)
-
-        by_unique = {url: outcome for url, outcome in zip(unique_urls, outcomes, strict=False)}
-        expanded: list[ExtractedContent] = []
-        for index, raw_url in enumerate(urls):
-            outcome = by_unique.get(unique_urls[key_to_unique[keys[index]]])
-            if outcome is None:
-                expanded.append(
-                    ExtractedContent(
-                        url=raw_url,
-                        error_type="missing_result",
-                        error="提取结果缺失",
-                    )
-                )
-            else:
-                expanded.append(replace(outcome, url=raw_url))
-        return expanded
+            return outcomes
+        return self._request(urls)
 
     def _request(self, urls: list[str]) -> list[ExtractedContent]:
         payload = {
@@ -376,6 +368,45 @@ class TavilyExtractor:
                 )
             )
         return outcomes
+
+
+def dedupe_inputs(urls: list[str]) -> tuple[list[str], list[str], dict[str, int]]:
+    """返回 (原始输入的去重键, 唯一 URL, 键到唯一索引的映射)。"""
+    keys: list[str] = []
+    unique_urls: list[str] = []
+    key_to_unique: dict[str, int] = {}
+    for raw_url in urls:
+        key = normalize_url(raw_url) or raw_url
+        keys.append(key)
+        if key not in key_to_unique:
+            key_to_unique[key] = len(unique_urls)
+            unique_urls.append(raw_url)
+    return keys, unique_urls, key_to_unique
+
+
+def expand_outcomes(
+    urls: list[str],
+    keys: list[str],
+    key_to_unique: dict[str, int],
+    unique_urls: list[str],
+    outcomes: list[ExtractedContent],
+) -> list[ExtractedContent]:
+    """把唯一 URL 的结果展开为与原始输入等长、顺序一致的结果。"""
+    by_unique = {url: outcome for url, outcome in zip(unique_urls, outcomes, strict=False)}
+    expanded: list[ExtractedContent] = []
+    for index, raw_url in enumerate(urls):
+        outcome = by_unique.get(unique_urls[key_to_unique[keys[index]]])
+        if outcome is None:
+            expanded.append(
+                ExtractedContent(
+                    url=raw_url,
+                    error_type="missing_result",
+                    error="提取结果缺失",
+                )
+            )
+        else:
+            expanded.append(replace(outcome, url=raw_url))
+    return expanded
 
 
 def chunk_urls(urls: list[str], size: int) -> list[list[str]]:
@@ -557,6 +588,8 @@ def build_extracted_doc(
     task: UrlTask,
     content: ExtractedContent,
     clean: CleanResult,
+    *,
+    extractor: str,
 ) -> ExtractedDoc:
     title = (task.title or "").strip() or clean.first_heading or url_host(task.url)
     return ExtractedDoc(
@@ -573,7 +606,7 @@ def build_extracted_doc(
         matched_queries=list(task.matched_queries),
         outbound_links=clean.outbound_links,
         outbound_text_ratio=clean.outbound_text_ratio,
-        extractor="tavily-extract",
+        extractor=extractor,
     )
 
 

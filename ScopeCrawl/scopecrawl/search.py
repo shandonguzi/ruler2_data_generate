@@ -1,4 +1,4 @@
-"""统一搜索接口与 Tavily provider。"""
+"""Tavily Provider：搜索、正文提取与搜索错误。"""
 
 from __future__ import annotations
 
@@ -6,19 +6,21 @@ import logging
 import re
 import time
 import unicodedata
-from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any
 
 import httpx
 
+from .content import TavilyExtractor
 from .models import (
     LANGUAGE_CODES,
+    ExtractedContent,
     SearchRequest,
     SearchResponse,
     SearchResult,
-    SearchSettings,
+    Settings,
 )
+from .provider import Provider
 from .utils import RateLimiter, normalize_url, response_body, retry_after, to_iso
 
 logger = logging.getLogger(__name__)
@@ -109,35 +111,42 @@ class SearchError(Exception):
         return f"{prefix}: {self.message}"
 
 
-class SearchProvider(ABC):
-    name: str
-
-    @abstractmethod
-    def search(self, request: SearchRequest) -> SearchResponse:
-        """执行一次搜索。失败时抛出 SearchError。"""
-
-
-class TavilyProvider(SearchProvider):
+class TavilyProvider(Provider):
     name = "tavily"
+    extractor_name = "tavily-extract"
 
     def __init__(
         self,
-        settings: SearchSettings,
+        settings: Settings,
         *,
         api_key: str | None = None,
         client: httpx.Client | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
-        if client is None and not api_key:
+        cfg = settings.providers.tavily
+        resolved_key = api_key or (
+            settings.tavily_api_key.get_secret_value() if settings.tavily_api_key else None
+        )
+        if client is None and not resolved_key:
             raise SearchError(self.name, None, "缺少 Tavily API Key")
-        self.settings = settings
-        self._api_key = api_key or ""
+        self._search = cfg.search
+        self.extract_batch_size = cfg.extract.batch_size
+        self._api_key = resolved_key or ""
         self._sleep = sleep
-        self._limiter = RateLimiter(settings.tavily.rate_limit_qps)
+        self._limiter = RateLimiter(cfg.search.rate_limit_qps)
         self._client = client or httpx.Client(
-            timeout=settings.tavily.timeout_seconds,
+            timeout=cfg.search.timeout_seconds,
             follow_redirects=False,
         )
+        self._extractor = TavilyExtractor(
+            cfg.extract,
+            api_key=resolved_key,
+            client=client,
+            sleep=sleep,
+        )
+
+    def _extract_unique(self, urls: list[str]) -> list[ExtractedContent]:
+        return self._extractor.extract_unique(urls)
 
     def search(self, request: SearchRequest) -> SearchResponse:
         payload = self._build_payload(request)
@@ -161,7 +170,7 @@ class TavilyProvider(SearchProvider):
         return SearchResponse(results=results)
 
     def _build_payload(self, request: SearchRequest) -> dict[str, Any]:
-        cfg = self.settings.tavily
+        cfg = self._search
         max_results = min(request.max_results, TAVILY_MAX_RESULTS)
         payload: dict[str, Any] = {
             "query": request.query,
@@ -196,7 +205,7 @@ class TavilyProvider(SearchProvider):
         return payload
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
-        cfg = self.settings.tavily
+        cfg = self._search
         headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
@@ -273,15 +282,3 @@ class TavilyProvider(SearchProvider):
             if len(results) >= max_results:
                 break
         return results
-
-
-def create_search_provider(
-    settings: SearchSettings,
-    *,
-    api_key: str | None = None,
-    client: httpx.Client | None = None,
-    sleep: Callable[[float], None] = time.sleep,
-) -> SearchProvider:
-    return TavilyProvider(settings, api_key=api_key, client=client, sleep=sleep)
-
-

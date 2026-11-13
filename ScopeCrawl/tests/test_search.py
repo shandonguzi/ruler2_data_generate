@@ -18,7 +18,7 @@ from tests.conftest import make_settings
 
 def _provider(sleep=None) -> TavilyProvider:
     return TavilyProvider(
-        make_settings().search,
+        make_settings(),
         api_key="tvly-test",
         sleep=sleep or (lambda _: None),
     )
@@ -116,9 +116,11 @@ def test_country_from_location_maps_names(location, expected):
 
 @respx.mock
 def test_country_omitted_for_news_topic():
-    settings = make_settings(search={"tavily": {"topic": "news", "rate_limit_qps": 1000}})
+    settings = make_settings(
+        providers={"tavily": {"search": {"topic": "news", "rate_limit_qps": 1000}}}
+    )
     route = respx.post(TAVILY_ENDPOINT).mock(return_value=httpx.Response(200, json=_response([])))
-    TavilyProvider(settings.search, api_key="k").search(
+    TavilyProvider(settings, api_key="k").search(
         SearchRequest(query="q", language="en", country="EG")
     )
     body = json.loads(route.calls[0].request.content)
@@ -201,4 +203,4 @@ def test_400_is_not_retried_and_marked_fatal():
 
 def test_missing_api_key_raises():
     with pytest.raises(SearchError, match="API Key"):
-        TavilyProvider(make_settings().search, api_key=None)
+        TavilyProvider(make_settings(), api_key=None)

@@ -8,7 +8,7 @@ import json
 import pytest
 
 from scopecrawl.models import ExtractedContent, SearchResponse, SearchResult, Settings
-from scopecrawl.search import SearchProvider
+from scopecrawl.provider import Provider
 
 _PROXY_ENV = (
     "HTTP_PROXY",
@@ -44,12 +44,21 @@ BASE_CONFIG = {
             "strip_tracking_params": True,
             "max_urls": None,
         },
-        "tavily": {"rate_limit_qps": 1000},
     },
     "extract": {
-        "rate_limit_qps": 1000,
+        "concurrency": 2,
         "min_chars": 20,
         "min_paragraphs": 1,
+    },
+    "providers": {
+        "tavily": {
+            "search": {"rate_limit_qps": 1000},
+            "extract": {"rate_limit_qps": 1000},
+        },
+        "deepseek": {
+            "search": {"rate_limit_qps": 1000},
+            "extract": {"rate_limit_qps": 1000},
+        },
     },
     "llm": {},
     "review": {"enabled": True},
@@ -119,8 +128,10 @@ class RouterLLM:
         return REVIEW_JSON
 
 
-class FakeProvider(SearchProvider):
+class FakeProvider(Provider):
     name = "tavily"
+    extractor_name = "tavily-extract"
+    extract_batch_size = 20
 
     def __init__(self, responses):
         self.responses = responses
@@ -132,6 +143,32 @@ class FakeProvider(SearchProvider):
         if isinstance(response, Exception):
             raise response
         return response
+
+    def _extract_unique(self, urls):
+        return [
+            ExtractedContent(url=url, error_type="failed", error="no extractor")
+            for url in urls
+        ]
+
+
+class CombinedProvider(Provider):
+    """测试用：把独立的搜索 fake 与提取 fake 组合成一个统一 provider。"""
+
+    extract_batch_size = 20
+
+    def __init__(self, provider: FakeProvider, extractor):
+        self._provider = provider
+        self._extractor = extractor
+        self.name = provider.name
+        self.extractor_name = provider.extractor_name
+        self.requests = provider.requests
+        self.calls = extractor.calls
+
+    def search(self, request):
+        return self._provider.search(request)
+
+    def _extract_unique(self, urls):
+        return self._extractor.extract_batch(urls)
 
 
 class FakeExtractor:

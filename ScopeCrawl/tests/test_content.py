@@ -18,13 +18,14 @@ from scopecrawl.content import (
     plain_length,
 )
 from scopecrawl.models import ExtractedContent, UrlTask
+from scopecrawl.search import TavilyProvider
 from scopecrawl.utils import visible_length
 from tests.conftest import make_settings
 
 
 def _extractor(settings=None, **kwargs) -> TavilyExtractor:
     return TavilyExtractor(
-        (settings or make_settings()).extract,
+        (settings or make_settings()).providers.tavily.extract,
         api_key="tvly-test",
         **kwargs,
     )
@@ -165,7 +166,9 @@ def test_extract_batch_retries_429():
 
 @respx.mock
 def test_extract_batch_service_error_returns_failures():
-    settings = make_settings(extract={"max_retries": 0})
+    settings = make_settings(
+        providers={"tavily": {"extract": {"max_retries": 0}}}
+    )
     respx.post(TAVILY_EXTRACT_ENDPOINT).mock(return_value=httpx.Response(503))
     results = _extractor(settings).extract_batch(["https://example.com/a"])
     assert results[0].error_type == "service_error"
@@ -173,7 +176,9 @@ def test_extract_batch_service_error_returns_failures():
 
 @respx.mock
 def test_extract_batch_non_json_protocol_error():
-    settings = make_settings(extract={"max_retries": 0})
+    settings = make_settings(
+        providers={"tavily": {"extract": {"max_retries": 0}}}
+    )
     respx.post(TAVILY_EXTRACT_ENDPOINT).mock(
         return_value=httpx.Response(200, text="not json")
     )
@@ -442,7 +447,7 @@ def test_build_extracted_doc_uses_metadata_fallbacks():
         "再补充一些文字确保它达到实质段落的长度要求。",
         url=task.url,
     )
-    doc = build_extracted_doc(task, content, clean)
+    doc = build_extracted_doc(task, content, clean, extractor="tavily-extract")
     assert doc.title == "正文标题"
     assert doc.site == "example.com"
     assert doc.final_url == task.url
@@ -456,5 +461,20 @@ def test_build_extracted_doc_falls_back_to_host():
     task = UrlTask(url="https://example.com/a", normalized_url="example.com/a")
     content = ExtractedContent(url=task.url, raw_content="raw")
     clean = _clean(markdown="正文", first_heading=None)
-    doc = build_extracted_doc(task, content, clean)
+    doc = build_extracted_doc(task, content, clean, extractor="tavily-extract")
     assert doc.title == "example.com"
+
+
+@respx.mock
+def test_tavily_provider_extract_batch_uses_extractor():
+    respx.post(TAVILY_EXTRACT_ENDPOINT).mock(
+        return_value=httpx.Response(
+            200,
+            json=_response(
+                results=[{"url": "https://example.com/a", "raw_content": "A"}]
+            ),
+        )
+    )
+    provider = TavilyProvider(make_settings(), api_key="tvly-test")
+    results = provider.extract_batch(["https://example.com/a"])
+    assert results[0].raw_content == "A"

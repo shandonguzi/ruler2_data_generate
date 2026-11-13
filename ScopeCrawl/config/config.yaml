@@ -1,3 +1,6 @@
+# 搜索与正文提取共用同一个引擎；DeepSeek 搜索 + Tavily 提取不被支持。
+provider: tavily
+
 run:
   s3: 日常聊天
   s4: 日常聊天
@@ -23,33 +26,50 @@ search:
     merge_www: false
     strip_tracking_params: true
     max_urls: 180
-  tavily:
-    search_depth: advanced
-    topic: general
-    include_published_date: true
-    filter_by_published_date: false
-    include_answer: false
-    include_images: false
-    auto_parameters: false
-    exact_match: false
-    safe_search: true
-    timeout_seconds: 30
-    max_retries: 3
-    rate_limit_qps: 1
 
 extract:
-  format: markdown
-  depth: advanced
-  batch_size: 20
   concurrency: 2
-  rate_limit_qps: 2
-  timeout_seconds: 60
-  max_retries: 3
   min_chars: 800
   min_paragraphs: 3
   max_link_text_ratio: 0.4
   # 非 ASCII 字符中异常文种占比超过该值时，判为编码乱码并丢弃
   max_garbled_ratio: 0.35
+
+providers:
+  tavily:
+    search:
+      search_depth: advanced
+      topic: general
+      include_published_date: true
+      filter_by_published_date: false
+      include_answer: false
+      include_images: false
+      auto_parameters: false
+      exact_match: false
+      safe_search: true
+      timeout_seconds: 30
+      max_retries: 3
+      rate_limit_qps: 1
+    extract:
+      format: markdown
+      depth: advanced
+      batch_size: 20
+      timeout_seconds: 60
+      max_retries: 3
+      rate_limit_qps: 2
+  deepseek:
+    # 搜索与提取共用 .env 中的 SCOPECRAWL_DEEPSEEK_API_KEY；base_url 为 API 根地址
+    base_url: https://api.deepseek.com
+    search:
+      timeout_seconds: 30
+      max_retries: 3
+      rate_limit_qps: 5
+    extract:
+      batch_size: 20
+      fetch_concurrency: 8
+      timeout_seconds: 60
+      max_retries: 3
+      rate_limit_qps: 10
 
 llm:
   timeout_seconds: 60

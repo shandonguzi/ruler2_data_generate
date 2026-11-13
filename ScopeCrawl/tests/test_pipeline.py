@@ -15,6 +15,7 @@ from scopecrawl.utils import normalize_url
 from tests.conftest import (
     MARKDOWN_NAV,
     MARKDOWN_OK,
+    CombinedProvider,
     FakeExtractor,
     FakeLLM,
     FakeProvider,
@@ -45,13 +46,19 @@ def _extractor():
 
 def _run(tmp_path, settings=None, **kwargs):
     settings = settings or make_settings()
+    provider = kwargs.pop("provider", _provider())
+    extractor = kwargs.pop("extractor", None)
+    if not isinstance(provider, CombinedProvider):
+        provider = CombinedProvider(provider, extractor or _extractor())
+        provider.extract_batch_size = getattr(
+            settings.providers, settings.provider
+        ).extract.batch_size
     pipeline = Pipeline(
         settings,
         output_root=tmp_path,
         history_path=tmp_path / HISTORY_FILENAME,
         llm_client=kwargs.pop("llm_client", RouterLLM()),
-        provider=kwargs.pop("provider", _provider()),
-        extractor=kwargs.pop("extractor", _extractor()),
+        provider=provider,
         **kwargs,
     )
     return pipeline.run()
@@ -66,8 +73,7 @@ def test_pipeline_resolves_relative_paths_against_project_root(tmp_path):
         scenarios_path="config/scenarios.json",
         prompt_paths={"review": "prompts/review.md"},
         llm_client=FakeLLM([]),
-        provider=_provider(),
-        extractor=_extractor(),
+        provider=CombinedProvider(_provider(), _extractor()),
     )
     assert pipeline.output_root == tmp_path / "out"
     assert pipeline.history_path == tmp_path / "data/history.json"
@@ -110,7 +116,8 @@ def test_pipeline_extract_preserves_order_across_batches(tmp_path):
     )
     extractor = FakeExtractor({url: MARKDOWN_OK for url in urls})
     settings = make_settings(
-        extract={"batch_size": 1, "concurrency": 4},
+        extract={"concurrency": 4},
+        providers={"tavily": {"extract": {"batch_size": 1}}},
         diversity={"max_per_query": None, "max_per_domain": None},
     )
 
@@ -580,3 +587,19 @@ def test_pipeline_missing_scenarios_file_still_generates_keywords(tmp_path):
     summary, code = _run(tmp_path, scenarios_path=tmp_path / "missing.json")
     assert code == 0
     assert summary.keywords == ["关键词一", "关键词二"]
+
+
+def test_pipeline_uses_same_provider_for_search_and_extract(tmp_path):
+    provider = CombinedProvider(_provider(), _extractor())
+    summary, code = _run(tmp_path, provider=provider)
+    assert code == 0
+    assert provider.requests
+    assert provider.calls
+
+
+def test_pipeline_search_quota_aborts(tmp_path):
+    error = SearchError("deepseek", 402, "quota")
+    provider = FakeProvider({"关键词一": error, "关键词二": error})
+    summary, code = _run(tmp_path, provider=provider)
+    assert code == 1
+    assert summary.documents == 0

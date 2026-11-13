@@ -22,9 +22,15 @@ DEFAULT_AUTHORITY_PATH = CONFIG_DIR / "authority.yaml"
 
 # 固定键名：只从 .env 文件读取，不读取进程环境变量。
 TAVILY_API_KEY_ENV = "SCOPECRAWL_TAVILY_API_KEY"
+DEEPSEEK_API_KEY_ENV = "SCOPECRAWL_DEEPSEEK_API_KEY"
 LLM_API_KEY_ENV = "SCOPECRAWL_LLM_API_KEY"
 LLM_BASE_URL_ENV = "SCOPECRAWL_LLM_BASE_URL"
 LLM_MODEL_ENV = "SCOPECRAWL_LLM_MODEL"
+
+PROVIDER_API_KEY_ENVS = {
+    "tavily": TAVILY_API_KEY_ENV,
+    "deepseek": DEEPSEEK_API_KEY_ENV,
+}
 
 _RUN_OVERRIDE_KEYS = ("s3", "s4", "location", "language", "time_range")
 
@@ -211,20 +217,33 @@ def _resolve_secrets(
     require_secrets: bool,
 ) -> None:
     model = _env_value(env, LLM_MODEL_ENV)
-    tavily_key = _env_value(env, TAVILY_API_KEY_ENV)
+    provider_key_env = PROVIDER_API_KEY_ENVS[settings.provider]
+    provider_key = _env_value(env, provider_key_env)
     llm_key = _env_value(env, LLM_API_KEY_ENV)
     llm_base_url = _env_value(env, LLM_BASE_URL_ENV)
 
     if require_secrets:
         if not model:
             raise ConfigError(f"缺少 LLM 模型名：请在 .env 设置 {LLM_MODEL_ENV}")
-        if not tavily_key:
-            raise ConfigError(f"缺少搜索 API Key：请在 .env 设置 {TAVILY_API_KEY_ENV}")
+        if not provider_key:
+            raise ConfigError(
+                f"缺少 {settings.provider} 搜索/提取 API Key："
+                f"请在 .env 设置 {provider_key_env}"
+            )
         if not llm_key:
             raise ConfigError(f"缺少 LLM API Key：请在 .env 设置 {LLM_API_KEY_ENV}")
 
     settings.llm_model = model or None
-    settings.tavily_api_key = SecretStr(tavily_key) if tavily_key else None
+    settings.tavily_api_key = (
+        SecretStr(provider_key)
+        if settings.provider == "tavily" and provider_key
+        else None
+    )
+    settings.deepseek_api_key = (
+        SecretStr(provider_key)
+        if settings.provider == "deepseek" and provider_key
+        else None
+    )
     settings.llm_api_key = SecretStr(llm_key) if llm_key else None
     settings.llm_base_url = llm_base_url or None
 

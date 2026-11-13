@@ -5,11 +5,14 @@ from __future__ import annotations
 import logging
 
 from ..models import Failure, SearchRequest, SearchResponse, Settings
-from ..search import SearchError, SearchProvider, country_from_location
+from ..provider import Provider
+from ..search import SearchError, country_from_location
 from ..summary import SearchStats, StageAborted
 from ..utils import iter_concurrent, log_stage
 
 logger = logging.getLogger(__name__)
+
+FATAL_SEARCH_STATUSES = {400, 401, 402, 403}
 
 
 class SearchStage:
@@ -18,7 +21,7 @@ class SearchStage:
     def __init__(
         self,
         settings: Settings,
-        provider: SearchProvider,
+        provider: Provider,
     ) -> None:
         self.settings = settings
         self.provider = provider
@@ -49,7 +52,7 @@ class SearchStage:
         ]
 
         responses: list[SearchResponse | None] = [None] * len(requests)
-        fatal_400 = False
+        fatal_status: int | None = None
         failed = 0
         done = 0
         logger.info(
@@ -84,13 +87,13 @@ class SearchStage:
                         message=f"{keywords[index]}：{exc}",
                     )
                 )
-                if isinstance(exc, SearchError) and exc.status_code == 400:
-                    fatal_400 = True
+                if isinstance(exc, SearchError) and exc.status_code in FATAL_SEARCH_STATUSES:
+                    fatal_status = exc.status_code
 
         succeeded = sum(1 for response in responses if response is not None)
         logger.info("[检索] 结束：成功 %d 条查询，失败 %d 条", succeeded, failed)
-        if fatal_400:
-            logger.error("搜索参数错误（HTTP 400），终止 run")
+        if fatal_status is not None:
+            logger.error("搜索致命错误（HTTP %s），终止 run", fatal_status)
             raise StageAborted("search", stats)
         if failed == len(requests):
             logger.error("所有搜索请求均失败，终止 run")

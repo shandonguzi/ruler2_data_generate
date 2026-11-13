@@ -80,7 +80,7 @@ class DedupeSettings(Model):
     max_urls: int | None = Field(None, ge=1)
 
 
-class TavilySettings(Model):
+class TavilySearchSettings(Model):
     search_depth: Literal["basic", "advanced"] = "basic"
     topic: Literal["general", "news"] = "general"
     include_published_date: bool = True
@@ -95,6 +95,45 @@ class TavilySettings(Model):
     rate_limit_qps: float = Field(1, gt=0)
 
 
+class TavilyExtractSettings(Model):
+    format: Literal["markdown", "text"] = "markdown"
+    depth: Literal["basic", "advanced"] = "basic"
+    batch_size: int = Field(20, ge=1, le=20)
+    timeout_seconds: float = Field(60, ge=1, le=60)
+    max_retries: int = Field(3, ge=0, le=10)
+    rate_limit_qps: float = Field(2, gt=0)
+
+
+class TavilyProviderSettings(Model):
+    search: TavilySearchSettings = Field(default_factory=TavilySearchSettings)
+    extract: TavilyExtractSettings = Field(default_factory=TavilyExtractSettings)
+
+
+class DeepSeekSearchSettings(Model):
+    timeout_seconds: float = Field(30, gt=0)
+    max_retries: int = Field(3, ge=0, le=10)
+    rate_limit_qps: float = Field(5, gt=0)
+
+
+class DeepSeekExtractSettings(Model):
+    batch_size: int = Field(20, ge=1, le=20)
+    fetch_concurrency: int = Field(8, ge=1, le=32)
+    timeout_seconds: float = Field(60, ge=1, le=60)
+    max_retries: int = Field(3, ge=0, le=10)
+    rate_limit_qps: float = Field(10, gt=0)
+
+
+class DeepSeekProviderSettings(Model):
+    base_url: str = Field("https://api.deepseek.com", min_length=1)
+    search: DeepSeekSearchSettings = Field(default_factory=DeepSeekSearchSettings)
+    extract: DeepSeekExtractSettings = Field(default_factory=DeepSeekExtractSettings)
+
+
+class ProviderSettings(Model):
+    tavily: TavilyProviderSettings = Field(default_factory=TavilyProviderSettings)
+    deepseek: DeepSeekProviderSettings = Field(default_factory=DeepSeekProviderSettings)
+
+
 class PrefilterSettings(Model):
     enabled: bool = True
 
@@ -104,17 +143,10 @@ class SearchSettings(Model):
     defaults: SearchDefaults = Field(default_factory=SearchDefaults)
     dedupe: DedupeSettings = Field(default_factory=DedupeSettings)
     prefilter: PrefilterSettings = Field(default_factory=PrefilterSettings)
-    tavily: TavilySettings = Field(default_factory=TavilySettings)
 
 
 class ExtractSettings(Model):
-    format: Literal["markdown", "text"] = "markdown"
-    depth: Literal["basic", "advanced"] = "basic"
-    batch_size: int = Field(20, ge=1, le=20)
     concurrency: int = Field(2, ge=1, le=32)
-    rate_limit_qps: float = Field(2, gt=0)
-    timeout_seconds: float = Field(60, ge=1, le=60)
-    max_retries: int = Field(3, ge=0, le=10)
     min_chars: int = Field(800, ge=1)
     min_paragraphs: int = Field(3, ge=0)
     max_link_text_ratio: float = Field(0.4, ge=0, le=1)
@@ -189,10 +221,12 @@ class AuthoritySettings(Model):
 
 
 class Settings(Model):
+    provider: Literal["tavily", "deepseek"] = "tavily"
     run: RunConfig
     keywords: KeywordsSettings = Field(default_factory=KeywordsSettings)
     search: SearchSettings = Field(default_factory=SearchSettings)
     extract: ExtractSettings = Field(default_factory=ExtractSettings)
+    providers: ProviderSettings = Field(default_factory=ProviderSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
     review: ReviewSettings = Field(default_factory=ReviewSettings)
     authority: AuthoritySettings = Field(default_factory=AuthoritySettings)
@@ -201,6 +235,7 @@ class Settings(Model):
     # 运行时从 .env 解析，不来自 YAML，也不读进程环境变量。
     llm_model: str | None = None
     tavily_api_key: SecretStr | None = Field(default=None, exclude=True)
+    deepseek_api_key: SecretStr | None = Field(default=None, exclude=True)
     llm_api_key: SecretStr | None = Field(default=None, exclude=True)
     llm_base_url: str | None = None
 
@@ -246,7 +281,7 @@ class SearchResponse(Model):
 
 @dataclass
 class ExtractedContent:
-    """Tavily Extract 单 URL 结果；error_type 为空表示成功。"""
+    """单个 URL 的提取结果；error_type 为空表示成功。"""
 
     url: str
     final_url: str = ""
@@ -269,7 +304,7 @@ class ExtractedDoc(Model):
     matched_queries: list[str] = Field(default_factory=list)
     outbound_links: int = 0
     outbound_text_ratio: float = 0.0
-    extractor: str = "tavily-extract"
+    extractor: str = ""
 
 
 class RelevanceResult(Model):

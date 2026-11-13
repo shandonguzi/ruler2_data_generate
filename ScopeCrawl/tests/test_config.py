@@ -54,8 +54,34 @@ def test_load_settings_resolves_env_and_secrets(tmp_path):
     settings = load_settings(path, env=env, require_secrets=True)
     assert settings.llm_model == "test-model"
     assert settings.tavily_api_key.get_secret_value() == "tvly-test"
+    assert settings.deepseek_api_key is None
     assert settings.llm_api_key.get_secret_value() == "llm-test"
     assert settings.llm_base_url == "https://llm.example/v1"
+
+
+def test_load_settings_resolves_selected_deepseek_key(tmp_path):
+    data = yaml_config()
+    data["provider"] = "deepseek"
+    env = {
+        "SCOPECRAWL_DEEPSEEK_API_KEY": "ds-test",
+        "SCOPECRAWL_LLM_MODEL": "test-model",
+        "SCOPECRAWL_LLM_API_KEY": "llm-test",
+    }
+    settings = load_settings(_write(tmp_path, data), env=env, require_secrets=True)
+    assert settings.deepseek_api_key.get_secret_value() == "ds-test"
+    assert settings.tavily_api_key is None
+
+
+def test_load_settings_requires_selected_provider_key(tmp_path):
+    data = yaml_config()
+    data["provider"] = "deepseek"
+    env = {
+        "SCOPECRAWL_TAVILY_API_KEY": "tvly-test",
+        "SCOPECRAWL_LLM_MODEL": "test-model",
+        "SCOPECRAWL_LLM_API_KEY": "llm-test",
+    }
+    with pytest.raises(ConfigError, match="SCOPECRAWL_DEEPSEEK_API_KEY"):
+        load_settings(_write(tmp_path, data), env=env, require_secrets=True)
 
 
 def test_load_settings_rejects_invalid_language(tmp_path):
@@ -208,12 +234,12 @@ def test_load_authority_rejects_overlap(tmp_path):
 
 def test_load_settings_rejects_bad_extract_settings(tmp_path):
     data = yaml_config()
-    data["extract"]["batch_size"] = 21
+    data["providers"]["tavily"]["extract"]["batch_size"] = 21
     with pytest.raises(ConfigError, match="batch_size"):
         load_settings(_write(tmp_path, data), env={}, require_secrets=False)
 
     data = yaml_config()
-    data["extract"]["timeout_seconds"] = 61
+    data["providers"]["tavily"]["extract"]["timeout_seconds"] = 61
     with pytest.raises(ConfigError, match="timeout_seconds"):
         load_settings(_write(tmp_path, data), env={}, require_secrets=False)
 
@@ -223,18 +249,13 @@ def test_load_settings_rejects_bad_extract_settings(tmp_path):
         load_settings(_write(tmp_path, data), env={}, require_secrets=False)
 
     data = yaml_config()
-    data["extract"]["provider"] = "other"
-    with pytest.raises(ConfigError):
-        load_settings(_write(tmp_path, data), env={}, require_secrets=False)
-
-    data = yaml_config()
-    data["extract"]["timeout_seconds"] = 0.5
-    with pytest.raises(ConfigError, match="timeout_seconds"):
-        load_settings(_write(tmp_path, data), env={}, require_secrets=False)
-
-    data = yaml_config()
-    data["search"]["provider"] = "other"
+    data["provider"] = "other"
     with pytest.raises(ConfigError, match="provider"):
+        load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+
+    data = yaml_config()
+    data["providers"]["tavily"]["extract"]["timeout_seconds"] = 0.5
+    with pytest.raises(ConfigError, match="timeout_seconds"):
         load_settings(_write(tmp_path, data), env={}, require_secrets=False)
 
     data = yaml_config()
@@ -296,4 +317,11 @@ def test_load_settings_rejects_removed_fetch_section(tmp_path):
     data = yaml_config()
     data["fetch"] = {"obey_robots": False}
     with pytest.raises(ConfigError, match="fetch"):
+        load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+
+
+def test_load_settings_rejects_empty_deepseek_base_url(tmp_path):
+    data = yaml_config()
+    data["providers"]["deepseek"]["base_url"] = ""
+    with pytest.raises(ConfigError, match="base_url"):
         load_settings(_write(tmp_path, data), env={}, require_secrets=False)

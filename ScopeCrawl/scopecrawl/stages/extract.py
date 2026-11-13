@@ -6,7 +6,6 @@ import logging
 
 from ..content import (
     ExtractError,
-    TavilyExtractor,
     build_extracted_doc,
     check_quality,
     chunk_urls,
@@ -21,6 +20,7 @@ from ..models import (
     Settings,
     UrlTask,
 )
+from ..provider import Provider
 from ..summary import ExtractStats, StageAborted
 from ..utils import iter_concurrent, log_stage
 
@@ -36,10 +36,10 @@ class ExtractStage:
     def __init__(
         self,
         settings: Settings,
-        extractor: TavilyExtractor,
+        provider: Provider,
     ) -> None:
         self.settings = settings
-        self.extractor = extractor
+        self.provider = provider
 
     def run(self, candidates: list[Candidate]) -> tuple[list[DocumentSlot], ExtractStats]:
         log_stage("提取清洗")
@@ -49,7 +49,7 @@ class ExtractStage:
             return [], stats
 
         total = len(candidates)
-        batch_size = self.settings.extract.batch_size
+        batch_size = self.provider.extract_batch_size
         concurrency = self.settings.extract.concurrency
         batches = chunk_urls([task.url for task, _ in candidates], batch_size)
         offsets: list[int] = []
@@ -73,7 +73,7 @@ class ExtractStage:
         done = 0
 
         for index, future in iter_concurrent(
-            batches, self.extractor.extract_batch, concurrency
+            batches, self.provider.extract_batch, concurrency
         ):
             batch = batches[index]
             offset = offsets[index]
@@ -214,7 +214,9 @@ class ExtractStage:
                 )
                 continue
 
-            document = build_extracted_doc(task, outcome, clean)
+            document = build_extracted_doc(
+                task, outcome, clean, extractor=self.provider.extractor_name
+            )
             slots[position] = (document, domain)
             logger.info(
                 "[提取清洗] 完成 %d/%d：%s（%d 字符）",
