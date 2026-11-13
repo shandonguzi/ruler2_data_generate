@@ -125,6 +125,8 @@ config/.history.json
 
 `config/config.yaml` 顶层 `provider` 只选择一个引擎（`tavily` 或 `deepseek`），搜索与正文提取共用同一个引擎，不支持混用。引擎参数位于 `providers.<name>.search` 与 `providers.<name>.extract`，运行时只读取选中引擎的配置。
 
+正文清洗开关位于 `extract`：`strip_links`（默认 `false`）把 `[文字](url)` 清洗为文字，`strip_images`（默认 `false`）删除整条图片 `![alt](url)`；只处理 Markdown 行内语法，围栏代码块内保持原样。
+
 DeepSeek 的已知差异：
 
 - 搜索不支持 `country`、`safe_search` 与独立的 news topic，地点只能靠查询语言（`lang:`）或 `site:` 约束；埃及场景不会自动做国别限定。

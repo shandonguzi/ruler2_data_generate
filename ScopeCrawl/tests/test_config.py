@@ -306,6 +306,19 @@ def test_load_settings_accepts_prefilter_and_diversity(tmp_path):
     assert settings.diversity.max_per_domain is None
 
 
+def test_load_settings_accepts_extract_strip_switches(tmp_path):
+    data = yaml_config()
+    data["extract"]["strip_links"] = True
+    data["extract"]["strip_images"] = True
+    settings = load_settings(_write(tmp_path, data), env={}, require_secrets=False)
+    assert settings.extract.strip_links is True
+    assert settings.extract.strip_images is True
+
+    defaults = load_settings(_write(tmp_path, yaml_config()), env={}, require_secrets=False)
+    assert defaults.extract.strip_links is False
+    assert defaults.extract.strip_images is False
+
+
 def test_load_settings_rejects_bad_diversity(tmp_path):
     data = yaml_config()
     data["diversity"] = {"max_per_query": 0}

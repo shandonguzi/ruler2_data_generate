@@ -256,6 +256,105 @@ def test_clean_content_drops_images_and_repeated_blocks():
     assert clean.markdown.count("重复") == 1
 
 
+def test_clean_content_strip_links_keeps_text():
+    raw = (
+        "正文段落包含足够多的内容，用于通过边缘导航规则并保留下来，"
+        '这里带一个[参考链接](https://example.org/report "报告")。再补充一些文字。'
+    )
+    clean = clean_content(raw, url="https://example.com/article", strip_links=True)
+    assert "参考链接" in clean.markdown
+    assert "example.org" not in clean.markdown
+    assert "报告" not in clean.markdown
+    assert "](" not in clean.markdown
+
+
+def test_clean_content_strip_links_handles_parentheses_in_href():
+    raw = (
+        "正文段落包含足够多的内容，用于通过边缘导航规则并保留下来，"
+        "包含[维基条目](/wiki/Foo_(bar))与[模板链接]({{alink('read_more')}})。"
+        "再补充一些文字。"
+    )
+    clean = clean_content(raw, url="https://example.com/article", strip_links=True)
+    assert "维基条目" in clean.markdown
+    assert "模板链接" in clean.markdown
+    assert "/wiki/" not in clean.markdown
+    assert "alink" not in clean.markdown
+    assert "}})" not in clean.markdown
+
+
+def test_clean_content_strip_links_removes_orphan_destination():
+    raw = (
+        "正文段落包含足够多的内容，用于通过边缘导航规则并保留下来。\n\n"
+        "评估、规划、实施和衡量软件做法与功能，用于对业务应用组合进行现代化改造和简化。"
+        "](https://example.org/orphan)\n\n"
+        "后续正文继续补充足够多的文字，确保整体长度满足要求并保留下来。"
+    )
+    clean = clean_content(raw, url="https://example.com/article", strip_links=True)
+    assert "评估、规划" in clean.markdown
+    assert "example.org" not in clean.markdown
+    assert "](" not in clean.markdown
+
+
+def test_clean_content_strip_images_removes_whole_image():
+    raw = (
+        "正文段落包含足够多的内容，用于通过边缘导航规则并保留下来，"
+        "这里带一张![示意图](https://example.com/a.png)，"
+        "后面继续中文正文以确保段落完整。"
+    )
+    clean = clean_content(raw, url="https://example.com/article", strip_images=True)
+    assert "示意图" not in clean.markdown
+    assert "a.png" not in clean.markdown
+    assert "![" not in clean.markdown
+    assert "这里带一张" in clean.markdown
+    assert "后面继续中文正文" in clean.markdown
+
+
+def test_clean_content_strip_switches_skip_fenced_code():
+    raw = """# 标题
+
+正文段落包含足够多的内容，用于通过边缘导航规则并保留下来，带[正文链接](https://example.org/body)，再补充一些文字。
+
+```text
+[代码链接](https://example.org/code)
+![代码图片](https://example.org/code.png)
+```
+"""
+    clean = clean_content(
+        raw,
+        url="https://example.com/article",
+        strip_links=True,
+        strip_images=True,
+    )
+    assert "正文链接" in clean.markdown
+    assert "[正文链接](https://example.org/body)" not in clean.markdown
+    assert "[代码链接](https://example.org/code)" in clean.markdown
+    assert "![代码图片](https://example.org/code.png)" in clean.markdown
+
+
+def test_clean_content_strip_switches_keep_metrics():
+    raw = (
+        "正文段落包含足够多的内容，用于通过边缘导航规则并保留下来，"
+        "这里带一张![示意图](https://example.com/a.png)和一个"
+        "[参考链接](https://example.org/report)，再补充一些文字。"
+    )
+    before = clean_content(raw, url="https://example.com/article")
+    after = clean_content(
+        raw,
+        url="https://example.com/article",
+        strip_links=True,
+        strip_images=True,
+    )
+    for field in (
+        "plain_chars",
+        "outbound_links",
+        "outbound_text_ratio",
+        "link_text_ratio",
+        "nav_ratio",
+        "substantive_blocks",
+    ):
+        assert getattr(after, field) == getattr(before, field), field
+
+
 def test_clean_content_nav_ratio_counts_characters():
     raw = "\n\n".join(
         [

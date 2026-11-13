@@ -199,7 +199,12 @@ class ExtractStage:
                 )
                 continue
 
-            clean = clean_content(outcome.raw_content, url=task.url)
+            clean = clean_content(
+                outcome.raw_content,
+                url=task.url,
+                strip_links=self.settings.extract.strip_links,
+                strip_images=self.settings.extract.strip_images,
+            )
             quality_error = check_quality(clean, self.settings.extract)
             if quality_error is not None:
                 error_type, message = quality_error

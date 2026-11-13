@@ -151,6 +151,8 @@ class ExtractSettings(Model):
     min_paragraphs: int = Field(3, ge=0)
     max_link_text_ratio: float = Field(0.4, ge=0, le=1)
     max_garbled_ratio: float = Field(0.35, ge=0, le=1)
+    strip_links: bool = False
+    strip_images: bool = False
 
 
 class LLMSettings(Model):

@@ -180,6 +180,18 @@ def test_pipeline_end_to_end_mock(tmp_path, capsys):
     assert "失败" not in output
 
 
+def test_pipeline_applies_extract_strip_switches(tmp_path):
+    settings = make_settings(extract={"strip_links": True, "strip_images": True})
+    summary, code = _run(tmp_path, settings=settings)
+    assert code == 0
+
+    files = list((tmp_path / summary.run_id).glob("*.md"))
+    assert files
+    content = files[0].read_text(encoding="utf-8")
+    assert "the full report" in content
+    assert "](https" not in content
+
+
 def test_pipeline_location_sets_country_hint(tmp_path):
     provider = _provider()
     _run(tmp_path, provider=provider)

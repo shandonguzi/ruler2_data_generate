@@ -42,6 +42,11 @@ _LIST_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 _TABLE_SEP_RE = re.compile(r"^\s*\|?[\s:|-]+\|?\s*$")
 _IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+# 清洗输出专用：允许 href 中含一层配对括号（维基 `Foo_(bar)`、JS 模板 `{{alink('x')}}`）。
+_STRIP_IMAGE_RE = re.compile(r"!\[[^\]]*\]\((?:[^()\s]|\([^()]*\))*(?:\s+\"[^\"]*\")?\)")
+_STRIP_LINK_RE = re.compile(r"\[([^\]]*)\]\((?:[^()\s]|\([^()]*\))*(?:\s+\"[^\"]*\")?\)")
+# 源文本缺失左括号时残留的孤立链接尾部，如“文字。](https://...)”
+_STRIP_ORPHAN_LINK_RE = re.compile(r"\]\((?:[^()\s]|\([^()]*\))*(?:\s+\"[^\"]*\")?\)")
 _BARE_URL_RE = re.compile(r"https?://\S+")
 
 _NAV_WORDS = (
@@ -415,8 +420,18 @@ def chunk_urls(urls: list[str], size: int) -> list[list[str]]:
     return [urls[index : index + size] for index in range(0, len(urls), size)]
 
 
-def clean_content(raw: str, *, url: str) -> CleanResult:
-    """清洗 Extract 返回的 Markdown：去导航/图片/重复块，保留正文结构。"""
+def clean_content(
+    raw: str,
+    *,
+    url: str,
+    strip_links: bool = False,
+    strip_images: bool = False,
+) -> CleanResult:
+    """清洗 Extract 返回的 Markdown：去导航/图片/重复块，保留正文结构。
+
+    ``strip_links`` / ``strip_images`` 只影响最终 markdown 与 first_heading；
+    导航、去重和质量指标均基于清洗前文本计算。
+    """
     text = (raw or "").lstrip("﻿")
     text = html.unescape(text).replace("\r\n", "\n").replace("\r", "\n")
     text = _ZERO_WIDTH_RE.sub("", text)
@@ -471,8 +486,11 @@ def clean_content(raw: str, *, url: str) -> CleanResult:
         for (block, _, _, _), keep_flag in zip(metadata, keep, strict=False)
         if keep_flag
     ]
-    removed_visible = max(pre_visible - visible_length("\n\n".join(kept_blocks)), 0)
-    markdown = "\n\n".join(kept_blocks).strip()
+    joined = "\n\n".join(kept_blocks).strip()
+    removed_visible = max(pre_visible - visible_length(joined), 0)
+    markdown = _strip_inline_markdown(
+        joined, strip_links=strip_links, strip_images=strip_images
+    )
 
     retained_link_text = 0
     outbound: set[str] = set()
@@ -487,8 +505,15 @@ def clean_content(raw: str, *, url: str) -> CleanResult:
         if _is_substantive(block, link_ratio):
             substantive += 1
 
-    retained_visible = max(visible_length(markdown), 1)
+    retained_visible = max(visible_length(joined), 1)
     first_heading = _first_heading(kept_blocks)
+    if first_heading is not None and (strip_links or strip_images):
+        first_heading = (
+            _strip_inline_markdown(
+                first_heading, strip_links=strip_links, strip_images=strip_images
+            )
+            or None
+        )
     return CleanResult(
         markdown=markdown,
         plain_chars=plain_length(markdown),
@@ -518,6 +543,24 @@ def plain_length(text: str) -> int:
     value = _BARE_URL_RE.sub("", value)
     value = re.sub(r"[*_`~|]", "", value)
     return visible_length(value)
+
+
+def _strip_inline_markdown(
+    text: str, *, strip_links: bool, strip_images: bool
+) -> str:
+    """按开关清洗行内链接/图片；围栏代码块原样保留，图片先于链接处理。"""
+    if not (strip_links or strip_images):
+        return text
+    parts = re.split(r"(```.*?```)", text, flags=re.S)
+    for index in range(0, len(parts), 2):  # 奇数下标是代码块，跳过
+        if strip_images:
+            parts[index] = _STRIP_IMAGE_RE.sub("", parts[index])
+        if strip_links:
+            parts[index] = _STRIP_LINK_RE.sub(r"\1", parts[index])
+            parts[index] = _STRIP_ORPHAN_LINK_RE.sub("", parts[index])
+        parts[index] = re.sub(r"[ \t]+\n", "\n", parts[index])
+        parts[index] = re.sub(r"\n{3,}", "\n\n", parts[index])
+    return "".join(parts).strip()
 
 
 # 视为正常正文的字符区间：中文、日韩、阿拉伯/希伯来文、通用标点与 emoji。
