@@ -1,5 +1,5 @@
 # 搜索与正文提取共用同一个引擎；DeepSeek 搜索 + Tavily 提取不被支持。
-provider: tavily
+provider: deepseek
 
 run:
   s3: 日常聊天

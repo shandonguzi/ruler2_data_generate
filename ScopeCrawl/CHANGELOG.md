@@ -15,6 +15,7 @@
 - 新增：`extract.strip_links` / `extract.strip_images` 清洗开关（默认 `false`）；开启后分别把 Markdown 行内链接 `[文字](url)` 清洗为文字、删除整条图片 `![alt](url)`，图片先于链接处理并跳过围栏代码块，导航/去重与质量指标仍按清洗前文本计算；清洗专用正则支持 href 中含一层配对括号（如维基 `Foo_(bar)`），并清理源文本缺左括号的孤立链接尾部（如 `文字](url)`）
 - 测试：补充链接/图片清洗、链接标题、代码块跳过、指标不变、配置解析与流水线接线用例
 - 调整：`config/config.yaml` 的 `extract.strip_links` / `extract.strip_images` 改为 `true`，默认在正文清洗时去掉行内链接 URL 与图片
+- 调整：`config/config.yaml` 的 `provider` 改为 `deepseek`，搜索与正文提取统一使用 DeepSeek
 
 ## 2026-11-12
 
