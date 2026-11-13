@@ -1,6 +1,6 @@
 run:
-  s3: 天气查询
-  s4: 气象灾害查询
+  s3: 日常聊天
+  s4: 日常聊天
   location: 埃及
   language: zh
   time_range: null
@@ -41,7 +41,7 @@ search:
 extract:
   provider: tavily
   format: markdown
-  depth: basic
+  depth: advanced
   batch_size: 20
   concurrency: 2
   rate_limit_qps: 2

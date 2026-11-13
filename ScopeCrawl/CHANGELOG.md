@@ -1,5 +1,9 @@
 # 变更日志
 
+## 2026-11-13
+
+- 调整：`config/config.yaml` 的 `extract.depth` 改为 `advanced`，提取正文时使用 Tavily 深度抽取，提升 JS 渲染与复杂页面的正文完整度
+
 ## 2026-11-12
 
 - 清理：删除测试中的无用代码——未使用的 `settings` fixture、`PROJECT_ROOT` / `MARKDOWN_TABLE` 常量，仅测试第三方库或测试辅助函数的用例，以及重复的 pipeline 丢弃统计用例与 storage 目录断言
